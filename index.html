@@ -131,8 +131,26 @@ h1,h2,h3{font-family:var(--f-display);line-height:1.1;margin:0;text-wrap:balance
 .phases div{border-radius:8px;padding:6px;text-align:center;font-size:.72rem;font-weight:700;background:var(--surface-2);color:var(--muted)}
 .phases div.on{background:var(--ink);color:var(--bg)}
 
+/* ricette */
+.recipe{display:flex;flex-direction:column;gap:8px}
+.rec-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.rec-min{font-size:.8rem;font-weight:700;color:var(--muted);white-space:nowrap}
+.ing{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:2px;font-size:.92rem}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:.93rem}
+.steps li::marker{font-family:var(--f-mono);font-weight:700;color:var(--court)}
+#recDays{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+#recDays button{padding:7px 2px;font-size:.78rem;line-height:1.2;min-width:0}
+#recDays button small{display:block;font-family:var(--f-mono);font-weight:500;opacity:.75}
+.rec-list{display:flex;flex-direction:column;gap:10px}
+.rec-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.rec-card summary{cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;list-style:none}
+.rec-card summary::-webkit-details-marker{display:none}
+.rec-card summary .chip{grid-column:1/-1;justify-self:start;margin:0}
+.rec-card summary b{font-size:1.02rem;min-width:0}
+.rec-card[open] summary{margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--line)}
+
 /* spesa */
-#settSeg button{flex:1 1 120px}
+#settSeg button{flex:1 1 0;min-width:0}
 .pane{display:flex;flex-direction:column;gap:16px}
 .shop-sum{background:var(--surface);border:2px solid var(--ink);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px}
 .shop-sum-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
@@ -279,7 +297,8 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
   <section class="view" id="v-sett" role="tabpanel" aria-labelledby="t-sett" hidden>
     <div class="seg" id="settSeg" role="group" aria-label="Vista settimana">
       <button type="button" data-pane="plan" aria-pressed="true">Piano</button>
-      <button type="button" data-pane="shop" aria-pressed="false">Lista della spesa</button>
+      <button type="button" data-pane="rec" aria-pressed="false">Ricette</button>
+      <button type="button" data-pane="shop" aria-pressed="false">Spesa</button>
     </div>
     <div class="section-h"><h2 id="weekTitle">Questa settimana</h2>
       <div style="display:flex;gap:6px">
@@ -306,6 +325,10 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
         <li>Mangia lentamente, mastica bene, niente telefono a tavola.</li>
       </ul>
     </div>
+    </div>
+    <div class="pane" id="sett-rec" hidden>
+      <div class="seg" id="recDays" role="group" aria-label="Giorno"></div>
+      <div class="rec-list" id="recList"></div>
     </div>
     <div class="pane" id="sett-shop" hidden>
       <div class="shop-sum">
@@ -487,6 +510,87 @@ const MEALS={
     "Insalata tiepida di quinoa, ceci, zucca e cavolo nero"]
 };
 
+// ricette per 1 persona, indice = giorno della settimana (0 = lunedì)
+const RECIPES={
+  colazione:[
+    {t:"Power bowl",min:5,ing:["50 g di fiocchi d'avena senza glutine","200 ml di bevanda di mandorla","½ banana","80 g di frutti di bosco","1 cucchiaio di semi di chia","4 gherigli di noce","1 cucchiaino di miele"],
+     steps:["Scalda la bevanda di mandorla in un pentolino, senza farla bollire.","Versala sull'avena insieme ai semi di chia, mescola e lascia riposare 3 minuti.","Taglia la banana a rondelle e spezzetta le noci con le mani.","Completa con banana, frutti di bosco, noci e il miele a filo."],
+     tip:"Se vai di fretta, prepara avena, chia e bevanda la sera prima in un barattolo e tienilo in frigo."},
+    {t:"Frullato verde",min:5,ing:["40 g di spinaci (una manciata)","1 banana","½ mela","1 cucchiaio di burro di mandorle","100 ml di latte di cocco e 100 ml d'acqua","1 cucchiaio di semi di lino","2 gallette di riso"],
+     steps:["Lava gli spinaci e sgocciolali.","Taglia banana e mela a pezzi, togliendo il torsolo della mela.","Metti tutto nel frullatore con latte di cocco, acqua, burro di mandorle e semi di lino.","Frulla 30–60 secondi, finché è liscio.","Bevilo a piccoli sorsi, insieme alle gallette."],
+     tip:"La banana congelata a pezzi rende il frullato più cremoso e fresco."},
+    {t:"Porridge di grano saraceno",min:20,ing:["50 g di grano saraceno in chicchi","200 ml di bevanda di mandorla e 100 ml d'acqua","1 mela","½ cucchiaino di cannella","4 gherigli di noce"],
+     steps:["Sciacqua il grano saraceno in un colino sotto l'acqua corrente.","Cuocilo con acqua e bevanda di mandorla a fuoco basso per 15 minuti, mescolando ogni tanto.","Intanto taglia la mela a cubetti e cuocila in padella con 2 cucchiai d'acqua e la cannella per 5–6 minuti.","Quando il porridge è cremoso, versalo nella ciotola.","Aggiungi la mela calda e le noci spezzettate."],
+     tip:"Metti il grano saraceno a bagno la sera prima: al mattino cuoce in 8 minuti."},
+    {t:"Budino di chia al cocco",min:5,ing:["3 cucchiai di semi di chia (30 g)","150 ml di latte di cocco e 50 ml d'acqua","½ mango","1 cucchiaio di semi di zucca"],
+     steps:["La sera prima mescola chia, latte di cocco e acqua in un barattolo.","Dopo 5 minuti rimescola bene per non formare grumi.","Chiudi il barattolo e mettilo in frigo per la notte.","Al mattino taglia il mango a cubetti.","Completa il budino con mango e semi di zucca."],
+     tip:"Va preparato la sera prima. Mettiti un promemoria dopo cena."},
+    {t:"Toast con avocado",min:7,ing:["2 fette di pane senza glutine","½ avocado","6 pomodorini","1 cucchiaino di semi di sesamo","Succo di ¼ di limone","Olio extravergine, sale e pepe"],
+     steps:["Tosta il pane in padella o nel tostapane.","Schiaccia l'avocado con una forchetta insieme al limone e a un pizzico di sale.","Taglia i pomodorini a metà.","Spalma l'avocado sul pane e aggiungi i pomodorini.","Finisci con sesamo, pepe e un filo d'olio."],
+     tip:"Conserva l'altra metà dell'avocado con il nocciolo e qualche goccia di limone: ti serve a pranzo."},
+    {t:"Bowl di yogurt di cocco e quinoa soffiata",min:5,ing:["125 g di yogurt di cocco","30 g di quinoa soffiata","1 kiwi","60 g di mirtilli","10 mandorle"],
+     steps:["Versa lo yogurt in una ciotola.","Sbuccia il kiwi e taglialo a rondelle.","Trita le mandorle grossolanamente con il coltello.","Aggiungi frutta e mandorle, e la quinoa soffiata per ultima, così resta croccante."]},
+    {t:"Pancake di banana e avena",min:15,ing:["1 banana matura","40 g di fiocchi d'avena senza glutine","60 ml di bevanda di mandorla","1 pizzico di cannella","1 cucchiaino d'olio per la padella","80 g di frutti di bosco"],
+     steps:["Frulla l'avena fino a ottenere una farina.","Schiaccia la banana e uniscila alla farina, alla bevanda e alla cannella. Lascia riposare 5 minuti.","Scalda una padella antiaderente unta con pochissimo olio, a fuoco medio-basso.","Versa un cucchiaio d'impasto per ogni pancake e cuoci 2–3 minuti per lato. Giralo quando i bordi si rapprendono.","Servi con i frutti di bosco, anche scaldati 2 minuti in padella come salsa."],
+     tip:"Sono senza uova, quindi delicati: falli piccoli e girali con calma."}
+  ],
+  pranzo:[
+    {t:"Pasta di riso al pesto senza formaggio",min:20,ing:["100 g di pasta di riso integrale","1 zucchina","20 g di foglie di basilico","1 cucchiaio di pinoli","½ spicchio d'aglio","2 cucchiai d'olio extravergine","Sale","Insalata verde"],
+     steps:["Metti a bollire l'acqua salata.","Frulla basilico, pinoli, aglio, olio, un pizzico di sale e 2 cucchiai d'acqua fredda fino a ottenere il pesto.","Taglia la zucchina a rondelle sottili e saltala in padella con un filo d'olio per 5 minuti.","Cuoci la pasta di riso per il tempo indicato sulla confezione, mescolando nei primi minuti perché non si attacchi.","Scolala tenendo da parte un po' d'acqua di cottura.","Condisci fuori dal fuoco con pesto, zucchine e un cucchiaio d'acqua di cottura. Insalata come contorno."]},
+    {t:"Quinoa con ceci e verdure grigliate",min:25,ing:["70 g di quinoa","120 g di ceci cotti (½ vasetto)","½ melanzana","½ peperone","Succo di ½ limone","2 cucchiai d'olio extravergine","Sale e prezzemolo"],
+     steps:["Sciacqua la quinoa in un colino: toglie il retrogusto amaro.","Cuocila coperta in doppio volume d'acqua salata per 12–15 minuti, finché assorbe tutto. Lasciala riposare 5 minuti.","Taglia la melanzana a fette e il peperone a falde, grigliali su una piastra calda 3–4 minuti per lato.","Taglia le verdure a pezzi e sciacqua i ceci.","Unisci tutto e condisci con olio, limone, sale e prezzemolo."],
+     tip:"Cuoci il doppio della quinoa: l'altra metà ti serve per la cena di domenica, o per un pranzo veloce."},
+    {t:"Curry di lenticchie rosse con riso",min:40,ing:["100 g di riso integrale (60 g per ora, 40 g per la cena)","70 g di lenticchie rosse","50 g di spinaci","1 spicchio d'aglio","1 cm di zenzero fresco","1 cucchiaino di curry","100 ml di latte di cocco","300 ml d'acqua","1 cucchiaio d'olio, sale"],
+     steps:["Cuoci il riso integrale in acqua salata per 35–40 minuti. Tienine da parte 40 g per la cena.","Sciacqua le lenticchie finché l'acqua è limpida.","In una pentola scalda l'olio con aglio tritato, zenzero grattugiato e curry per 1 minuto.","Aggiungi lenticchie e acqua e cuoci 15 minuti mescolando, finché si sfaldano.","Unisci latte di cocco e spinaci, cuoci altri 2 minuti e aggiusta di sale.","Servi il curry sul riso."]},
+    {t:"Pasta di grano saraceno con broccoli",min:20,ing:["100 g di pasta di grano saraceno","300 g di cimette di broccolo","1 spicchio d'aglio","Peperoncino a piacere","2 cucchiai d'olio extravergine","Sale"],
+     steps:["Porta a bollore l'acqua salata e cuoci le cimette per 5 minuti.","Butta la pasta nella stessa acqua e cuocila per il tempo indicato, mescolando con delicatezza perché è fragile.","Intanto scalda olio, aglio a fettine e peperoncino in padella a fuoco basso per 2 minuti, senza bruciare l'aglio.","Scola pasta e broccoli e passali in padella per 1 minuto con un mestolino d'acqua di cottura.","Schiaccia qualche cimetta con il cucchiaio: diventa una crema che lega la pasta."]},
+    {t:"Bowl di riso nero, edamame e tahina",min:15,ing:["60 g di riso nero (cotto in anticipo)","80 g di edamame","½ avocado","1 carota","1 manciata di cavolo cappuccio","1 cucchiaio di tahina","Succo di ½ limone","Sale e semi di sesamo"],
+     steps:["Cuoci il riso nero per il tempo della confezione, di solito 35–40 minuti. Meglio farlo il giorno prima.","Cuoci gli edamame in acqua bollente per 4 minuti e scolali.","Grattugia la carota, taglia il cavolo a strisce sottili e l'avocado a fette.","Per la salsa mescola tahina, limone, 2–3 cucchiai d'acqua e un pizzico di sale, fino a ottenere una crema.","Componi la bowl a spicchi e versa la salsa sopra."]},
+    {t:"Pasta di legumi con pomodoro e melanzane",min:25,ing:["80 g di pasta di legumi","½ melanzana","3 pomodori maturi","1 spicchio d'aglio","Qualche foglia di basilico","2 cucchiai d'olio extravergine, sale"],
+     steps:["Taglia la melanzana a cubetti e cuocila in padella con 1 cucchiaio d'olio, l'aglio e 2 cucchiai d'acqua, coperta per i primi 5 minuti, poi scoperta per altri 5.","Aggiungi i pomodori a cubetti e cuoci 10 minuti a fuoco medio. Aggiusta di sale.","Cuoci la pasta di legumi in acqua salata per il tempo della confezione: cuoce in fretta, non lasciarla scuocere.","Scolala e saltala nel sugo per 1 minuto.","Finisci con basilico e un filo d'olio a crudo."]},
+    {t:"Miglio con funghi e insalata di finocchi",min:25,ing:["70 g di miglio","250 g di funghi","1 spicchio d'aglio","Prezzemolo tritato","2 cucchiai d'olio extravergine","Sale e pepe","1 finocchio e succo di ½ limone"],
+     steps:["Sciacqua il miglio e tostalo in una pentola asciutta per 2 minuti.","Aggiungi 210 ml d'acqua bollente salata e cuoci coperto a fuoco basso per 15–18 minuti. Spegni e lascia riposare 5 minuti.","Pulisci i funghi con un panno umido, affettali e cuocili in padella calda con olio e aglio per 8 minuti a fuoco vivace.","Sala, pepa e aggiungi il prezzemolo.","Sgrana il miglio con una forchetta e uniscilo ai funghi.","Per l'insalata affetta sottile il finocchio e condiscilo con limone, olio e sale."]}
+  ],
+  spuntino:[
+    {t:"Mela e mandorle",min:2,ing:["1 mela","15 mandorle"],
+     steps:["Lava la mela e tagliala a spicchi.","Mangiala con le mandorle, lontano dalla scrivania e dallo schermo."]},
+    {t:"Hummus con verdure",min:5,ing:["3 cucchiai di hummus","1 carota","1 costa di sedano"],
+     steps:["Lava e pela la carota.","Taglia carota e sedano a bastoncini.","Intingili nell'hummus."],
+     tip:"Taglia i bastoncini per due giorni e conservali in un contenitore con un po' d'acqua in frigo."},
+    {t:"Banana e burro di mandorle",min:2,ing:["1 banana","1 cucchiaio di burro di mandorle","1 pizzico di cannella"],
+     steps:["Taglia la banana a rondelle.","Spalma o intingi nel burro di mandorle e completa con la cannella."]},
+    {t:"Frutti di bosco e noci",min:2,ing:["100 g di frutti di bosco","4 gherigli di noce"],
+     steps:["Se sono surgelati, mettili in frigo la mattina: a metà pomeriggio sono pronti.","Servili in una ciotola con le noci spezzettate."]},
+    {t:"Gallette con avocado",min:5,ing:["2 gallette di riso","½ avocado","Sale, pepe e qualche goccia di limone"],
+     steps:["Schiaccia l'avocado con limone, sale e pepe.","Spalmalo sulle gallette appena prima di mangiarle, così restano croccanti."]},
+    {t:"Pera e noci del Brasile",min:2,ing:["1 pera","2–3 noci del Brasile"],
+     steps:["Lava la pera e tagliala a spicchi.","Accompagnala con le noci del Brasile."],
+     tip:"Non superare 2–3 noci del Brasile al giorno: sono molto ricche di selenio."},
+    {t:"Datteri ripieni di nocciole",min:3,ing:["2 datteri","10 nocciole"],
+     steps:["Apri i datteri per il lungo e togli il nocciolo.","Metti dentro qualche nocciola e mangia le altre a parte."]}
+  ],
+  cena:[
+    {t:"Salmone al forno con patata dolce",min:30,ing:["150 g di filetto di salmone (oppure 150 g di tempeh)","1 patata dolce media (250 g)","200 g di cimette di broccolo","1 cucchiaio d'olio extravergine","Succo di ½ limone, sale"],
+     steps:["Accendi il forno a 200 °C.","Taglia la patata dolce a cubetti, condiscila con metà dell'olio e un pizzico di sale e mettila in teglia con carta da forno per 25 minuti.","Dopo 12 minuti aggiungi il salmone con la pelle in basso, condito con olio, sale e limone. Cuoci 12–15 minuti.","Nel frattempo cuoci i broccoli al vapore per 6–8 minuti.","Versione vegetale: taglia il tempeh a fette, lascialo 10 minuti in olio e limone e cuocilo in forno 15 minuti."]},
+    {t:"Zuppa di lenticchie e verdure",min:40,ing:["80 g di lenticchie","1 carota","1 costa di sedano","1 pomodoro","1 spicchio d'aglio","700 ml d'acqua","1 cucchiaio d'olio extravergine, sale","Rucola e limone per l'insalata"],
+     steps:["Trita carota, sedano e aglio e falli appassire 5 minuti in pentola con l'olio, a fuoco dolce.","Aggiungi le lenticchie sciacquate, il pomodoro a pezzi e l'acqua.","Cuoci 30–35 minuti a fuoco basso con il coperchio socchiuso, finché le lenticchie sono tenere.","Sala solo a fine cottura. Se la vuoi cremosa, frulla metà zuppa.","Servila con un filo d'olio a crudo e la rucola condita con limone."],
+     tip:"Raddoppia le dosi e congela una porzione: è la tua cena di emergenza."},
+    {t:"Tofu saltato con verdure e zenzero",min:20,ing:["150 g di tofu","300 g di verdure (peperone, carota, zucchina, cavolo)","1 cm di zenzero fresco","1 spicchio d'aglio","1 cucchiaio di tamari (salsa di soia senza glutine)","1 cucchiaio d'olio","40 g di riso integrale cotto a pranzo"],
+     steps:["Tampona il tofu con carta da cucina e taglialo a cubetti.","Rosolalo in padella o nel wok ben caldo con l'olio per 6–8 minuti, finché è dorato su più lati. Mettilo da parte.","Taglia le verdure a listarelle e saltale a fuoco vivace per 5 minuti con aglio e zenzero grattugiato: devono restare croccanti.","Rimetti il tofu, aggiungi il tamari e salta ancora 1 minuto.","Servi con il riso avanzato dal pranzo, scaldato in padella."]},
+    {t:"Branzino al cartoccio con verdure",min:30,ing:["1 branzino pulito (circa 300 g) o 150 g di filetti","300 g di verdure (zucchine, pomodorini, finocchio)","½ limone a fette","Prezzemolo e 1 spicchio d'aglio","1 cucchiaio d'olio extravergine, sale"],
+     steps:["Accendi il forno a 190 °C.","Taglia le verdure sottili e disponile su un grande foglio di carta da forno.","Appoggia il pesce sopra e mettigli dentro limone, prezzemolo e aglio. Condisci con olio e sale.","Chiudi bene il cartoccio e cuoci 20–25 minuti (12–15 minuti per i filetti).","Versione vegetale: schiaccia ½ vasetto di ceci con 2 cucchiai d'avena e prezzemolo, forma 2 burger e cuocili in padella 4 minuti per lato."],
+     tip:"Chiedi al pescivendolo di pulire il branzino: una scusa in meno."},
+    {t:"Burger di fagioli neri",min:25,ing:["240 g di fagioli neri cotti (1 vasetto sgocciolato)","3 cucchiai di fiocchi d'avena senza glutine (30 g)","½ cucchiaino di curry","Prezzemolo tritato, sale","1 cucchiaio d'olio","Insalata grande, ½ avocado e qualche pomodorino"],
+     steps:["Sciacqua e asciuga bene i fagioli.","Schiacciali con una forchetta, lasciando qualche pezzo intero.","Aggiungi avena, curry, prezzemolo e sale e impasta. Se è troppo morbido, aggiungi altra avena. Lascia riposare 10 minuti.","Forma 2 burger e cuocili in padella antiaderente con poco olio, 4–5 minuti per lato a fuoco medio. Girali con delicatezza.","Servili con l'insalata, l'avocado a fette e i pomodorini."]},
+    {t:"Minestrone di verdure e ceci",min:45,ing:["400 g di verdure di stagione (carota, zucchina, sedano, cavolo)","120 g di ceci cotti (½ vasetto)","1 litro d'acqua","1 cucchiaio d'olio extravergine e un filo a crudo","Sale e prezzemolo"],
+     steps:["Lava le verdure e tagliale a cubetti piccoli, così cuociono in fretta e in modo uniforme.","In pentola fai insaporire carota e sedano con l'olio per 3 minuti.","Aggiungi le altre verdure, l'acqua e un pizzico di sale e cuoci 30 minuti a fuoco basso.","Negli ultimi 10 minuti aggiungi i ceci.","Servi con prezzemolo e olio a crudo."],
+     tip:"Fanne una pentola intera: si conserva 3 giorni in frigo e si congela bene."},
+    {t:"Insalata tiepida di quinoa e zucca",min:35,ing:["70 g di quinoa (o quella avanzata da martedì)","200 g di zucca","120 g di ceci cotti (½ vasetto)","3 foglie di cavolo nero","2 cucchiai d'olio extravergine","Sale e succo di ½ limone"],
+     steps:["Accendi il forno a 200 °C. Taglia la zucca a cubetti, condiscila con olio e sale e cuocila 25 minuti.","Negli ultimi 10 minuti aggiungi in teglia i ceci asciugati: diventano croccanti.","Sciacqua la quinoa e cuocila 12–15 minuti in doppio volume d'acqua salata.","Togli la costa centrale al cavolo nero, taglialo a striscioline e massaggialo 1 minuto con un pizzico di sale e un filo d'olio: si ammorbidisce.","Unisci tutto ancora tiepido e condisci con il limone."]}
+  ]
+};
+const MEAL_LABEL={colazione:"Colazione",pranzo:"Pranzo",spuntino:"Spuntino",cena:"Cena"};
+
 // lista della spesa per 1 persona e 7 giorni: [id, nome, quantità, a cosa serve]
 const SHOP=[
   ["Frutta",[
@@ -498,13 +602,13 @@ const SHOP=[
     ["mango","Mango","1","colazione gio"],
     ["pera","Pera","1","spuntino sab"],
     ["limoni","Limoni","3","acqua e limone, quinoa di mar"],
-    ["avocado","Avocado","4","colazione, pranzo, spuntino e cena di ven"],
+    ["avocado","Avocado","2","colazione, pranzo, spuntino e cena di ven"],
     ["datteri","Datteri","1 confezione","spuntino dom"]]],
   ["Verdura ed erbe",[
-    ["spinaci","Spinaci","300 g","frullato mar, curry mer"],
+    ["spinaci","Spinaci","150 g","frullato mar, curry mer"],
     ["zucchine","Zucchine","2","pranzo lun"],
     ["broccoli","Broccoli","2","pranzo gio, cena lun"],
-    ["melanzane","Melanzane","2","pranzi mar e sab"],
+    ["melanzane","Melanzane","1","pranzi mar e sab"],
     ["peperoni","Peperoni","1","verdure grigliate mar"],
     ["pomodorini","Pomodorini","250 g","colazione ven"],
     ["pomodori","Pomodori maturi","4","pranzo sab"],
@@ -530,7 +634,7 @@ const SHOP=[
     ["miglio","Miglio","80 g","pranzo dom"],
     ["pastariso","Pasta di riso integrale","100 g","pranzo lun"],
     ["pastasar","Pasta di grano saraceno","100 g","pranzo gio"],
-    ["pastaleg","Pasta di legumi","100 g","pranzo sab"],
+    ["pastaleg","Pasta di legumi","80 g","pranzo sab"],
     ["pane","Pane senza glutine","1 confezione","colazione ven"],
     ["gallette","Gallette di riso","1 confezione","colazione mar, spuntino ven"]]],
   ["Legumi, pesce e proteine",[
@@ -562,7 +666,8 @@ const SHOP=[
   ["Dispensa",[
     ["olio","Olio extravergine d'oliva","se manca","tutti i giorni"],
     ["miele","Miele","se manca","colazione lun"],
-    ["spezie","Cannella e curry","se mancano","porridge mer, curry mer"]]]
+    ["spezie","Cannella e curry","se mancano","porridge mer, curry mer, burger ven"],
+    ["tamari","Tamari (salsa di soia senza glutine)","1 bottiglietta","tofu mer"]]]
 ];
 
 // p = schema respiratorio [inspira, trattieni, espira, pausa] in secondi
@@ -649,20 +754,20 @@ function buildDay(d){
     {id:"medam",t:W+15,kind:"mente",title:"Meditazione: "+med.name,dur:medMin,med:med,
       sum:med.sum+" "+medMin+" minuti.",list:med.steps,
       micro:"Siediti, chiudi gli occhi e fai 5 respiri lenti contando le espirazioni."},
-    {id:"colaz",t:W+45,kind:"cibo",title:"Colazione",dur:20,sum:MEALS.colazione[I.wd],
-      list:["Siediti a tavola, senza schermi.","Mastica lentamente: la digestione inizia in bocca.","Bevi acqua a temperatura ambiente, non ghiacciata."],
+    {id:"colaz",t:W+45,kind:"cibo",title:"Colazione: "+RECIPES.colazione[I.wd].t,dur:RECIPES.colazione[I.wd].min,rec:RECIPES.colazione[I.wd],sum:MEALS.colazione[I.wd],
+      eat:"Siediti a tavola, senza schermi, e mastica lentamente.",
       micro:"Prepara solo gli ingredienti sul tavolo. Il resto viene facile."},
     {id:"train",t:trainAt,kind:"corpo",title:wo.name,dur:woDur,ex:wo.ex,tip:wo.tip,
       sum:woDur+" minuti · "+WEEKS[I.week].name,
       micro:"Metti le scarpe e fai solo il primo esercizio. Se dopo 2 minuti vuoi smettere, puoi."},
-    {id:"pranzo",t:lunchAt,kind:"cibo",title:"Pranzo",dur:30,sum:MEALS.pranzo[I.wd],
-      list:["Carboidrati senza glutine per l'energia del pomeriggio.","Metà piatto di verdure.","Mangia lentamente, posate giù tra un boccone e l'altro."],
+    {id:"pranzo",t:lunchAt,kind:"cibo",title:"Pranzo: "+RECIPES.pranzo[I.wd].t,dur:RECIPES.pranzo[I.wd].min,rec:RECIPES.pranzo[I.wd],sum:MEALS.pranzo[I.wd],
+      eat:"Mangia lentamente: posate giù tra un boccone e l'altro.",
       micro:"Scegli la ricetta e metti l'acqua sul fuoco. Fatto il primo passo."},
-    {id:"snack",t:W+600,kind:"cibo",title:"Spuntino",dur:10,sum:MEALS.spuntino[I.wd],
-      list:["Uno spuntino semplice tiene stabile l'energia.","Accompagnalo con un bicchiere d'acqua."],
+    {id:"snack",t:W+600,kind:"cibo",title:"Spuntino: "+RECIPES.spuntino[I.wd].t,dur:RECIPES.spuntino[I.wd].min,rec:RECIPES.spuntino[I.wd],sum:MEALS.spuntino[I.wd],
+      eat:"Accompagnalo con un bicchiere d'acqua.",
       micro:"Prendi il frutto. Mangialo lontano dalla scrivania."},
-    {id:"cena",t:W+810,kind:"cibo",title:"Cena",dur:30,sum:MEALS.cena[I.wd],
-      list:["Proteine e verdure, carboidrati leggeri.","Finisci almeno 2 ore prima di dormire.","Niente zuccheri raffinati la sera."],
+    {id:"cena",t:W+810,kind:"cibo",title:"Cena: "+RECIPES.cena[I.wd].t,dur:RECIPES.cena[I.wd].min,rec:RECIPES.cena[I.wd],sum:MEALS.cena[I.wd],
+      eat:"Finisci di cenare almeno 2 ore prima di dormire.",
       micro:"Lava e taglia le verdure. Il resto della cena parte da lì."},
     {id:"medpm",t:W+930,kind:"mente",title:"Chiusura: diario e gratitudine",dur:5,med:MEDS[6],
       sum:"Tre righe sul diario: cosa è andato bene, cosa migliorare, tre grazie.",
@@ -773,6 +878,7 @@ function render(){
     let det="";
     if(open){
       if(x.ex){det='<div class="details">'+x.ex.map(e=>'<div class="ex"><span>'+esc(e.n)+'</span><span class="dose">'+esc(dose(e,+S.profile.level||0,WEEKS[I.week].factor))+'</span></div>').join("")+'<div class="tip">'+esc(x.tip)+'</div>'+startBtn(x)+'</div>'}
+      else if(x.rec)det='<div class="details">'+recipeHTML(x.rec,x.eat)+startBtn(x)+"</div>";
       else det='<div class="details"><ul>'+x.list.map(s=>"<li>"+esc(s)+"</li>").join("")+"</ul>"+startBtn(x)+"</div>";
     }
     return '<li class="task'+(isDone?" done":"")+(i===nowIdx?" now":"")+'">'+
@@ -786,7 +892,13 @@ function render(){
   if(view==="medita")renderMed();
   if(view==="tu")renderYou();
 }
-function startBtn(x){return '<div class="btnrow"><button class="btn btn-court" data-start="'+x.id+'">'+(x.med?"Avvia meditazione guidata":"Avvia timer · "+x.dur+" min")+'</button></div>'}
+function startBtn(x){return '<div class="btnrow"><button class="btn btn-court" data-start="'+x.id+'">'+(x.med?"Avvia meditazione guidata":x.rec?"Cucina con il timer · "+x.dur+" min":"Avvia timer · "+x.dur+" min")+'</button></div>'}
+function recipeHTML(r,eat){
+  return '<div class="recipe"><div class="rec-h"><span class="eyebrow">Ingredienti · 1 persona</span><span class="mono rec-min">'+r.min+' min</span></div>'+
+    '<ul class="ing">'+r.ing.map(i=>"<li>"+esc(i)+"</li>").join("")+'</ul>'+
+    '<div class="eyebrow">Preparazione</div><ol class="steps">'+r.steps.map(i=>"<li>"+esc(i)+"</li>").join("")+'</ol>'+
+    (r.tip?'<p class="tip">'+esc(r.tip)+'</p>':"")+(eat?'<p class="tip">'+esc(eat)+'</p>':"")+'</div>';
+}
 function labelKind(k){return{rituale:"Rituale",mente:"Mente",cibo:"Cibo",corpo:"Allenamento",sonno:"Sonno"}[k]}
 
 /* ---------- SETTIMANA ---------- */
@@ -807,9 +919,22 @@ function renderWeek(){
       '<div class="bar"><i style="width:'+Math.round(pc*100)+'%"></i></div></div></button>';
   }
   $("weekGrid").innerHTML=h;
-  ["plan","shop"].forEach(n=>{$("sett-"+n).hidden=n!==pane});
+  ["plan","rec","shop"].forEach(n=>{$("sett-"+n).hidden=n!==pane});
   $("settSeg").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.pane===pane));
   if(pane==="shop")renderShop();
+  if(pane==="rec")renderRecipes();
+}
+
+/* ---------- RICETTARIO ---------- */
+let recDay=null;
+function renderRecipes(){
+  const mon=addDays(weekSel,-((weekSel.getDay()+6)%7));
+  if(recDay===null)recDay=(today().getDay()+6)%7;
+  $("recDays").innerHTML=DAYNAMES.map((n,i)=>'<button type="button" data-recday="'+i+'" aria-pressed="'+(i===recDay)+'">'+n.slice(0,3)+"<small>"+addDays(mon,i).getDate()+"</small></button>").join("");
+  $("recList").innerHTML=["colazione","pranzo","spuntino","cena"].map((m,j)=>{
+    const r=RECIPES[m][recDay];
+    return '<details class="rec-card"'+(j===0?" open":"")+'><summary><span class="chip k-cibo">'+MEAL_LABEL[m]+'</span><b>'+esc(r.t)+'</b><span class="mono rec-min">'+r.min+" min</span></summary>"+recipeHTML(r)+"</details>";
+  }).join("");
 }
 
 /* ---------- LISTA DELLA SPESA ---------- */
@@ -961,8 +1086,9 @@ function startTask(id,mini){
   if(x.med){openOverlay({title:x.med.name,eyebrow:breathLabel(x.med.p),secs:x.dur*60,med:x.med,task:id,day:sel});return}
   let list="";
   if(x.ex)list='<div class="phase"><div class="eyebrow">Esercizi</div>'+x.ex.map(e=>'<div class="ex"><span>'+esc(e.n)+'</span><span class="dose">'+esc(dose(e,+S.profile.level||0,WEEKS[plan.info.week].factor))+"</span></div>").join("")+'<p class="tip" style="margin-top:8px">'+esc(x.tip)+"</p></div>";
+  else if(x.rec)list='<div class="phase">'+recipeHTML(x.rec,x.eat)+"</div>";
   else if(x.list)list='<div class="phase"><ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">'+x.list.map(s=>"<li>"+esc(s)+"</li>").join("")+"</ul></div>";
-  openOverlay({title:x.title,eyebrow:x.id==="train"?"Allenamento":"In corso",secs:x.dur*60,task:id,day:sel,list,msg:x.id==="train"?"Inizia dal primo esercizio. Pensa solo a quello.":x.sum});
+  openOverlay({title:x.title,eyebrow:x.id==="train"?"Allenamento":x.rec?"In cucina":"In corso",secs:x.dur*60,task:id,day:sel,list,msg:x.id==="train"?"Inizia dal primo esercizio. Pensa solo a quello.":x.rec?"Segui i passaggi qui sotto, uno alla volta.":x.sum});
 }
 
 /* ---------- EVENTI ---------- */
@@ -974,6 +1100,7 @@ document.addEventListener("click",e=>{
   if(b.dataset.day){sel=parseKey(b.dataset.day);openTask=null;switchView("oggi");return}
   if(b.dataset.med){medSel=b.dataset.med;renderMed();return}
   if(b.dataset.dur){durSel=+b.dataset.dur;renderMed();return}
+  if(b.dataset.recday){recDay=+b.dataset.recday;renderRecipes();return}
   if(b.dataset.pane){pane=b.dataset.pane;$("shopText").hidden=true;renderWeek();return}
   if(b.dataset.slot){S.profile.slot=b.dataset.slot;S.setup=true;save();render();renderYou();toast("Orari aggiornati");return}
   if(b.dataset.level){S.profile.level=+b.dataset.level;S.setup=true;save();render();renderYou();toast("Livello: "+LEVELS[+b.dataset.level]);return}
@@ -982,7 +1109,7 @@ document.addEventListener("click",e=>{
 function switchView(v){
   view=v;
   ["oggi","sett","medita","tu"].forEach(n=>{$("v-"+n).hidden=n!==v;$("t-"+n).setAttribute("aria-selected",n===v)});
-  if(v==="sett")weekSel=sel;
+  if(v==="sett"){weekSel=sel;recDay=(sel.getDay()+6)%7}
   render();window.scrollTo(0,0);
 }
 $("prevDay").onclick=()=>{sel=addDays(sel,-1);openTask=null;$("excuseBox").hidden=true;render()};
