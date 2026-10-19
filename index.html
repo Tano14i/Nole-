@@ -332,6 +332,10 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
       <button class="iconbtn" id="nextDay" aria-label="Giorno successivo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 5l7 7-7 7"/></svg></button>
     </div>
 
+    <div class="banner" id="instBanner" hidden>
+      <p id="instText"></p>
+      <div class="btnrow"><button class="btn btn-go" id="instBannerBtn" hidden>Installa l'app</button><button class="btn btn-ghost" id="instBannerNo">Più tardi</button></div>
+    </div>
     <div class="banner" id="remBanner" hidden>
       <p>Vuoi che ti scriva all'ora di ogni attività, e di nuovo se non hai ancora iniziato?</p>
       <div class="btnrow"><button class="btn btn-court" id="remBannerOn">Attiva i promemoria</button><button class="btn btn-ghost" id="remBannerNo">No, grazie</button></div>
@@ -1040,7 +1044,10 @@ function render(){
   if(view==="sett")renderWeek();
   if(view==="medita")renderMed();
   if(view==="tu")renderYou();
-  $("remBanner").hidden=!(ENV.notif&&!S.rem.on&&!S.rem.dismiss&&isToday(sel));
+  const showInst=ENV.site&&!ENV.standalone&&!S.instDismiss&&isToday(sel);
+  $("instBanner").hidden=!showInst;
+  if(showInst){$("instText").innerHTML=installEvt?"Installa Nole Coach: si apre come un'app, anche senza connessione, e ti manda i promemoria.":"<b>Installa Nole Coach sul telefono.</b> "+installHelp();$("instBannerBtn").hidden=!installEvt}
+  $("remBanner").hidden=showInst||!(ENV.notif&&!S.rem.on&&!S.rem.dismiss&&isToday(sel));
   scheduleReminders();
 }
 function startBtn(x){return '<div class="btnrow"><button class="btn btn-court" data-start="'+x.id+'">'+(x.med?"Avvia meditazione guidata":x.rec?"Cucina con il timer · "+x.dur+" min":"Avvia timer · "+x.dur+" min")+'</button></div>'}
@@ -1314,9 +1321,19 @@ const ENV=(function(){
 })();
 let swReg=null,installEvt=null,remTimers=[];
 if(ENV.sw)navigator.serviceWorker.register("sw.js").then(r=>{swReg=r}).catch(()=>{});
-window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;if(view==="tu")renderApp()});
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;render();if(view==="tu")renderApp()});
 window.addEventListener("appinstalled",()=>{installEvt=null;toast("App installata. La trovi tra le tue app.");if(view==="tu")renderApp()});
 
+// istruzioni di installazione per il browser in uso
+function installHelp(){
+  const ua=navigator.userAgent;
+  if(ENV.ios&&!/Safari/.test(ua)||/CriOS|FxiOS|EdgiOS/.test(ua))return "Su iPhone si installa solo da Safari: apri questo indirizzo in Safari, poi tocca <b>Condividi</b> → <b>Aggiungi alla schermata Home</b>.";
+  if(ENV.ios)return "Tocca <b>Condividi</b> (il quadrato con la freccia in basso) → scorri e scegli <b>Aggiungi alla schermata Home</b> → <b>Aggiungi</b>.";
+  if(/; wv\)|GitHub|FBAN|FBAV|Instagram|Line\//.test(ua))return "Sei dentro un'altra app, non nel browser. Tocca <b>⋮</b> e scegli <b>Apri in Chrome</b> (o «Apri nel browser»), poi installa da lì.";
+  if(/SamsungBrowser/.test(ua))return "Tocca <b>≡</b> in basso a destra → <b>Aggiungi pagina a</b> → <b>Schermata Home</b>.";
+  if(/Firefox/.test(ua))return "Tocca <b>⋮</b> → <b>Installa</b> (o «Aggiungi alla schermata Home»).";
+  return "Tocca <b>⋮</b> in alto a destra → <b>Aggiungi a schermata Home</b> (o «Installa app») → <b>Installa</b>.";
+}
 function remOn(id){return S.rem.on&&S.rem.ids[id]!==false}
 function notify(title,body,tag){
   const opt={body,tag,icon:"icons/icon-192.png",badge:"icons/icon-192.png",renotify:true};
@@ -1383,8 +1400,7 @@ function renderApp(){
   if(!ENV.site)st.innerHTML='Questa è l\'anteprima: qui il telefono non permette di installare l\'app né di inviare notifiche. Apri il sito <b class="mono sel">'+SITE_URL+'</b> dal telefono e installala da lì.';
   else if(ENV.standalone)st.innerHTML="<b>App installata.</b> Funziona anche offline.";
   else if(installEvt)st.textContent="Puoi installare Nole Coach sul telefono: la apri come un'app, anche senza connessione.";
-  else if(ENV.ios)st.innerHTML="Per installarla su iPhone: tocca <b>Condividi</b> in Safari, poi <b>Aggiungi alla schermata Home</b>. Le notifiche su iPhone funzionano solo dall'app installata (iOS 16.4 o successivo).";
-  else st.textContent="Per installarla apri il menu del browser e scegli «Installa app» o «Aggiungi a schermata Home».";
+  else st.innerHTML="Per installarla: "+installHelp()+(ENV.ios?" Le notifiche su iPhone funzionano solo dall'app installata (iOS 16.4 o successivo).":"");
   const perm=ENV.notif?Notification.permission:"na";
   $("remToggle").textContent=S.rem.on&&perm==="granted"?"Disattiva i promemoria":"Attiva i promemoria";
   $("remToggle").disabled=!ENV.notif;$("remTest").disabled=!(ENV.notif&&perm==="granted");$("icsBtn").disabled=!ENV.site;
@@ -1529,6 +1545,8 @@ document.addEventListener("click",e=>{
   if(b.id==="remBannerNo"){S.rem.dismiss=true;save();render();toast("Va bene. Li trovi in Progressi se cambi idea.");return}
   if(b.id==="remTest"){notify("Nole Coach","Così ti arriveranno i promemoria. Ora fai la prossima cosa della lista.","nc-test");return}
   if(b.id==="icsBtn"){downloadICS();return}
+  if(b.id==="instBannerNo"){S.instDismiss=true;save();render();toast("Le istruzioni restano in Progressi → App e promemoria");return}
+  if(b.id==="instBannerBtn"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;render()})}return}
   if(b.id==="instBtn"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;renderApp()})}return}
   if(b.dataset.level){S.profile.level=+b.dataset.level;S.setup=true;save();render();renderYou();toast("Livello: "+LEVELS[+b.dataset.level]);return}
   if(b.dataset.v){switchView(b.dataset.v);return}
