@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="it">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nole Coach</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#1D5A3D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: una colonna da app, la giornata come il programma di un match (orari a sinistra), tab bar fissa in basso */
+:root{
+  --bg:#F2F5EF; --surface:#FFFFFF; --surface-2:#E7EEE5; --ink:#10241B; --muted:#56675D; --line:#D6DFD3;
+  --court:#1D5A3D; --court-ink:#FFFFFF; --accent:#5B2A86; --accent-soft:#EFE7F7; --ball:#D4E157; --ball-ink:#1B2A00; --warn:#A8501A;
+  --f-display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:16px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0B1612; --surface:#11211A; --surface-2:#182D23; --ink:#E6EFE8; --muted:#97AA9E; --line:#25392F;
+  --court:#3FA673; --court-ink:#06140D; --accent:#BA9DE8; --accent-soft:#2A2140; --ball:#D4E157; --ball-ink:#1B2A00; --warn:#E59A5E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1612; --surface:#11211A; --surface-2:#182D23; --ink:#E6EFE8; --muted:#97AA9E; --line:#25392F;
+  --court:#3FA673; --court-ink:#06140D; --accent:#BA9DE8; --accent-soft:#2A2140; --ball:#D4E157; --ball-ink:#1B2A00; --warn:#E59A5E; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+h1,h2,h3{font-family:var(--f-display);line-height:1.1;margin:0;text-wrap:balance}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+
+.app{max-width:620px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 110px}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:8px 14px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{width:36px;height:36px;border-radius:50%;background:var(--ball);display:grid;place-items:center;flex:none}
+.brand h1{font-size:1.25rem;font-weight:800;letter-spacing:-.01em}
+.brand small{display:block;color:var(--muted);font-size:.78rem;font-weight:600}
+.streak{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:700;font-size:.85rem;white-space:nowrap}
+.streak b{font-family:var(--f-mono);font-size:1rem}
+
+.view{display:flex;flex-direction:column;gap:16px}
+
+/* date nav */
+.datenav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.datenav .mid{text-align:center;min-width:0}
+.datenav .mid h2{font-size:1.5rem;font-weight:800}
+.iconbtn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;flex:none}
+.todaylink{background:none;border:0;color:var(--accent);font-weight:700;font-size:.85rem;padding:2px 6px}
+
+/* coach */
+.coach{background:var(--court);color:var(--court-ink);border-radius:var(--r);padding:18px;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}
+.ring{position:relative;width:76px;height:76px}
+.ring svg{display:block;transform:rotate(-90deg)}
+.ring .pct{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-mono);font-weight:700;font-size:1.05rem}
+.coach p{margin:0;font-size:1.02rem;font-weight:500}
+.coach .eyebrow{color:inherit;opacity:.75;margin-bottom:4px}
+
+/* next action */
+.next{background:var(--surface);border:2px solid var(--ink);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:12px}
+.next h3{font-size:1.35rem;font-weight:800}
+.next .meta{color:var(--muted);font-size:.92rem}
+.btnrow{display:flex;flex-wrap:wrap;gap:10px}
+.btn{border:0;border-radius:12px;padding:12px 18px;font-weight:700;font-size:1rem;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn-go{background:var(--ball);color:var(--ball-ink);flex:1 1 180px;font-size:1.1rem;padding:15px 18px}
+.btn-sec{background:var(--surface-2);color:var(--ink)}
+.btn-ghost{background:transparent;color:var(--accent);padding:12px 8px}
+.btn-court{background:var(--court);color:var(--court-ink)}
+.btn-danger{background:var(--warn);color:#fff}
+.excuse{background:var(--accent-soft);border-radius:12px;padding:12px 14px;font-weight:500}
+.excuse b{color:var(--accent)}
+
+.banner{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--accent-soft);border-radius:var(--r);padding:12px 14px;flex-wrap:wrap}
+.banner p{margin:0;font-weight:600;font-size:.95rem;flex:1 1 220px}
+
+/* timeline */
+.section-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:4px}
+.section-h h2{font-size:1.15rem;font-weight:800}
+.timeline{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.task{display:grid;grid-template-columns:52px 1fr;gap:12px;position:relative}
+.task .time{font-family:var(--f-mono);font-weight:700;font-size:.88rem;color:var(--muted);padding-top:16px;text-align:right}
+.task .body{border-left:2px solid var(--line);padding:10px 0 10px 16px;position:relative;min-width:0}
+.task .body::before{content:"";position:absolute;left:-7px;top:20px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--line)}
+.task.done .body::before{background:var(--court);border-color:var(--court)}
+.task.now .body::before{background:var(--ball);border-color:var(--ink)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 12px 12px 14px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+.task.done .card{opacity:.62}
+.task.done .card h3{text-decoration:line-through;text-decoration-thickness:2px}
+.card h3{font-size:1.02rem;font-weight:700;font-family:var(--f-body)}
+.card .sum{color:var(--muted);font-size:.9rem;margin-top:2px}
+.chip{display:inline-block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;border-radius:6px;padding:2px 7px;margin-bottom:5px}
+.k-rituale{background:var(--surface-2);color:var(--ink)}
+.k-mente{background:var(--accent-soft);color:var(--accent)}
+.k-cibo{background:var(--ball);color:var(--ball-ink)}
+.k-corpo{background:var(--court);color:var(--court-ink)}
+.k-sonno{background:var(--ink);color:var(--bg)}
+.check{width:40px;height:40px;border-radius:50%;border:2px solid var(--line);background:transparent;display:grid;place-items:center;flex:none}
+.task.done .check{background:var(--court);border-color:var(--court);color:var(--court-ink)}
+.expand{background:none;border:0;padding:0;text-align:left;width:100%;min-width:0}
+.details{grid-column:1/-1;border-top:1px dashed var(--line);padding-top:10px;display:flex;flex-direction:column;gap:10px}
+.details ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.details li{font-size:.93rem}
+.ex{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:.93rem;padding:6px 0;border-bottom:1px solid var(--line)}
+.ex:last-child{border-bottom:0}
+.ex small{display:block;color:var(--muted);font-size:.8rem}
+.ex .dose{font-family:var(--f-mono);font-weight:700;white-space:nowrap;font-size:.85rem}
+.tip{font-size:.85rem;color:var(--muted);font-style:italic}
+
+/* week */
+.weekgrid{display:flex;flex-direction:column;gap:10px}
+.wday{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:56px 1fr;gap:12px;text-align:left;width:100%}
+.wday.is-today{border:2px solid var(--ink)}
+.wday .dn{font-family:var(--f-display);font-weight:800;font-size:1.3rem;line-height:1}
+.wday .dn small{display:block;font-family:var(--f-mono);font-size:.75rem;color:var(--muted);font-weight:500;margin-top:4px}
+.wday .lines{display:flex;flex-direction:column;gap:3px;font-size:.9rem;min-width:0}
+.wday .lines span{color:var(--muted)}
+.wday .lines b{color:var(--ink);font-weight:600}
+.bar{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--court);border-radius:99px}
+.phase{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.phase p{margin:4px 0 0;color:var(--muted);font-size:.93rem}
+.phases{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.phases div{border-radius:8px;padding:6px;text-align:center;font-size:.72rem;font-weight:700;background:var(--surface-2);color:var(--muted)}
+.phases div.on{background:var(--ink);color:var(--bg)}
+
+/* meditate */
+.medlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.medcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:left;display:flex;flex-direction:column;gap:4px}
+.medcard[aria-pressed="true"]{border:2px solid var(--accent);background:var(--accent-soft)}
+.medcard b{font-size:.98rem}
+.medcard span{font-size:.82rem;color:var(--muted)}
+.durs{display:flex;flex-wrap:wrap;gap:8px}
+.durs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-family:var(--f-mono);font-weight:700}
+.durs button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.sos{background:var(--surface);border:2px dashed var(--accent);border-radius:var(--r);padding:16px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.sos p{margin:0;flex:1 1 220px}
+
+/* you */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.stat b{display:block;font-family:var(--f-mono);font-size:1.6rem;font-weight:700;line-height:1.2}
+.stat span{font-size:.82rem;color:var(--muted);font-weight:600}
+.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.heat div{aspect-ratio:1;max-width:100%;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;font-family:var(--f-mono);font-size:.72rem;color:var(--muted);border:1px solid transparent}
+.heat .h1{background:color-mix(in srgb,var(--court) 30%,var(--surface-2));color:var(--ink)}
+.heat .h2{background:color-mix(in srgb,var(--court) 60%,var(--surface-2));color:var(--ink)}
+.heat .h3{background:var(--court);color:var(--court-ink)}
+.heat .today{border-color:var(--ink);border-width:2px}
+.heat .future{opacity:.45}
+.legend{display:flex;gap:10px;align-items:center;font-size:.78rem;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+form.settings{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-weight:700;font-size:.9rem}
+.field small{color:var(--muted);font-size:.8rem}
+.field input,.field select,.field textarea{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+.field textarea{min-height:76px;resize:vertical}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1 1 90px;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px;font-weight:700;font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.note{font-size:.8rem;color:var(--muted);line-height:1.45}
+
+/* tab bar */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);z-index:20;
+  padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px));padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs nav{max-width:620px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.tabs button{background:none;border:0;padding:10px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.74rem;font-weight:700;color:var(--muted)}
+.tabs button[aria-selected="true"]{color:var(--ink)}
+.tabs button[aria-selected="true"] svg{color:var(--court)}
+
+/* overlay */
+.overlay{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.ov-in{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;gap:18px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 28px}
+.ov-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ov-title{font-size:1.6rem;font-weight:800}
+.bigtime{font-family:var(--f-mono);font-weight:700;font-size:clamp(3.4rem,18vw,5.5rem);text-align:center;line-height:1;letter-spacing:-.03em}
+.ov-msg{text-align:center;font-size:1.05rem;font-weight:500;min-height:3em}
+.breath{display:grid;place-items:center;height:min(68vw,300px)}
+.breath .orb{width:min(62vw,270px);height:min(62vw,270px);border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--ball),var(--court) 70%);
+  transform:scale(.55);transition-property:transform;transition-timing-function:ease-in-out;display:grid;place-items:center}
+.breath .orb span{font-family:var(--f-display);font-weight:800;color:var(--court-ink);font-size:1.3rem;text-align:center;transform:scale(1.4)}
+.progress{height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--accent)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--ink);color:var(--bg);
+  padding:12px 18px;border-radius:12px;font-weight:700;max-width:calc(100% - 32px);text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.footer-note{font-size:.78rem;color:var(--muted);line-height:1.45;border-top:1px solid var(--line);padding-top:12px}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (min-width:560px){.stats{grid-template-columns:repeat(4,1fr)}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B2A00" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M4.5 5.5c3.5 3 3.5 10 0 13M19.5 5.5c-3.5 3-3.5 10 0 13"/></svg>
+      </div>
+      <div><h1>Nole Coach</h1><small id="hdr-sub">Giorno 1 · Fondamenta</small></div>
+    </div>
+    <div class="streak" title="Giorni vinti di fila (almeno 70% del piano)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-4-1-6 1-9.5z"/></svg>
+      <span>Serie</span> <b id="hdr-streak">0</b>
+    </div>
+  </header>
+
+  <!-- OGGI -->
+  <section class="view" id="v-oggi" role="tabpanel" aria-labelledby="t-oggi">
+    <div class="datenav">
+      <button class="iconbtn" id="prevDay" aria-label="Giorno precedente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="mid"><div class="eyebrow" id="dn-eyebrow">Oggi</div><h2 id="dn-title">Lunedì 19</h2><button class="todaylink" id="goToday" hidden>Torna a oggi</button></div>
+      <button class="iconbtn" id="nextDay" aria-label="Giorno successivo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+
+    <div class="banner" id="firstRun" hidden>
+      <p>Il piano è già pronto. Imposta sveglia, livello e il tuo «perché» per renderlo tuo.</p>
+      <button class="btn btn-court" id="goSetup">Personalizza</button>
+    </div>
+
+    <div class="coach">
+      <div class="ring" aria-hidden="true">
+        <svg width="76" height="76" viewBox="0 0 76 76"><circle cx="38" cy="38" r="32" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-width="8"/><circle id="ringArc" cx="38" cy="38" r="32" fill="none" stroke="var(--ball)" stroke-width="8" stroke-linecap="round" stroke-dasharray="201.06" stroke-dashoffset="201.06"/></svg>
+        <div class="pct" id="ringPct">0%</div>
+      </div>
+      <div><div class="eyebrow">Il coach dice</div><p id="coachLine">…</p></div>
+    </div>
+
+    <div class="next" id="nextCard">
+      <div class="eyebrow" id="nextEyebrow">Prossima azione</div>
+      <h3 id="nextTitle">…</h3>
+      <div class="meta" id="nextMeta"></div>
+      <div class="btnrow">
+        <button class="btn btn-go" id="nextGo">Inizia ora</button>
+        <button class="btn btn-sec" id="nextMini">Solo 2 minuti</button>
+        <button class="btn btn-ghost" id="nextExcuse">Non ho voglia</button>
+      </div>
+      <div class="excuse" id="excuseBox" hidden></div>
+    </div>
+
+    <div class="section-h"><h2>Il programma del giorno</h2><span class="eyebrow" id="countLbl">0/9</span></div>
+    <ol class="timeline" id="timeline"></ol>
+
+    <p class="footer-note">Ispirato alle abitudini che Novak Djokovic ha descritto pubblicamente (dieta senza glutine e latticini, alimentazione in prevalenza vegetale, yoga e flessibilità, meditazione quotidiana). Non è un programma ufficiale né affiliato. Non sostituisce il parere di medico o nutrizionista: con patologie, gravidanza o dubbi, chiedi prima a loro.</p>
+  </section>
+
+  <!-- SETTIMANA -->
+  <section class="view" id="v-sett" role="tabpanel" aria-labelledby="t-sett" hidden>
+    <div class="phase">
+      <div class="eyebrow" id="phaseEyebrow">Ciclo 1 · Settimana 1 di 4</div>
+      <h2 id="phaseTitle" style="font-size:1.35rem;font-weight:800;margin-top:4px">Fondamenta</h2>
+      <p id="phaseText"></p>
+      <div class="phases" id="phaseBar"></div>
+    </div>
+    <div class="section-h"><h2 id="weekTitle">Questa settimana</h2>
+      <div style="display:flex;gap:6px">
+        <button class="iconbtn" id="prevWeek" aria-label="Settimana precedente"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button class="iconbtn" id="nextWeek" aria-label="Settimana successiva"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+    <div class="weekgrid" id="weekGrid"></div>
+    <div class="phase">
+      <div class="eyebrow">Le regole della cucina di Nole</div>
+      <ul style="margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:.93rem">
+        <li>Niente glutine: riso, quinoa, grano saraceno, miglio, avena certificata.</li>
+        <li>Niente latticini: bevande vegetali di mandorla, cocco o riso.</li>
+        <li>Molti vegetali, legumi, frutta secca e semi. Pesce al massimo un paio di volte a settimana.</li>
+        <li>Zuccheri raffinati al minimo. Un cucchiaino di miele va bene.</li>
+        <li>Acqua a temperatura ambiente o tiepida durante tutto il giorno.</li>
+        <li>Mangia lentamente, mastica bene, niente telefono a tavola.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- MEDITA -->
+  <section class="view" id="v-medita" role="tabpanel" aria-labelledby="t-medita" hidden>
+    <div class="sos">
+      <p><b>Bloccato? Reset da 60 secondi.</b><br><span style="color:var(--muted);font-size:.92rem">Un minuto di respiro lento per spezzare il ciclo della procrastinazione. Poi fai la prossima cosa.</span></p>
+      <button class="btn btn-court" id="sosBtn">Respira 1 minuto</button>
+    </div>
+    <div class="section-h"><h2>Scegli la pratica</h2><span class="eyebrow">Quella di oggi è già selezionata</span></div>
+    <div class="medlist" id="medList"></div>
+    <div class="section-h"><h2>Durata</h2><span class="eyebrow mono" id="durHint"></span></div>
+    <div class="durs" id="durs"></div>
+    <div class="phase" id="medPreview"></div>
+    <button class="btn btn-go" id="medStart">Inizia la meditazione</button>
+  </section>
+
+  <!-- TU -->
+  <section class="view" id="v-tu" role="tabpanel" aria-labelledby="t-tu" hidden>
+    <div class="stats" id="stats"></div>
+    <div class="phase">
+      <div class="section-h" style="margin:0"><h2 id="heatTitle">Ciclo 1</h2><span class="eyebrow">28 giorni</span></div>
+      <div class="heat" id="heat" style="margin-top:12px"></div>
+      <div class="legend" style="margin-top:10px">
+        <span><i style="background:var(--surface-2)"></i>0%</span>
+        <span><i style="background:color-mix(in srgb,var(--court) 30%,var(--surface-2))"></i>fino al 40%</span>
+        <span><i style="background:color-mix(in srgb,var(--court) 60%,var(--surface-2))"></i>fino al 69%</span>
+        <span><i style="background:var(--court)"></i>giornata vinta</span>
+      </div>
+    </div>
+
+    <form class="settings" id="settings" novalidate>
+      <h2 style="font-size:1.15rem;font-weight:800">Il tuo piano</h2>
+      <div class="field"><label for="f-name">Come ti chiamo?</label><input id="f-name" maxlength="30" placeholder="Il tuo nome" autocomplete="given-name"></div>
+      <div class="field"><label for="f-wake">Ora della sveglia</label><input id="f-wake" type="time" value="06:30"><small>Tutti gli orari della giornata si calcolano da qui. Punta a 7–8 ore di sonno.</small></div>
+      <div class="field"><label id="l-slot">Quando ti alleni?</label><div class="seg" id="f-slot" role="group" aria-labelledby="l-slot"></div></div>
+      <div class="field"><label id="l-level">Livello</label><div class="seg" id="f-level" role="group" aria-labelledby="l-level"></div><small>Cambia volume degli allenamenti e minuti di meditazione.</small></div>
+      <div class="field"><label for="f-why">Il tuo perché</label><textarea id="f-why" maxlength="200" placeholder="Es. Voglio sentirmi leggero, concentrato e fiero di me ogni sera."></textarea><small>Te lo ricorderò quando premi «Non ho voglia».</small></div>
+      <div class="field"><label for="f-start">Giorno 1 del programma</label><input id="f-start" type="date"></div>
+      <div class="btnrow" id="resetRow">
+        <button type="button" class="btn btn-sec" id="resetBtn">Azzera i progressi</button>
+      </div>
+      <p class="note">I dati restano solo in questo browser, su questo dispositivo.</p>
+    </form>
+  </section>
+</div>
+
+<div class="tabs"><nav role="tablist" aria-label="Sezioni">
+  <button role="tab" id="t-oggi" aria-controls="v-oggi" aria-selected="true" data-v="oggi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Oggi</button>
+  <button role="tab" id="t-sett" aria-controls="v-sett" aria-selected="false" data-v="sett"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Settimana</button>
+  <button role="tab" id="t-medita" aria-controls="v-medita" aria-selected="false" data-v="medita"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2.5"/><path d="M12 8v5M5 20c2-4 4-6 7-7 3 1 5 3 7 7M4 14l8-1 8 1"/></svg>Medita</button>
+  <button role="tab" id="t-tu" aria-controls="v-tu" aria-selected="false" data-v="tu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Progressi</button>
+</nav></div>
+
+<div class="overlay" id="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="ovTitle">
+  <div class="ov-in">
+    <div class="ov-top">
+      <div><div class="eyebrow" id="ovEyebrow">In corso</div><h2 class="ov-title" id="ovTitle">…</h2></div>
+      <button class="iconbtn" id="ovClose" aria-label="Chiudi"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="breath" id="ovBreath" hidden><div class="orb" id="orb"><span id="orbTxt">Pronto</span></div></div>
+    <div class="bigtime" id="ovTime">02:00</div>
+    <div class="progress"><i id="ovBar"></i></div>
+    <p class="ov-msg" id="ovMsg"></p>
+    <div class="btnrow">
+      <button class="btn btn-sec" id="ovPause" style="flex:1">Pausa</button>
+      <button class="btn btn-go" id="ovDone" style="flex:2">Fatto</button>
+    </div>
+    <div id="ovList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- DATI DEL PROGRAMMA ---------- */
+const LEVELS=["Principiante","Intermedio","Avanzato"];
+const SLOTS=[["mattina","Mattina"],["pranzo","Pausa pranzo"],["sera","Sera"]];
+const WEEKS=[
+  {name:"Fondamenta",factor:1,text:"Impari i movimenti e costruisci l'abitudine. La regola è una: presentati ogni giorno."},
+  {name:"Costruzione",factor:1.15,text:"Un po' più di volume. Il corpo si adatta, la mente si abitua alla routine."},
+  {name:"Intensità",factor:1.3,text:"La settimana più dura del ciclo. Concentrati sulla qualità di ogni ripetizione."},
+  {name:"Recupero",factor:.85,text:"Si scarica per assorbire il lavoro. Più mobilità, più sonno, più respiro."}
+];
+const DAYNAMES=["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato","Domenica"];
+const MONTHS=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+
+// s = serie per livello, r = ripetizioni/durata per livello, u = unità
+const WORKOUTS=[
+  {name:"Mobilità e cardio leggero",dur:[30,40,50],tip:"Ritmo da conversazione: se non riesci a parlare, rallenta.",ex:[
+    {n:"Saluto al sole",s:[1,1,1],r:[3,5,6],u:"giri"},
+    {n:"Mobilità anche 90/90",s:[2,2,3],r:[6,8,10],u:"per lato"},
+    {n:"Gatto-mucca",s:[1,1,1],r:[10,10,12],u:"rip"},
+    {n:"Corsa o bici facile",s:[1,1,1],r:[15,25,35],u:"min",fixed:true},
+    {n:"Stretching finale",s:[1,1,1],r:[5,5,6],u:"min",fixed:true}]},
+  {name:"Forza funzionale",dur:[30,40,50],tip:"Tecnica prima del carico. Un minuto di recupero tra le serie.",ex:[
+    {n:"Squat a corpo libero",s:[3,3,4],r:[10,14,16],u:"rip"},
+    {n:"Piegamenti (anche sulle ginocchia)",s:[3,3,4],r:[6,10,14],u:"rip"},
+    {n:"Affondi alternati",s:[3,3,3],r:[8,12,14],u:"per gamba"},
+    {n:"Rematore con elastico",s:[3,3,4],r:[10,12,15],u:"rip"},
+    {n:"Plank",s:[3,3,3],r:[20,40,60],u:"sec"},
+    {n:"Dead bug",s:[2,3,3],r:[8,10,12],u:"per lato"}]},
+  {name:"Agilità e gioco di gambe",dur:[30,40,45],tip:"Leggero sulle punte, come in attesa della risposta al servizio.",ex:[
+    {n:"Riscaldamento: skip e calciata",s:[1,1,1],r:[4,5,5],u:"min",fixed:true},
+    {n:"Passi laterali veloci",s:[4,5,6],r:[15,20,25],u:"sec"},
+    {n:"Split step + scatto di 5 metri",s:[2,3,3],r:[5,6,8],u:"rip"},
+    {n:"Salti con la corda (anche simulati)",s:[3,4,5],r:[30,45,60],u:"sec"},
+    {n:"Equilibrio su una gamba",s:[2,3,3],r:[20,30,45],u:"sec per lato"},
+    {n:"Flusso yoga",s:[1,1,1],r:[8,10,12],u:"min",fixed:true}]},
+  {name:"Recupero attivo nella natura",dur:[40,50,60],tip:"Oggi non si spinge. Si recupera, ed è parte dell'allenamento.",ex:[
+    {n:"Camminata all'aperto",s:[1,1,1],r:[25,35,45],u:"min"},
+    {n:"Automassaggio o rullo",s:[1,1,1],r:[5,8,10],u:"min",fixed:true},
+    {n:"Stretching profondo (pose da 60 s)",s:[1,1,1],r:[10,12,15],u:"min",fixed:true}]},
+  {name:"Forza esplosiva",dur:[30,40,50],tip:"Ogni ripetizione veloce e pulita. Fermati prima di perdere la forma.",ex:[
+    {n:"Squat jump",s:[3,3,4],r:[6,8,10],u:"rip"},
+    {n:"Piegamenti veloci",s:[3,3,4],r:[5,8,10],u:"rip"},
+    {n:"Ponte glutei su una gamba",s:[3,3,3],r:[8,10,12],u:"per lato"},
+    {n:"Rotazioni del busto con elastico",s:[3,3,4],r:[10,12,14],u:"per lato"},
+    {n:"Mountain climber",s:[3,3,4],r:[20,30,40],u:"sec"},
+    {n:"Plank laterale",s:[2,3,3],r:[15,30,40],u:"sec per lato"}]},
+  {name:"Resistenza",dur:[40,55,70],tip:"Ritmo costante dall'inizio alla fine. Respira dal naso finché puoi.",ex:[
+    {n:"Bici, corsa o nuoto a ritmo costante",s:[1,1,1],r:[30,40,55],u:"min"},
+    {n:"Mobilità spalle con elastico",s:[2,2,2],r:[10,12,12],u:"rip"},
+    {n:"Flusso yoga",s:[1,1,1],r:[10,12,15],u:"min",fixed:true}]},
+  {name:"Yoga dolce e tempo all'aperto",dur:[35,45,55],tip:"Giorno di riposo. Muoviti piano e stai fuori, senza telefono.",ex:[
+    {n:"Yoga rigenerativo",s:[1,1,1],r:[15,20,25],u:"min",fixed:true},
+    {n:"Tempo all'aperto senza telefono",s:[1,1,1],r:[20,25,30],u:"min",fixed:true}]}
+];
+
+const MEALS={
+  colazione:[
+    "Power bowl: avena senza glutine, frutti di bosco, banana, semi di chia, noci, bevanda di mandorla e un cucchiaino di miele",
+    "Frullato verde (spinaci, banana, mela, burro di mandorle, latte di cocco, semi di lino) e 2 gallette di riso",
+    "Porridge di grano saraceno con mela cotta, cannella e noci",
+    "Budino di chia al cocco con mango e semi di zucca",
+    "Pane senza glutine tostato con avocado, sesamo e pomodorini",
+    "Bowl di quinoa soffiata, kiwi, mirtilli, mandorle e yogurt di cocco",
+    "Pancake di banana e avena senza glutine con frutti rossi"],
+  pranzo:[
+    "Pasta di riso integrale con pesto di basilico senza formaggio, zucchine e pinoli. Insalata verde",
+    "Quinoa con ceci, verdure grigliate, olio extravergine e limone",
+    "Riso integrale con curry di lenticchie rosse e spinaci",
+    "Pasta di grano saraceno con broccoli, aglio e peperoncino",
+    "Bowl di riso nero, edamame, avocado, carote, cavolo e salsa tahina",
+    "Pasta di legumi con pomodoro fresco e melanzane",
+    "Miglio con funghi trifolati, prezzemolo e insalata di finocchi"],
+  spuntino:[
+    "Una mela e una manciata di mandorle",
+    "Hummus con bastoncini di carota e sedano",
+    "Banana con un cucchiaio di burro di mandorle",
+    "Frutti di bosco e qualche noce",
+    "Gallette di riso con avocado",
+    "Una pera e 2–3 noci del Brasile",
+    "Due datteri e una manciata di nocciole"],
+  cena:[
+    "Salmone al forno con broccoli al vapore e patata dolce (versione vegetale: tempeh)",
+    "Zuppa di lenticchie e verdure, insalata di rucola",
+    "Tofu saltato con verdure e zenzero, piccola porzione di riso integrale",
+    "Branzino al cartoccio con verdure di stagione (versione vegetale: burger di ceci)",
+    "Burger di fagioli neri con insalata grande e avocado",
+    "Minestrone di verdure e ceci con olio extravergine a crudo",
+    "Insalata tiepida di quinoa, ceci, zucca e cavolo nero"]
+};
+
+// p = schema respiratorio [inspira, trattieni, espira, pausa] in secondi
+const MEDS=[
+  {id:"box",name:"Respiro quadrato",sum:"Calma e lucidità in quattro tempi uguali.",p:[4,4,4,4],steps:[
+    "Siediti con la schiena dritta e le spalle morbide.","Inspira dal naso contando fino a 4.","Trattieni per 4, senza tensione.","Espira lentamente per 4.","Resta vuoto per 4, poi ricomincia.","Se la mente scappa, notalo e torna a contare."]},
+  {id:"vis",name:"Visualizzazione",sum:"Vedi la tua giornata riuscita prima di viverla.",p:[4,0,6,0],steps:[
+    "Chiudi gli occhi e rallenta il respiro.","Immagina la giornata di oggi dal mattino alla sera.","Vediti mentre fai l'allenamento con energia.","Vediti mentre scegli il cibo con calma.","Immagina un momento difficile e come lo affronti, sereno.","Senti come sarai stasera, dopo aver mantenuto la parola."]},
+  {id:"scan",name:"Body scan",sum:"Attraversa il corpo con l'attenzione, dai piedi alla testa.",p:[4,0,6,0],steps:[
+    "Porta l'attenzione ai piedi. Notali senza cambiare niente.","Sali a polpacci e ginocchia. Lascia andare la tensione.","Cosce e bacino: senti il peso che si appoggia.","Pancia e petto: segui il respiro che li muove.","Spalle, braccia, mani: ammorbidisci.","Collo, mascella, viso: rilassa la fronte."]},
+  {id:"walk",name:"Meditazione camminata",sum:"Passi lenti e attenzione ai sensi, meglio tra gli alberi.",p:[4,0,4,0],steps:[
+    "Cammina più lentamente del solito.","Senti il contatto di ogni piede con il terreno.","Ascolta i suoni intorno a te, senza nominarli.","Nota tre colori diversi nella natura.","Senti l'aria sulla pelle.","Se pensi a dopo, torna al passo che stai facendo."]},
+  {id:"coh",name:"Respiro di coerenza",sum:"Cinque secondi dentro, cinque fuori. Rilassa il sistema nervoso.",p:[5,0,5,0],steps:[
+    "Respira dal naso, lento e regolare.","Cinque secondi a inspirare.","Cinque secondi a espirare.","Lascia che il ritmo diventi automatico.","Senti il cuore che rallenta.","Resta qui, non c'è altro da fare."]},
+  {id:"love",name:"Amore e gentilezza",sum:"Coltiva pace verso te stesso e verso gli altri.",p:[4,0,6,0],steps:[
+    "Porta una mano sul cuore.","Ripeti dentro di te: che io sia sereno, che io sia in salute.","Pensa a una persona cara e auguralo anche a lei.","Pensa a una persona neutrale e fai lo stesso.","Pensa a qualcuno con cui hai un conflitto. Augura pace anche a lui.","Allarga il pensiero a tutti. Pace."]},
+  {id:"grat",name:"Silenzio e gratitudine",sum:"Pochi minuti di silenzio e tre cose per cui dire grazie.",p:[4,2,6,0],steps:[
+    "Stai in silenzio e ascolta il respiro.","Pensa a una cosa del tuo corpo per cui sei grato.","Pensa a una persona per cui sei grato.","Pensa a un momento di questa settimana per cui sei grato.","Lascia che la gratitudine riempia il petto.","Resta in silenzio fino al suono finale."]}
+];
+const SOS={id:"sos",name:"Reset anti-blocco",sum:"Un minuto per spezzare il ciclo.",p:[4,0,6,0],steps:["Non devi fare niente adesso, solo respirare.","Espira più a lungo di quanto inspiri.","Nota la resistenza, senza giudicarla.","Scegli la prossima azione più piccola possibile.","Quando suona, alzati e falla."]};
+
+const MED_MIN=[[8,10,12,10],[12,14,16,14],[15,18,20,18]]; // per livello e settimana del ciclo
+
+const EXCUSES=[
+  "Va bene non avere voglia. Non ti chiedo voglia, ti chiedo 2 minuti. Parti, poi decidi.",
+  "La motivazione arriva dopo l'azione, quasi mai prima. Fai il primo passo e lascia che arrivi.",
+  "Ogni campione ha giorni storti. La differenza è che si presenta lo stesso.",
+  "Non serve la versione perfetta. Serve la versione fatta.",
+  "Abbassa l'asticella, non fermarti. Fai la versione mini e la giornata resta tua.",
+  "Rimandare costa più che fare. Tra 10 minuti sarai contento di aver iniziato adesso.",
+  "Non decidere con la testa stanca. Metti le scarpe, apri il tappetino. Il resto viene da sé."
+];
+const GENERIC=[
+  "Una cosa alla volta. Guarda solo la prossima azione, non tutta la lista.",
+  "Disciplina vuol dire mantenere la promessa anche quando l'entusiasmo è finito.",
+  "Il corpo segue la mente. Respira, poi muoviti.",
+  "Oggi non devi essere perfetto. Devi essere presente.",
+  "Le partite lunghe si vincono punto per punto. Pensa al punto che stai giocando.",
+  "Quello che mangi oggi è l'energia che avrai domani.",
+  "La costanza batte l'intensità. Ogni giorno, anche poco."
+];
+
+/* ---------- STATO ---------- */
+const LS="nolecoach.v1";
+function key(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function parseKey(k){const a=k.split("-").map(Number);return new Date(a[0],a[1]-1,a[2])}
+function addDays(d,n){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()+n);return x}
+function diffDays(a,b){return Math.round((parseKey(key(b))-parseKey(key(a)))/864e5)}
+function today(){return parseKey(key(new Date()))}
+
+function defaults(){return{profile:{name:"",wake:"06:30",slot:"mattina",level:0,why:"",start:key(today())},log:{},medMin:{},setup:false,sound:true}}
+let S=(function(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&s.profile)return Object.assign(defaults(),s)}catch(e){}return defaults()})();
+function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+
+let sel=today(), weekSel=today(), view="oggi", openTask=null, excuseIdx=0;
+
+/* ---------- COSTRUZIONE GIORNATA ---------- */
+function toMin(hhmm){const p=(hhmm||"06:30").split(":").map(Number);return p[0]*60+(p[1]||0)}
+function fmt(m){m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
+function dayInfo(d){
+  const idx=diffDays(parseKey(S.profile.start),d);
+  const wd=(d.getDay()+6)%7;
+  const cycleDay=((idx%28)+28)%28;
+  const week=Math.floor(cycleDay/7);
+  const cycle=Math.floor(idx/28)+1;
+  return{idx,wd,week,cycle,cycleDay};
+}
+function dose(e,lvl,f){
+  const s=e.s[lvl], r=e.fixed?e.r[lvl]:Math.max(1,Math.round(e.r[lvl]*f));
+  return (s>1?s+" × ":"")+r+" "+e.u;
+}
+function buildDay(d){
+  const P=S.profile, lvl=+P.level||0, I=dayInfo(d), W=toMin(P.wake), f=WEEKS[I.week].factor;
+  const wo=WORKOUTS[I.wd], med=MEDS[I.wd];
+  const medMin=MED_MIN[lvl][I.week];
+  const trainAt=P.slot==="pranzo"?W+345:P.slot==="sera"?W+720:W+120;
+  const lunchAt=P.slot==="pranzo"?W+420:W+390;
+  const woDur=Math.round(wo.dur[lvl]*(I.week===3?.85:1));
+  const tasks=[
+    {id:"wake",t:W,kind:"rituale",title:"Risveglio da campione",dur:5,
+      sum:"Acqua tiepida, un minuto di gratitudine, niente telefono per 30 minuti.",
+      list:["Appena sveglio bevi un grande bicchiere d'acqua tiepida.","Facoltativo: un bicchiere di succo di sedano o acqua e limone.","Apri la finestra e fai 5 respiri profondi.","Pensa a una cosa per cui sei grato.","Il telefono resta lontano per i primi 30 minuti."],
+      micro:"Alzati e bevi un bicchiere d'acqua. Basta questo per iniziare."},
+    {id:"medam",t:W+15,kind:"mente",title:"Meditazione: "+med.name,dur:medMin,med:med,
+      sum:med.sum+" "+medMin+" minuti.",list:med.steps,
+      micro:"Siediti, chiudi gli occhi e fai 5 respiri lenti contando le espirazioni."},
+    {id:"colaz",t:W+45,kind:"cibo",title:"Colazione",dur:20,sum:MEALS.colazione[I.wd],
+      list:["Siediti a tavola, senza schermi.","Mastica lentamente: la digestione inizia in bocca.","Bevi acqua a temperatura ambiente, non ghiacciata."],
+      micro:"Prepara solo gli ingredienti sul tavolo. Il resto viene facile."},
+    {id:"train",t:trainAt,kind:"corpo",title:wo.name,dur:woDur,ex:wo.ex,tip:wo.tip,
+      sum:woDur+" minuti · "+WEEKS[I.week].name,
+      micro:"Metti le scarpe e fai solo il primo esercizio. Se dopo 2 minuti vuoi smettere, puoi."},
+    {id:"pranzo",t:lunchAt,kind:"cibo",title:"Pranzo",dur:30,sum:MEALS.pranzo[I.wd],
+      list:["Carboidrati senza glutine per l'energia del pomeriggio.","Metà piatto di verdure.","Mangia lentamente, posate giù tra un boccone e l'altro."],
+      micro:"Scegli la ricetta e metti l'acqua sul fuoco. Fatto il primo passo."},
+    {id:"snack",t:W+600,kind:"cibo",title:"Spuntino",dur:10,sum:MEALS.spuntino[I.wd],
+      list:["Uno spuntino semplice tiene stabile l'energia.","Accompagnalo con un bicchiere d'acqua."],
+      micro:"Prendi il frutto. Mangialo lontano dalla scrivania."},
+    {id:"cena",t:W+810,kind:"cibo",title:"Cena",dur:30,sum:MEALS.cena[I.wd],
+      list:["Proteine e verdure, carboidrati leggeri.","Finisci almeno 2 ore prima di dormire.","Niente zuccheri raffinati la sera."],
+      micro:"Lava e taglia le verdure. Il resto della cena parte da lì."},
+    {id:"medpm",t:W+930,kind:"mente",title:"Chiusura: diario e gratitudine",dur:5,med:MEDS[6],
+      sum:"Tre righe sul diario: cosa è andato bene, cosa migliorare, tre grazie.",
+      list:["Scrivi una cosa che hai fatto bene oggi.","Scrivi una cosa da migliorare domani, senza giudicarti.","Scrivi tre cose per cui sei grato.","Chiudi con 10 respiri lenti."],
+      micro:"Scrivi una sola riga: cosa è andato bene oggi."},
+    {id:"sleep",t:W+960,kind:"sonno",title:"Luci spente",dur:5,
+      sum:"Stessa ora ogni sera. Schermi spenti, stanza fresca e buia.",
+      list:["Schermi spenti 30 minuti prima.","Prepara i vestiti per l'allenamento di domani: domattina avrai una scusa in meno.","Stanza fresca, buia e silenziosa.","Punta a 7–8 ore di sonno."],
+      micro:"Metti il telefono in carica fuori dalla camera."}
+  ];
+  return{info:I,tasks,wo,med,medMin};
+}
+function dayLog(k){return S.log[k]||{}}
+function pctOf(d){const k=key(d),p=buildDay(d),l=dayLog(k);return p.tasks.filter(t=>l[t.id]).length/p.tasks.length}
+function won(d){return pctOf(d)>=.7}
+function streak(){
+  let d=today(),n=0;const st=parseKey(S.profile.start);
+  if(!won(d))d=addDays(d,-1);
+  while(diffDays(st,d)>=0&&won(d)){n++;d=addDays(d,-1)}
+  return n;
+}
+function bestStreak(){
+  let d=parseKey(S.profile.start),t=today(),b=0,c=0;
+  while(diffDays(d,t)>=0){if(won(d)){c++;b=Math.max(b,c)}else c=0;d=addDays(d,1)}
+  return b;
+}
+
+/* ---------- UTILITY UI ---------- */
+const $=id=>document.getElementById(id);
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+let toastT;
+function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+function nowMin(){const n=new Date();return n.getHours()*60+n.getMinutes()}
+function isToday(d){return key(d)===key(today())}
+function name(){return S.profile.name?S.profile.name:"campione"}
+
+function setDone(d,id,val){
+  const k=key(d);const wasWon=won(d);
+  S.log[k]=S.log[k]||{};
+  if(val)S.log[k][id]=true;else delete S.log[k][id];
+  save();
+  if(!wasWon&&won(d))setTimeout(()=>toast("Giornata vinta! La serie continua."),150);
+  render();
+}
+
+/* ---------- COACH ---------- */
+function coachLine(d,plan,pct){
+  const I=plan.info;
+  if(!isToday(d)){
+    if(diffDays(d,today())>0)return pct>=.7?"Giornata vinta. Questo è il tipo di giornata che costruisce un campione.":"Questa giornata è passata. Non serve rimpiangerla: conta quella di oggi.";
+    return "Anteprima: ecco cosa ti aspetta. Prepara stasera quello che ti serve, domani avrai meno scuse.";
+  }
+  const h=new Date().getHours(), n=name();
+  if(pct===1)return "Giornata completa, "+n+". È il lavoro che nessuno vede a fare la differenza.";
+  if(pct>=.7)return "Giornata già vinta. Chiudi in bellezza e vai a dormire fiero.";
+  if(I.idx===0&&pct===0)return "Giorno 1, "+n+". Non devi cambiare vita oggi. Devi solo fare la prossima cosa della lista.";
+  if(h<11&&pct===0)return "Buongiorno "+n+". La giornata si decide nei primi 30 minuti: acqua, respiro, niente telefono.";
+  if(h>=18&&pct<.4)return "Non è troppo tardi. Scegli una cosa sola qui sotto e falla adesso. Una.";
+  if(I.wd===6)return "Domenica: si recupera. Riposare bene fa parte del piano, non è una pausa dal piano.";
+  return GENERIC[((I.idx%GENERIC.length)+GENERIC.length)%GENERIC.length];
+}
+
+/* ---------- RENDER OGGI ---------- */
+function render(){
+  const plan=buildDay(sel), k=key(sel), l=dayLog(k), I=plan.info;
+  const done=plan.tasks.filter(t=>l[t.id]).length, pct=done/plan.tasks.length;
+  const tI=dayInfo(today());
+  $("hdr-sub").textContent="Giorno "+Math.max(1,tI.idx+1)+" · "+WEEKS[tI.week].name;
+  $("hdr-streak").textContent=streak();
+
+  // data
+  const t=isToday(sel), diff=diffDays(today(),sel);
+  $("dn-eyebrow").textContent=t?"Oggi":diff===-1?"Ieri":diff===1?"Domani":(I.idx>=0?"Giorno "+(I.idx+1):"Prima dell'inizio");
+  $("dn-title").textContent=DAYNAMES[I.wd]+" "+sel.getDate()+" "+MONTHS[sel.getMonth()].slice(0,3);
+  $("goToday").hidden=t;
+  $("firstRun").hidden=S.setup;
+
+  // ring
+  $("ringArc").setAttribute("stroke-dashoffset",(201.06*(1-pct)).toFixed(2));
+  $("ringPct").textContent=Math.round(pct*100)+"%";
+  $("coachLine").textContent=coachLine(sel,plan,pct);
+  $("countLbl").textContent=done+"/"+plan.tasks.length+" fatti";
+
+  // prossima azione
+  const nm=nowMin();
+  let next=null;
+  if(t)next=plan.tasks.find(x=>!l[x.id]&&x.t+(x.dur||10)>=nm-30)||plan.tasks.find(x=>!l[x.id]);
+  else next=plan.tasks.find(x=>!l[x.id]);
+  const nc=$("nextCard");
+  if(!next){
+    $("nextEyebrow").textContent="Tutto fatto";
+    $("nextTitle").textContent="Hai completato il programma.";
+    $("nextMeta").textContent="Riposa. Domani si riparte da qui.";
+    nc.querySelector(".btnrow").hidden=true;$("excuseBox").hidden=true;
+  }else{
+    nc.querySelector(".btnrow").hidden=false;
+    $("nextEyebrow").textContent=t?(next.t<=nm?"Adesso tocca a questo":"Prossima azione · alle "+fmt(next.t)):"Prima azione da fare";
+    $("nextTitle").textContent=next.title;
+    $("nextMeta").textContent=next.sum;
+    nc.dataset.id=next.id;
+    $("nextGo").textContent=next.med?"Inizia a meditare":next.id==="train"?"Inizia l'allenamento":"Inizia ora";
+  }
+
+  // timeline
+  const nowIdx=t?plan.tasks.findIndex(x=>!l[x.id]&&x.t+(x.dur||10)>=nm-30):-1;
+  $("timeline").innerHTML=plan.tasks.map((x,i)=>{
+    const isDone=!!l[x.id], open=openTask===x.id;
+    let det="";
+    if(open){
+      if(x.ex){det='<div class="details">'+x.ex.map(e=>'<div class="ex"><span>'+esc(e.n)+'</span><span class="dose">'+esc(dose(e,+S.profile.level||0,WEEKS[I.week].factor))+'</span></div>').join("")+'<div class="tip">'+esc(x.tip)+'</div>'+startBtn(x)+'</div>'}
+      else det='<div class="details"><ul>'+x.list.map(s=>"<li>"+esc(s)+"</li>").join("")+"</ul>"+startBtn(x)+"</div>";
+    }
+    return '<li class="task'+(isDone?" done":"")+(i===nowIdx?" now":"")+'">'+
+      '<div class="time">'+fmt(x.t)+'</div><div class="body"><div class="card">'+
+      '<button class="expand" data-open="'+x.id+'" aria-expanded="'+open+'"><span class="chip k-'+x.kind+'">'+labelKind(x.kind)+'</span><h3>'+esc(x.title)+'</h3><div class="sum">'+esc(x.sum)+'</div></button>'+
+      '<button class="check" data-check="'+x.id+'" aria-pressed="'+isDone+'" aria-label="'+(isDone?"Segna come da fare: ":"Segna come fatto: ")+esc(x.title)+'">'+(isDone?'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg>':"")+'</button>'+
+      det+'</div></div></li>';
+  }).join("");
+
+  if(view==="sett")renderWeek();
+  if(view==="medita")renderMed();
+  if(view==="tu")renderYou();
+}
+function startBtn(x){return '<div class="btnrow"><button class="btn btn-court" data-start="'+x.id+'">'+(x.med?"Avvia meditazione guidata":"Avvia timer · "+x.dur+" min")+'</button></div>'}
+function labelKind(k){return{rituale:"Rituale",mente:"Mente",cibo:"Cibo",corpo:"Allenamento",sonno:"Sonno"}[k]}
+
+/* ---------- SETTIMANA ---------- */
+function renderWeek(){
+  const mon=addDays(weekSel,-((weekSel.getDay()+6)%7));
+  const I=dayInfo(weekSel);
+  $("phaseEyebrow").textContent=(I.idx>=0?"Ciclo "+I.cycle+" · ":"")+"Settimana "+(I.week+1)+" di 4";
+  $("phaseTitle").textContent=WEEKS[I.week].name;
+  $("phaseText").textContent=WEEKS[I.week].text;
+  $("phaseBar").innerHTML=WEEKS.map((w,i)=>'<div class="'+(i===I.week?"on":"")+'">'+w.name+"</div>").join("");
+  const tw=diffDays(addDays(today(),-((today().getDay()+6)%7)),mon)/7;
+  $("weekTitle").textContent=tw===0?"Questa settimana":tw===1?"Prossima settimana":tw===-1?"Settimana scorsa":"Settimana del "+mon.getDate()+" "+MONTHS[mon.getMonth()].slice(0,3);
+  let h="";
+  for(let i=0;i<7;i++){
+    const d=addDays(mon,i),p=buildDay(d),pc=pctOf(d);
+    h+='<button class="wday'+(isToday(d)?" is-today":"")+'" data-day="'+key(d)+'"><div class="dn">'+DAYNAMES[i].slice(0,3)+'<small>'+d.getDate()+" "+MONTHS[d.getMonth()].slice(0,3)+'</small></div><div class="lines">'+
+      '<span>Allenamento · <b>'+esc(p.wo.name)+'</b></span><span>Mente · <b>'+esc(p.med.name)+" "+p.medMin+"′</b></span><span>Pranzo · <b>"+esc(MEALS.pranzo[i].split(/[,.(]/)[0])+'</b></span>'+
+      '<div class="bar"><i style="width:'+Math.round(pc*100)+'%"></i></div></div></button>';
+  }
+  $("weekGrid").innerHTML=h;
+}
+
+/* ---------- MEDITA ---------- */
+let medSel=null, durSel=null;
+function renderMed(){
+  const p=buildDay(today());
+  if(!medSel)medSel=p.med.id;
+  if(!durSel)durSel=p.medMin;
+  $("medList").innerHTML=MEDS.map(m=>'<button class="medcard" data-med="'+m.id+'" aria-pressed="'+(m.id===medSel)+'"><b>'+esc(m.name)+'</b><span>'+esc(m.sum)+"</span></button>").join("");
+  const opts=[3,5,10,15,20];if(opts.indexOf(p.medMin)<0)opts.push(p.medMin);opts.sort((a,b)=>a-b);
+  $("durs").innerHTML=opts.map(n=>'<button data-dur="'+n+'" aria-pressed="'+(n===durSel)+'">'+n+" min</button>").join("");
+  $("durHint").textContent="Il tuo piano oggi: "+p.medMin+" min";
+  const m=MEDS.find(x=>x.id===medSel);
+  $("medPreview").innerHTML='<div class="eyebrow">Ritmo del respiro</div><p style="color:var(--ink);font-weight:600;margin-top:4px">'+breathLabel(m.p)+"</p><ul style=\"margin:8px 0 0;padding-left:18px;font-size:.92rem;color:var(--muted)\">"+m.steps.slice(0,3).map(s=>"<li>"+esc(s)+"</li>").join("")+"</ul>";
+}
+function breathLabel(p){const a=["Inspira "+p[0]+" s"];if(p[1])a.push("trattieni "+p[1]+" s");a.push("espira "+p[2]+" s");if(p[3])a.push("pausa "+p[3]+" s");return a.join(" · ")}
+
+/* ---------- PROGRESSI ---------- */
+function renderYou(){
+  const st=parseKey(S.profile.start), t=today();
+  let wins=0,workouts=0,d=st;
+  while(diffDays(d,t)>=0){const l=dayLog(key(d));if(won(d))wins++;if(l.train)workouts++;d=addDays(d,1)}
+  const mins=Object.values(S.medMin).reduce((a,b)=>a+b,0);
+  $("stats").innerHTML=[[streak(),"Serie attuale"],[bestStreak(),"Serie migliore"],[wins,"Giornate vinte"],[workouts,"Allenamenti"]]
+    .map(s=>'<div class="stat"><b>'+s[0]+"</b><span>"+s[1]+"</span></div>").join("")+
+    '<div class="stat" style="grid-column:1/-1"><b>'+mins+'</b><span>Minuti di meditazione guidata completati</span></div>';
+  const I=dayInfo(t), cs=addDays(st,Math.max(0,I.idx-I.cycleDay));
+  $("heatTitle").textContent="Ciclo "+Math.max(1,I.cycle);
+  let h="";
+  for(let i=0;i<28;i++){
+    const d=addDays(cs,i),fut=diffDays(t,d)>0,pc=fut?0:pctOf(d);
+    const c=fut?"future":pc>=.7?"h3":pc>.4?"h2":pc>0?"h1":"";
+    h+='<div class="'+c+(isToday(d)?" today":"")+'" title="'+key(d)+" · "+Math.round(pc*100)+'%">'+d.getDate()+"</div>";
+  }
+  $("heat").innerHTML=h;
+  // form
+  const P=S.profile;
+  if(document.activeElement!==$("f-name"))$("f-name").value=P.name;
+  $("f-wake").value=P.wake;
+  if(document.activeElement!==$("f-why"))$("f-why").value=P.why;
+  $("f-start").value=P.start;
+  $("f-slot").innerHTML=SLOTS.map(s=>'<button type="button" data-slot="'+s[0]+'" aria-pressed="'+(P.slot===s[0])+'">'+s[1]+"</button>").join("");
+  $("f-level").innerHTML=LEVELS.map((s,i)=>'<button type="button" data-level="'+i+'" aria-pressed="'+(+P.level===i)+'">'+s+"</button>").join("");
+}
+
+/* ---------- OVERLAY: TIMER E MEDITAZIONE ---------- */
+let OV=null;
+function bell(f){
+  if(!S.sound)return;
+  try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const ac=bell.ac||(bell.ac=new C());
+    const o=ac.createOscillator(),g=ac.createGain();o.type="sine";o.frequency.value=f||528;
+    g.gain.setValueAtTime(.0001,ac.currentTime);g.gain.exponentialRampToValueAtTime(.25,ac.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+2.4);
+    o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+2.5)}catch(e){}
+}
+let wakeLock=null;
+async function lockScreen(on){try{if(on&&navigator.wakeLock)wakeLock=await navigator.wakeLock.request("screen");else if(!on&&wakeLock){await wakeLock.release();wakeLock=null}}catch(e){}}
+
+function openOverlay(o){
+  // o: {title, eyebrow, secs, med?, task?, day?, mini?, list?}
+  closeOverlay(true);
+  OV=Object.assign({left:o.secs,paused:false,msgI:0},o);
+  $("overlay").hidden=false;document.body.style.overflow="hidden";
+  $("ovTitle").textContent=o.title;$("ovEyebrow").textContent=o.eyebrow;
+  $("ovBreath").hidden=!o.med;
+  $("ovPause").textContent="Pausa";
+  $("ovDone").textContent=o.mini?"Passo alla versione completa":"Fatto";
+  $("ovList").innerHTML=o.list||"";
+  $("ovMsg").textContent=o.med?o.med.steps[0]:(o.msg||"");
+  OV.end=Date.now()+o.secs*1000;
+  OV.tick=setInterval(tick,250);
+  if(o.med)breathLoop(0);
+  tick();bell(528);lockScreen(true);
+  setTimeout(()=>$("ovDone").focus(),50);
+}
+function tick(){
+  if(!OV||OV.paused)return;
+  OV.left=Math.max(0,(OV.end-Date.now())/1000);
+  const s=Math.ceil(OV.left);
+  $("ovTime").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+  $("ovBar").style.width=((1-OV.left/OV.secs)*100).toFixed(1)+"%";
+  if(OV.med){
+    const el=OV.secs-OV.left, every=Math.max(15,OV.secs/OV.med.steps.length), i=Math.min(OV.med.steps.length-1,Math.floor(el/every));
+    if(i!==OV.msgI){OV.msgI=i;$("ovMsg").textContent=OV.med.steps[i]}
+  }
+  if(OV.left<=0)finish();
+}
+function breathLoop(ph){
+  if(!OV||!OV.med)return;
+  const p=OV.med.p, names=["Inspira","Trattieni","Espira","Pausa"];
+  while(!p[ph])ph=(ph+1)%4;
+  const orb=$("orb"),secs=p[ph];
+  if(!OV.paused){
+    orb.style.transitionDuration=(ph===1||ph===3?0:secs)+"s";
+    orb.style.transform="scale("+(ph===0||ph===1?1:.55)+")";
+    $("orbTxt").textContent=names[ph];
+  }
+  OV.bt=setTimeout(()=>breathLoop((ph+1)%4),secs*1000);
+}
+function finish(){
+  const o=OV;clearInterval(o.tick);clearTimeout(o.bt);bell(396);
+  $("ovTime").textContent="00:00";$("ovBar").style.width="100%";
+  if(o.med&&o.day){const k=key(o.day);S.medMin[k]=(S.medMin[k]||0)+Math.round(o.secs/60);save()}
+  if(o.mini){
+    $("ovMsg").textContent="Due minuti fatti. Hai già battuto la procrastinazione. Vuoi continuare con la versione completa?";
+    $("ovDone").textContent="Continua";$("ovPause").textContent="Basta così";
+    o.state="miniEnd";
+  }else{
+    $("ovMsg").textContent=o.med?"Fine. Resta un attimo in silenzio prima di alzarti.":"Tempo finito. Segna come fatto e passa alla prossima.";
+    if(o.med)$("orbTxt").textContent="Fine";
+    o.state="end";
+  }
+}
+function closeOverlay(silent){
+  if(!OV)return;clearInterval(OV.tick);clearTimeout(OV.bt);OV=null;
+  $("overlay").hidden=true;document.body.style.overflow="";lockScreen(false);
+  if(!silent)render();
+}
+function startTask(id,mini){
+  const plan=buildDay(sel),x=plan.tasks.find(t=>t.id===id);if(!x)return;
+  if(mini){openOverlay({title:x.title,eyebrow:"Versione 2 minuti",secs:120,mini:true,task:id,day:sel,msg:x.micro});return}
+  if(x.med){openOverlay({title:x.med.name,eyebrow:breathLabel(x.med.p),secs:x.dur*60,med:x.med,task:id,day:sel});return}
+  let list="";
+  if(x.ex)list='<div class="phase"><div class="eyebrow">Esercizi</div>'+x.ex.map(e=>'<div class="ex"><span>'+esc(e.n)+'</span><span class="dose">'+esc(dose(e,+S.profile.level||0,WEEKS[plan.info.week].factor))+"</span></div>").join("")+'<p class="tip" style="margin-top:8px">'+esc(x.tip)+"</p></div>";
+  else if(x.list)list='<div class="phase"><ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">'+x.list.map(s=>"<li>"+esc(s)+"</li>").join("")+"</ul></div>";
+  openOverlay({title:x.title,eyebrow:x.id==="train"?"Allenamento":"In corso",secs:x.dur*60,task:id,day:sel,list,msg:x.id==="train"?"Inizia dal primo esercizio. Pensa solo a quello.":x.sum});
+}
+
+/* ---------- EVENTI ---------- */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.check){const k=key(sel);setDone(sel,b.dataset.check,!dayLog(k)[b.dataset.check]);return}
+  if(b.dataset.open){openTask=openTask===b.dataset.open?null:b.dataset.open;render();return}
+  if(b.dataset.start){startTask(b.dataset.start,false);return}
+  if(b.dataset.day){sel=parseKey(b.dataset.day);openTask=null;switchView("oggi");return}
+  if(b.dataset.med){medSel=b.dataset.med;renderMed();return}
+  if(b.dataset.dur){durSel=+b.dataset.dur;renderMed();return}
+  if(b.dataset.slot){S.profile.slot=b.dataset.slot;S.setup=true;save();render();renderYou();toast("Orari aggiornati");return}
+  if(b.dataset.level){S.profile.level=+b.dataset.level;S.setup=true;save();render();renderYou();toast("Livello: "+LEVELS[+b.dataset.level]);return}
+  if(b.dataset.v){switchView(b.dataset.v);return}
+});
+function switchView(v){
+  view=v;
+  ["oggi","sett","medita","tu"].forEach(n=>{$("v-"+n).hidden=n!==v;$("t-"+n).setAttribute("aria-selected",n===v)});
+  if(v==="sett")weekSel=sel;
+  render();window.scrollTo(0,0);
+}
+$("prevDay").onclick=()=>{sel=addDays(sel,-1);openTask=null;$("excuseBox").hidden=true;render()};
+$("nextDay").onclick=()=>{sel=addDays(sel,1);openTask=null;$("excuseBox").hidden=true;render()};
+$("goToday").onclick=()=>{sel=today();openTask=null;render()};
+$("prevWeek").onclick=()=>{weekSel=addDays(weekSel,-7);renderWeek()};
+$("nextWeek").onclick=()=>{weekSel=addDays(weekSel,7);renderWeek()};
+$("goSetup").onclick=()=>{switchView("tu");setTimeout(()=>$("f-name").focus(),60)};
+$("nextGo").onclick=()=>startTask($("nextCard").dataset.id,false);
+$("nextMini").onclick=()=>startTask($("nextCard").dataset.id,true);
+$("nextExcuse").onclick=()=>{
+  const plan=buildDay(sel),x=plan.tasks.find(t=>t.id===$("nextCard").dataset.id);
+  let line=EXCUSES[excuseIdx%EXCUSES.length];excuseIdx++;
+  if(S.profile.why&&excuseIdx%3===1)line="Ricordati perché hai iniziato: «"+S.profile.why+"»";
+  $("excuseBox").innerHTML="<b>Coach:</b> "+esc(line)+(x?"<br><b>Versione mini:</b> "+esc(x.micro):"");
+  $("excuseBox").hidden=false;
+};
+$("sosBtn").onclick=()=>openOverlay({title:SOS.name,eyebrow:breathLabel(SOS.p),secs:60,med:SOS});
+$("medStart").onclick=()=>{const m=MEDS.find(x=>x.id===medSel);openOverlay({title:m.name,eyebrow:breathLabel(m.p),secs:durSel*60,med:m,task:"medam",day:today()})};
+$("ovClose").onclick=()=>closeOverlay();
+$("ovPause").onclick=()=>{
+  if(!OV)return;
+  if(OV.state==="miniEnd"){closeOverlay(true);toast("Bene così. Due minuti valgono più di zero.");render();return}
+  if(OV.state==="end"){closeOverlay();return}
+  if(OV.paused){OV.paused=false;OV.end=Date.now()+OV.left*1000;$("ovPause").textContent="Pausa";if(OV.med){clearTimeout(OV.bt);breathLoop(0)}}
+  else{OV.paused=true;$("ovPause").textContent="Riprendi";if(OV.med){clearTimeout(OV.bt);$("orbTxt").textContent="In pausa"}}
+};
+$("ovDone").onclick=()=>{
+  if(!OV)return;
+  const o=OV;
+  if(o.mini&&o.state!=="end"){closeOverlay(true);startTask(o.task,false);return}
+  if(o.med&&o.day&&!o.state){const el=Math.round((o.secs-o.left)/60);if(el>0){const k=key(o.day);S.medMin[k]=(S.medMin[k]||0)+el;save()}}
+  const d=o.day,t=o.task;closeOverlay(true);
+  if(t&&d){if(!dayLog(key(d))[t])setDone(d,t,true);else render();toast(o.mini?"Iniziato è già mezzo fatto.":"Fatto. Avanti il prossimo.")}
+  else{render();toast("Ben fatto. Ora la prossima azione.")}
+};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&OV)closeOverlay()});
+
+// impostazioni
+$("settings").addEventListener("submit",e=>e.preventDefault());
+$("f-name").addEventListener("input",e=>{S.profile.name=e.target.value.trim();S.setup=true;save();render()});
+$("f-why").addEventListener("input",e=>{S.profile.why=e.target.value.trim();S.setup=true;save()});
+$("f-wake").addEventListener("change",e=>{if(e.target.value){S.profile.wake=e.target.value;S.setup=true;save();render();toast("Sveglia alle "+e.target.value+". Orari ricalcolati.")}});
+$("f-start").addEventListener("change",e=>{if(e.target.value){S.profile.start=e.target.value;S.setup=true;save();render()}});
+function bindReset(){$("resetBtn").onclick=()=>{
+  $("resetRow").innerHTML='<span style="font-weight:600;flex:1 1 100%">Cancello serie, spunte e minuti meditati? Il profilo resta.</span><button type="button" class="btn btn-danger" id="resetYes">Sì, azzera</button><button type="button" class="btn btn-sec" id="resetNo">Annulla</button>';
+  $("resetYes").onclick=()=>{S.log={};S.medMin={};S.profile.start=key(today());save();restoreReset();render();toast("Progressi azzerati. Oggi è il giorno 1.")};
+  $("resetNo").onclick=restoreReset;
+}}
+function restoreReset(){$("resetRow").innerHTML='<button type="button" class="btn btn-sec" id="resetBtn">Azzera i progressi</button>';bindReset()}
+bindReset();
+
+// aggiorna "prossima azione" ogni minuto e al cambio di giorno
+let lastDay=key(today());
+setInterval(()=>{const k=key(today());if(k!==lastDay){if(key(sel)===lastDay)sel=today();lastDay=k}if(!OV)render()},60000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!OV)render();if(!document.hidden&&OV)lockScreen(true)});
+
+render();
+})();
+</script>
