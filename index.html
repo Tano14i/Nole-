@@ -149,6 +149,25 @@ h1,h2,h3{font-family:var(--f-display);line-height:1.1;margin:0;text-wrap:balance
 .rec-card summary b{font-size:1.02rem;min-width:0}
 .rec-card[open] summary{margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--line)}
 
+/* macronutrienti */
+.macro{display:flex;flex-direction:column;gap:8px;background:var(--surface-2);border-radius:12px;padding:10px 12px}
+.macro-k{display:flex;align-items:baseline;gap:6px}
+.macro-k b{font-size:1.35rem;line-height:1}
+.macro-k span{font-size:.8rem;color:var(--muted);font-weight:600}
+.macro-bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--line)}
+.macro-bar i{display:block;height:100%}
+.m-p{background:var(--accent)}
+.m-c{background:var(--ball)}
+.m-f{background:var(--court)}
+.m-fi{background:var(--muted)}
+.macro-g{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0}
+.macro-g div{min-width:0}
+.macro-g dt{font-size:.7rem;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.macro-g dt i{width:8px;height:8px;border-radius:2px;flex:none}
+.macro-g dd{margin:0;font-weight:700;font-size:.9rem}
+.macro{container-type:inline-size}
+@container (max-width:330px){.macro-g{grid-template-columns:repeat(2,1fr);row-gap:8px}}
+
 /* spesa */
 #settSeg button{flex:1 1 0;min-width:0}
 .pane{display:flex;flex-direction:column;gap:16px}
@@ -328,6 +347,7 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
     </div>
     <div class="pane" id="sett-rec" hidden>
       <div class="seg" id="recDays" role="group" aria-label="Giorno"></div>
+      <div class="shop-sum" id="recTotal"></div>
       <div class="rec-list" id="recList"></div>
     </div>
     <div class="pane" id="sett-shop" hidden>
@@ -575,7 +595,7 @@ const RECIPES={
     {t:"Zuppa di lenticchie e verdure",min:40,ing:["80 g di lenticchie","1 carota","1 costa di sedano","1 pomodoro","1 spicchio d'aglio","700 ml d'acqua","1 cucchiaio d'olio extravergine, sale","Rucola e limone per l'insalata"],
      steps:["Trita carota, sedano e aglio e falli appassire 5 minuti in pentola con l'olio, a fuoco dolce.","Aggiungi le lenticchie sciacquate, il pomodoro a pezzi e l'acqua.","Cuoci 30–35 minuti a fuoco basso con il coperchio socchiuso, finché le lenticchie sono tenere.","Sala solo a fine cottura. Se la vuoi cremosa, frulla metà zuppa.","Servila con un filo d'olio a crudo e la rucola condita con limone."],
      tip:"Raddoppia le dosi e congela una porzione: è la tua cena di emergenza."},
-    {t:"Tofu saltato con verdure e zenzero",min:20,ing:["150 g di tofu","300 g di verdure (peperone, carota, zucchina, cavolo)","1 cm di zenzero fresco","1 spicchio d'aglio","1 cucchiaio di tamari (salsa di soia senza glutine)","1 cucchiaio d'olio","40 g di riso integrale cotto a pranzo"],
+    {t:"Tofu saltato con verdure e zenzero",min:20,ing:["150 g di tofu","300 g di verdure (peperone, carota, zucchina, cavolo)","1 cm di zenzero fresco","1 spicchio d'aglio","1 cucchiaio di tamari (salsa di soia senza glutine)","1 cucchiaio d'olio","Il riso integrale avanzato dal pranzo (40 g da crudo)"],
      steps:["Tampona il tofu con carta da cucina e taglialo a cubetti.","Rosolalo in padella o nel wok ben caldo con l'olio per 6–8 minuti, finché è dorato su più lati. Mettilo da parte.","Taglia le verdure a listarelle e saltale a fuoco vivace per 5 minuti con aglio e zenzero grattugiato: devono restare croccanti.","Rimetti il tofu, aggiungi il tamari e salta ancora 1 minuto.","Servi con il riso avanzato dal pranzo, scaldato in padella."]},
     {t:"Branzino al cartoccio con verdure",min:30,ing:["1 branzino pulito (circa 300 g) o 150 g di filetti","300 g di verdure (zucchine, pomodorini, finocchio)","½ limone a fette","Prezzemolo e 1 spicchio d'aglio","1 cucchiaio d'olio extravergine, sale"],
      steps:["Accendi il forno a 190 °C.","Taglia le verdure sottili e disponile su un grande foglio di carta da forno.","Appoggia il pesce sopra e mettigli dentro limone, prezzemolo e aglio. Condisci con olio e sale.","Chiudi bene il cartoccio e cuoci 20–25 minuti (12–15 minuti per i filetti).","Versione vegetale: schiaccia ½ vasetto di ceci con 2 cucchiai d'avena e prezzemolo, forma 2 burger e cuocili in padella 4 minuti per lato."],
@@ -589,6 +609,10 @@ const RECIPES={
      steps:["Accendi il forno a 200 °C. Taglia la zucca a cubetti, condiscila con olio e sale e cuocila 25 minuti.","Negli ultimi 10 minuti aggiungi in teglia i ceci asciugati: diventano croccanti.","Sciacqua la quinoa e cuocila 12–15 minuti in doppio volume d'acqua salata.","Togli la costa centrale al cavolo nero, taglialo a striscioline e massaggialo 1 minuto con un pizzico di sale e un filo d'olio: si ammorbidisce.","Unisci tutto ancora tiepido e condisci con il limone."]}
   ]
 };
+// valori stimati per porzione: k = kcal, p = proteine, c = carboidrati, f = grassi, fi = fibre (g)
+// calcolati dagli ingredienti con valori medi per 100 g delle tabelle nutrizionali (USDA)
+const NUTRI={"colazione":[{"k":510,"p":14,"c":56,"f":22,"fi":15},{"k":570,"p":11,"c":52,"f":36,"fi":11},{"k":410,"p":11,"c":50,"f":17,"fi":11},{"k":560,"p":12,"c":20,"f":46,"fi":13},{"k":370,"p":5,"c":36,"f":21,"fi":10},{"k":360,"p":8,"c":44,"f":16,"fi":8},{"k":350,"p":8,"c":54,"f":9,"fi":11}],"pranzo":[{"k":660,"p":13,"c":84,"f":30,"fi":7},{"k":700,"p":23,"c":74,"f":28,"fi":21},{"k":770,"p":25,"c":86,"f":35,"fi":11},{"k":620,"p":21,"c":79,"f":24,"fi":15},{"k":580,"p":21,"c":58,"f":26,"fi":17},{"k":550,"p":22,"c":53,"f":23,"fi":15},{"k":580,"p":19,"c":62,"f":24,"fi":16}],"spuntino":[{"k":180,"p":4,"c":19,"f":9,"fi":6},{"k":110,"p":5,"c":10,"f":5,"fi":6},{"k":210,"p":5,"c":26,"f":9,"fi":5},{"k":180,"p":4,"c":9,"f":13,"fi":5},{"k":180,"p":3,"c":16,"f":11,"fi":5},{"k":160,"p":2,"c":21,"f":7,"fi":6},{"k":200,"p":3,"c":28,"f":9,"fi":4}],"cena":[{"k":690,"p":40,"c":53,"f":31,"fi":13},{"k":490,"p":23,"c":53,"f":17,"fi":14},{"k":540,"p":34,"c":44,"f":25,"fi":12},{"k":330,"p":32,"c":12,"f":16,"fi":7},{"k":660,"p":29,"c":58,"f":24,"fi":31},{"k":430,"p":15,"c":39,"f":19,"fi":18},{"k":710,"p":24,"c":78,"f":29,"fi":17}]};
+Object.keys(NUTRI).forEach(m=>NUTRI[m].forEach((n,i)=>{RECIPES[m][i].n=n}));
 const MEAL_LABEL={colazione:"Colazione",pranzo:"Pranzo",spuntino:"Spuntino",cena:"Cena"};
 
 // lista della spesa per 1 persona e 7 giorni: [id, nome, quantità, a cosa serve]
@@ -754,19 +778,19 @@ function buildDay(d){
     {id:"medam",t:W+15,kind:"mente",title:"Meditazione: "+med.name,dur:medMin,med:med,
       sum:med.sum+" "+medMin+" minuti.",list:med.steps,
       micro:"Siediti, chiudi gli occhi e fai 5 respiri lenti contando le espirazioni."},
-    {id:"colaz",t:W+45,kind:"cibo",title:"Colazione: "+RECIPES.colazione[I.wd].t,dur:RECIPES.colazione[I.wd].min,rec:RECIPES.colazione[I.wd],sum:MEALS.colazione[I.wd],
+    {id:"colaz",t:W+45,kind:"cibo",title:"Colazione: "+RECIPES.colazione[I.wd].t,dur:RECIPES.colazione[I.wd].min,rec:RECIPES.colazione[I.wd],sum:MEALS.colazione[I.wd]+" · circa "+RECIPES.colazione[I.wd].n.k+" kcal",
       eat:"Siediti a tavola, senza schermi, e mastica lentamente.",
       micro:"Prepara solo gli ingredienti sul tavolo. Il resto viene facile."},
     {id:"train",t:trainAt,kind:"corpo",title:wo.name,dur:woDur,ex:wo.ex,tip:wo.tip,
       sum:woDur+" minuti · "+WEEKS[I.week].name,
       micro:"Metti le scarpe e fai solo il primo esercizio. Se dopo 2 minuti vuoi smettere, puoi."},
-    {id:"pranzo",t:lunchAt,kind:"cibo",title:"Pranzo: "+RECIPES.pranzo[I.wd].t,dur:RECIPES.pranzo[I.wd].min,rec:RECIPES.pranzo[I.wd],sum:MEALS.pranzo[I.wd],
+    {id:"pranzo",t:lunchAt,kind:"cibo",title:"Pranzo: "+RECIPES.pranzo[I.wd].t,dur:RECIPES.pranzo[I.wd].min,rec:RECIPES.pranzo[I.wd],sum:MEALS.pranzo[I.wd]+" · circa "+RECIPES.pranzo[I.wd].n.k+" kcal",
       eat:"Mangia lentamente: posate giù tra un boccone e l'altro.",
       micro:"Scegli la ricetta e metti l'acqua sul fuoco. Fatto il primo passo."},
-    {id:"snack",t:W+600,kind:"cibo",title:"Spuntino: "+RECIPES.spuntino[I.wd].t,dur:RECIPES.spuntino[I.wd].min,rec:RECIPES.spuntino[I.wd],sum:MEALS.spuntino[I.wd],
+    {id:"snack",t:W+600,kind:"cibo",title:"Spuntino: "+RECIPES.spuntino[I.wd].t,dur:RECIPES.spuntino[I.wd].min,rec:RECIPES.spuntino[I.wd],sum:MEALS.spuntino[I.wd]+" · circa "+RECIPES.spuntino[I.wd].n.k+" kcal",
       eat:"Accompagnalo con un bicchiere d'acqua.",
       micro:"Prendi il frutto. Mangialo lontano dalla scrivania."},
-    {id:"cena",t:W+810,kind:"cibo",title:"Cena: "+RECIPES.cena[I.wd].t,dur:RECIPES.cena[I.wd].min,rec:RECIPES.cena[I.wd],sum:MEALS.cena[I.wd],
+    {id:"cena",t:W+810,kind:"cibo",title:"Cena: "+RECIPES.cena[I.wd].t,dur:RECIPES.cena[I.wd].min,rec:RECIPES.cena[I.wd],sum:MEALS.cena[I.wd]+" · circa "+RECIPES.cena[I.wd].n.k+" kcal",
       eat:"Finisci di cenare almeno 2 ore prima di dormire.",
       micro:"Lava e taglia le verdure. Il resto della cena parte da lì."},
     {id:"medpm",t:W+930,kind:"mente",title:"Chiusura: diario e gratitudine",dur:5,med:MEDS[6],
@@ -893,8 +917,17 @@ function render(){
   if(view==="tu")renderYou();
 }
 function startBtn(x){return '<div class="btnrow"><button class="btn btn-court" data-start="'+x.id+'">'+(x.med?"Avvia meditazione guidata":x.rec?"Cucina con il timer · "+x.dur+" min":"Avvia timer · "+x.dur+" min")+'</button></div>'}
+function energy(n){const p=n.p*4,c=n.c*4,f=n.f*9,t=p+c+f||1;return{p:Math.round(p/t*100),c:Math.round(c/t*100),f:Math.round(f/t*100)}}
+function macroHTML(n,label){
+  if(!n)return "";
+  const e=energy(n);
+  return '<div class="macro"><div class="macro-k"><b class="mono">'+n.k+'</b><span>kcal'+(label?" · "+label:" per porzione")+'</span></div>'+
+    '<div class="macro-bar" role="img" aria-label="Energia: proteine '+e.p+'%, carboidrati '+e.c+'%, grassi '+e.f+'%"><i class="m-p" style="width:'+e.p+'%"></i><i class="m-c" style="width:'+e.c+'%"></i><i class="m-f" style="width:'+e.f+'%"></i></div>'+
+    '<dl class="macro-g"><div><dt><i class="m-p"></i>Proteine</dt><dd class="mono">'+n.p+' g</dd></div><div><dt><i class="m-c"></i>Carboidrati</dt><dd class="mono">'+n.c+' g</dd></div><div><dt><i class="m-f"></i>Grassi</dt><dd class="mono">'+n.f+' g</dd></div><div><dt><i class="m-fi"></i>Fibre</dt><dd class="mono">'+n.fi+' g</dd></div></dl></div>';
+}
+function dayNutri(wd){const t={k:0,p:0,c:0,f:0,fi:0};["colazione","pranzo","spuntino","cena"].forEach(m=>{const n=RECIPES[m][wd].n;for(const x in t)t[x]+=n[x]});return t}
 function recipeHTML(r,eat){
-  return '<div class="recipe"><div class="rec-h"><span class="eyebrow">Ingredienti · 1 persona</span><span class="mono rec-min">'+r.min+' min</span></div>'+
+  return '<div class="recipe">'+macroHTML(r.n)+'<div class="rec-h"><span class="eyebrow">Ingredienti · 1 persona</span><span class="mono rec-min">'+r.min+' min</span></div>'+
     '<ul class="ing">'+r.ing.map(i=>"<li>"+esc(i)+"</li>").join("")+'</ul>'+
     '<div class="eyebrow">Preparazione</div><ol class="steps">'+r.steps.map(i=>"<li>"+esc(i)+"</li>").join("")+'</ol>'+
     (r.tip?'<p class="tip">'+esc(r.tip)+'</p>':"")+(eat?'<p class="tip">'+esc(eat)+'</p>':"")+'</div>';
@@ -931,9 +964,12 @@ function renderRecipes(){
   const mon=addDays(weekSel,-((weekSel.getDay()+6)%7));
   if(recDay===null)recDay=(today().getDay()+6)%7;
   $("recDays").innerHTML=DAYNAMES.map((n,i)=>'<button type="button" data-recday="'+i+'" aria-pressed="'+(i===recDay)+'">'+n.slice(0,3)+"<small>"+addDays(mon,i).getDate()+"</small></button>").join("");
+  const tot=dayNutri(recDay);
+  $("recTotal").innerHTML='<div class="eyebrow">Totale del '+DAYNAMES[recDay].toLowerCase()+'</div>'+macroHTML(tot,"giornata")+
+    '<p class="note" style="margin:0">Stime per una porzione. Il fabbisogno dipende da peso, età e attività: se ti alleni molto o hai fame, aggiungi una porzione di cereali, legumi o frutta secca, oppure un secondo spuntino.</p>';
   $("recList").innerHTML=["colazione","pranzo","spuntino","cena"].map((m,j)=>{
     const r=RECIPES[m][recDay];
-    return '<details class="rec-card"'+(j===0?" open":"")+'><summary><span class="chip k-cibo">'+MEAL_LABEL[m]+'</span><b>'+esc(r.t)+'</b><span class="mono rec-min">'+r.min+" min</span></summary>"+recipeHTML(r)+"</details>";
+    return '<details class="rec-card"'+(j===0?" open":"")+'><summary><span class="chip k-cibo">'+MEAL_LABEL[m]+'</span><b>'+esc(r.t)+'</b><span class="mono rec-min">'+r.n.k+" kcal · "+r.min+" min</span></summary>"+recipeHTML(r)+"</details>";
   }).join("");
 }
 
