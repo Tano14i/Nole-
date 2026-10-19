@@ -20,6 +20,14 @@ Apri `index.html` in un browser (su telefono o computer). Non serve installare n
 - **Backup**: «Copia backup» copia tutti i tuoi dati come testo da salvare in una nota o in una mail; «Ripristina da backup» li reinserisce su un altro telefono o browser.
 - **Progressi**: serie di giornate vinte (almeno il 70% del piano), calendario del ciclo e impostazioni (sveglia, momento dell'allenamento, livello, il tuo perché).
 
+- **Esercizi spiegati**: tocca un esercizio per vedere come si esegue, l'errore da evitare e la versione più facile.
+- **Allenamento che si adatta**: dopo l'allenamento scegli «troppo facile», «giusto» o «troppo duro»; il volume dei successivi sale o scende (da −25% a +30%).
+- **Menù su misura**: in Ricette puoi cambiare ogni piatto con un altro della stessa categoria; nel fabbisogno puoi scegliere «Vegetariano» (il pesce diventa tempeh e ceci) e «Più proteine» (+18 g al giorno).
+- **Acqua e sonno**: in Oggi segni i bicchieri d'acqua e le ore di sonno.
+- **Resoconto settimanale**: in Progressi, gli ultimi 7 giorni, il punto debole con un consiglio e l'obiettivo della settimana, che compare ogni giorno in Oggi. La domenica un avviso ti invita a farlo.
+- **Jolly della serie**: un giorno storto a settimana non azzera la serie, se il giorno prima era vinto.
+- **Guida vocale**: nelle meditazioni una voce legge le indicazioni.
+
 ## Installarla sul telefono, con i promemoria
 
 L'app è una web app installabile: funziona offline e manda notifiche all'ora di ogni attività, più una «spintarella» dopo 20 minuti se non l'hai ancora iniziata.
