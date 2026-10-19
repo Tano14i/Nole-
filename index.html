@@ -179,6 +179,31 @@ fieldset.needs legend{font-weight:700;font-size:.9rem;padding:0 6px}
 .needs-out span{color:var(--muted);font-size:.84rem}
 .needs-out .warn{color:var(--warn);font-weight:600}
 
+/* peso, diario, backup */
+.card-block{display:flex;flex-direction:column;gap:12px}
+.wform{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
+.wform .field{min-width:0}
+.wform input{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+@media (max-width:420px){.wform{grid-template-columns:1fr 1fr}.wform .btn{grid-column:1/-1}}
+.wsvg{width:100%;height:auto;display:block}
+.wgrid{stroke:var(--line);stroke-width:1}
+.wlab{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
+.wdot{fill:var(--accent);opacity:.55}
+.wline{fill:none;stroke:var(--court);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.lg-dot{background:var(--accent);border-radius:50%!important;opacity:.6}
+.lg-line{background:var(--court);height:3px!important;vertical-align:3px!important}
+.needs-out.good{border-left:4px solid var(--court)}
+.wlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.wlist li{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.wlist li:last-child{border-bottom:0}
+.iconbtn.sm{width:32px;height:32px;font-size:1.1rem;line-height:1}
+.journal{display:flex;flex-direction:column;gap:10px}
+.journal textarea{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;resize:vertical}
+.jdl{margin:0;display:flex;flex-direction:column;gap:4px}
+.jdl dt{font-size:.75rem;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-top:6px}
+.jdl dd{margin:0;white-space:pre-wrap;font-size:.93rem}
+.warn{color:var(--warn);font-weight:600}
+
 /* spesa */
 #settSeg button{flex:1 1 0;min-width:0}
 .pane{display:flex;flex-direction:column;gap:16px}
@@ -405,6 +430,39 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
       </div>
     </div>
 
+    <div class="phase card-block" id="weightCard">
+      <div class="section-h" style="margin:0"><h2>Diario del peso</h2><span class="eyebrow">media di 7 giorni</span></div>
+      <form class="wform" id="wForm" novalidate>
+        <div class="field"><label for="w-kg">Peso (kg)</label><input id="w-kg" type="text" inputmode="decimal" placeholder="74,5" autocomplete="off"></div>
+        <div class="field"><label for="w-date">Giorno</label><input id="w-date" type="date"></div>
+        <button type="submit" class="btn btn-court">Aggiungi</button>
+      </form>
+      <div id="wChart"></div>
+      <div id="wAdvice" class="needs-out" aria-live="polite"></div>
+      <ul class="wlist" id="wList"></ul>
+    </div>
+
+    <div class="phase card-block">
+      <div class="section-h" style="margin:0"><h2>Diario serale</h2><span class="eyebrow">ultime 2 settimane</span></div>
+      <div class="rec-list" id="jList"></div>
+    </div>
+
+    <div class="phase card-block">
+      <div class="section-h" style="margin:0"><h2>Backup dei tuoi dati</h2></div>
+      <p style="margin:0">I dati vivono solo in questo browser. Copia il backup e salvalo in una nota o in una mail a te stesso: se cambi telefono, lo incolli qui e ritrovi tutto.</p>
+      <p class="note" id="bkStatus" style="margin:0"></p>
+      <div class="btnrow">
+        <button type="button" class="btn btn-court" id="bkCopy">Copia backup</button>
+        <button type="button" class="btn btn-sec" id="bkOpen">Ripristina da backup</button>
+      </div>
+      <textarea id="bkOut" class="shop-text" readonly hidden aria-label="Testo del backup"></textarea>
+      <div id="bkImport" hidden class="journal">
+        <div class="field"><label for="bkIn">Incolla qui il testo del backup</label><textarea id="bkIn" class="shop-text" spellcheck="false"></textarea></div>
+        <div class="btnrow"><button type="button" class="btn btn-court" id="bkRestore">Ripristina</button></div>
+        <div id="bkMsg" class="journal"></div>
+      </div>
+    </div>
+
     <form class="settings" id="settings" novalidate>
       <h2 style="font-size:1.15rem;font-weight:800">Il tuo piano</h2>
       <div class="field"><label for="f-name">Come ti chiamo?</label><input id="f-name" maxlength="30" placeholder="Il tuo nome" autocomplete="given-name"></div>
@@ -430,7 +488,7 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
       <div class="btnrow" id="resetRow">
         <button type="button" class="btn btn-sec" id="resetBtn">Azzera i progressi</button>
       </div>
-      <p class="note">I dati restano solo in questo browser, su questo dispositivo.</p>
+      <p class="note">I dati restano solo in questo browser, su questo dispositivo. Azzerare i progressi non cancella peso e diario.</p>
     </form>
   </section>
 </div>
@@ -767,7 +825,7 @@ function addDays(d,n){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate())
 function diffDays(a,b){return Math.round((parseKey(key(b))-parseKey(key(a)))/864e5)}
 function today(){return parseKey(key(new Date()))}
 
-function defaults(){return{profile:{name:"",wake:"06:30",slot:"mattina",level:0,why:"",start:key(today())},log:{},medMin:{},shop:{},setup:false,sound:true}}
+function defaults(){return{profile:{name:"",wake:"06:30",slot:"mattina",level:0,why:"",start:key(today())},log:{},medMin:{},shop:{},weights:{},journal:{},lastBackup:null,setup:false,sound:true}}
 let S=(function(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&s.profile)return Object.assign(defaults(),s)}catch(e){}return defaults()})();
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 
@@ -928,6 +986,7 @@ function render(){
     let det="";
     if(open){
       if(x.ex){det='<div class="details">'+x.ex.map(e=>'<div class="ex"><span>'+esc(e.n)+'</span><span class="dose">'+esc(dose(e,+S.profile.level||0,WEEKS[I.week].factor))+'</span></div>').join("")+'<div class="tip">'+esc(x.tip)+'</div>'+startBtn(x)+'</div>'}
+      else if(x.id==="medpm")det='<div class="details">'+journalHTML(sel)+startBtn(x)+"</div>";
       else if(x.rec)det='<div class="details">'+recipeHTML(x.rec,x.eat)+startBtn(x)+"</div>";
       else det='<div class="details"><ul>'+x.list.map(s=>"<li>"+esc(s)+"</li>").join("")+"</ul>"+startBtn(x)+"</div>";
     }
@@ -1099,6 +1158,108 @@ function renderMed(){
 function breathLabel(p){const a=["Inspira "+p[0]+" s"];if(p[1])a.push("trattieni "+p[1]+" s");a.push("espira "+p[2]+" s");if(p[3])a.push("pausa "+p[3]+" s");return a.join(" · ")}
 
 /* ---------- PROGRESSI ---------- */
+/* ---------- DIARIO DEL PESO ---------- */
+const GOAL_RANGE=[[-.75,-.25,-.5],[-.2,.2,0],[.1,.35,.25]]; // kg a settimana: minimo, massimo, ideale
+function weights(){return Object.keys(S.weights).sort().map(k=>({k,d:parseKey(k),w:S.weights[k]}))}
+function weightTrend(){
+  const t=today(),all=weights().filter(e=>diffDays(e.d,t)<=21&&diffDays(e.d,t)>=0);
+  if(all.length<4||diffDays(all[0].d,all[all.length-1].d)<14)return null;
+  const xs=all.map(e=>diffDays(all[0].d,e.d)),ys=all.map(e=>e.w),n=xs.length;
+  const mx=xs.reduce((a,b)=>a+b)/n,my=ys.reduce((a,b)=>a+b)/n;
+  let num=0,den=0;xs.forEach((x,i)=>{num+=(x-mx)*(ys[i]-my);den+=(x-mx)*(x-mx)});
+  return den?num/den*7:null;
+}
+function currentKcal(){const t=target();if(t)return t;let b=0;for(let i=0;i<7;i++)b+=baseDay(i).k;return Math.round(b/7/10)*10}
+function weightAdvice(){
+  const wk=weightTrend(),c=nutriCfg(),goal=c.mode==="base"?1:c.goal;
+  const ents=weights();
+  if(wk===null){
+    const left=ents.length<4?"Ancora "+(4-ents.length)+" pesate":"Serve qualche giorno in più";
+    return {txt:left+" (in almeno 14 giorni) e ti dico se le calorie sono giuste. Pesati sempre allo stesso modo: al mattino, dopo il bagno, prima di colazione."};
+  }
+  const r=GOAL_RANGE[goal],w=Math.round(wk*100)/100,trendTxt="Tendenza: "+(w>0?"+":"")+fmtNum(w)+" kg a settimana.";
+  if(wk>=r[0]&&wk<=r[1])return {txt:trendTxt+" È in linea con l'obiettivo «"+GOALS[goal][1].toLowerCase()+"». Continua così.",ok:true};
+  let delta=Math.round(Math.max(-250,Math.min(250,(r[2]-wk)*1100))/50)*50;
+  if(!delta)delta=wk>r[1]?-50:50;
+  const next=Math.max(1200,currentKcal()+delta);
+  return {txt:trendTxt+" Per l'obiettivo «"+GOALS[goal][1].toLowerCase()+"» "+(delta<0?"conviene scendere":"conviene salire")+" di "+Math.abs(delta)+" kcal al giorno."+(c.mode==="base"?" Non hai impostato un obiettivo, quindi considero il mantenimento.":""),apply:next};
+}
+function renderWeight(){
+  const ents=weights(),box=$("wChart");
+  if(document.activeElement!==$("w-date"))$("w-date").value=$("w-date").value||key(today());
+  if(!ents.length){box.innerHTML='<p class="note" style="margin:0">Nessuna pesata ancora. Aggiungi la prima qui sopra: il grafico parte da lì.</p>'}
+  else{
+    const last=ents.slice(-60),W=320,H=140,pl=34,pr=8,pt=10,pb=22;
+    const x0=last[0].d,span=Math.max(1,diffDays(x0,last[last.length-1].d));
+    let lo=Math.min(...last.map(e=>e.w)),hi=Math.max(...last.map(e=>e.w));
+    if(hi-lo<2){const m=(hi+lo)/2;lo=m-1;hi=m+1}
+    const X=d=>pl+diffDays(x0,d)/span*(W-pl-pr),Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb);
+    const avg=last.map((e,i)=>{const win=last.filter(o=>diffDays(o.d,e.d)>=0&&diffDays(o.d,e.d)<7);return{d:e.d,w:win.reduce((a,o)=>a+o.w,0)/win.length}});
+    const path=avg.map((a,i)=>(i?"L":"M")+X(a.d).toFixed(1)+" "+Y(a.w).toFixed(1)).join(" ");
+    const fmtD=d=>d.getDate()+" "+MONTHS[d.getMonth()].slice(0,3);
+    box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" class="wsvg" role="img" aria-label="Andamento del peso">'+
+      [hi,(hi+lo)/2,lo].map(v=>'<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(v).toFixed(1)+'" y2="'+Y(v).toFixed(1)+'" class="wgrid"/><text x="'+(pl-6)+'" y="'+(Y(v)+4).toFixed(1)+'" class="wlab" text-anchor="end">'+fmtNum(Math.round(v*10)/10)+'</text>').join("")+
+      last.map(e=>'<circle cx="'+X(e.d).toFixed(1)+'" cy="'+Y(e.w).toFixed(1)+'" r="3" class="wdot"/>').join("")+
+      (avg.length>1?'<path d="'+path+'" class="wline"/>':"")+
+      '<text x="'+pl+'" y="'+(H-6)+'" class="wlab">'+fmtD(last[0].d)+'</text><text x="'+(W-pr)+'" y="'+(H-6)+'" class="wlab" text-anchor="end">'+fmtD(last[last.length-1].d)+'</text></svg>'+
+      '<div class="legend"><span><i class="lg-dot"></i>pesata</span><span><i class="lg-line"></i>media di 7 giorni</span></div>';
+  }
+  const a=weightAdvice();
+  $("wAdvice").innerHTML='<p style="margin:0">'+esc(a.txt)+'</p>'+(a.apply?'<div class="btnrow"><button type="button" class="btn btn-court" id="wApply" data-apply="'+a.apply+'">Usa '+a.apply+' kcal al giorno</button></div>':"");
+  $("wAdvice").className="needs-out"+(a.ok?" good":"");
+  $("wList").innerHTML=ents.slice(-5).reverse().map(e=>'<li><span>'+DAYNAMES[(e.d.getDay()+6)%7].slice(0,3)+" "+e.d.getDate()+" "+MONTHS[e.d.getMonth()].slice(0,3)+'</span><b class="mono">'+fmtNum(e.w)+' kg</b><button type="button" class="iconbtn sm" data-wdel="'+e.k+'" aria-label="Elimina la pesata del '+e.k+'">×</button></li>').join("");
+}
+function addWeight(){
+  const v=parseFloat(String($("w-kg").value).replace(",",".")),d=$("w-date").value||key(today());
+  if(!(v>=30&&v<=300)){toast("Scrivi il peso in kg, per esempio 74,5");return}
+  if(diffDays(today(),parseKey(d))>0){toast("La data non può essere nel futuro");return}
+  S.weights[d]=Math.round(v*10)/10;
+  const lastK=Object.keys(S.weights).sort().pop();
+  if(S.profile.nutri&&nutriCfg().mode==="calc")S.profile.nutri.weight=S.weights[lastK];
+  save();$("w-kg").value="";renderWeight();renderNeeds();render();toast("Pesata salvata");
+}
+
+/* ---------- DIARIO SERALE ---------- */
+const JQ=[["good","Cosa è andato bene oggi?"],["improve","Cosa migliori domani?"],["grat","Tre cose per cui sei grato"]];
+function journalHTML(d){
+  const j=S.journal[key(d)]||{};
+  return '<div class="journal">'+JQ.map(q=>'<div class="field"><label for="j-'+q[0]+'">'+q[1]+'</label><textarea id="j-'+q[0]+'" data-j="'+q[0]+'" maxlength="500" rows="2">'+esc(j[q[0]]||"")+'</textarea></div>').join("")+
+    '<div class="btnrow"><button type="button" class="btn btn-go" data-jsave="1">Salva e segna come fatto</button></div><p class="note" style="margin:0">Si salva mentre scrivi. Rileggi tutto in Progressi.</p></div>';
+}
+function renderJournal(){
+  const ks=Object.keys(S.journal).filter(k=>JQ.some(q=>(S.journal[k][q[0]]||"").trim())).sort().reverse();
+  $("jList").innerHTML=ks.length?ks.slice(0,14).map((k,i)=>{const d=parseKey(k),j=S.journal[k];
+    return '<details class="rec-card"'+(i===0?" open":"")+'><summary><b>'+DAYNAMES[(d.getDay()+6)%7]+" "+d.getDate()+" "+MONTHS[d.getMonth()]+'</b></summary><dl class="jdl">'+
+      JQ.filter(q=>(j[q[0]]||"").trim()).map(q=>"<dt>"+q[1]+"</dt><dd>"+esc(j[q[0]])+"</dd>").join("")+"</dl></details>"}).join(""):
+    '<p class="note" style="margin:0">Il diario è vuoto. Stasera, nella voce «Chiusura: diario e gratitudine», scrivi le tue prime tre righe.</p>';
+}
+
+/* ---------- BACKUP ---------- */
+function backupText(){return JSON.stringify({app:"nole-coach",v:1,date:key(today()),data:S})}
+function renderBackup(){
+  const lb=S.lastBackup,days=lb?diffDays(parseKey(lb),today()):null;
+  const hasData=Object.keys(S.log).length||Object.keys(S.weights).length||Object.keys(S.journal).length;
+  $("bkStatus").innerHTML=lb?"Ultimo backup: <b>"+parseKey(lb).getDate()+" "+MONTHS[parseKey(lb).getMonth()]+"</b>"+(days>14?' <span class="warn">· sono passati '+days+" giorni, fanne uno nuovo</span>":""):
+    (hasData?'<span class="warn">Non hai ancora fatto un backup.</span>':"Non hai ancora fatto un backup.");
+}
+function bindBackup(){
+  $("bkCopy").onclick=()=>{
+    const txt=backupText(),ta=$("bkOut");
+    const ok=()=>{S.lastBackup=key(today());save();renderBackup()};
+    const fallback=()=>{ta.value=txt;ta.hidden=false;ta.focus();ta.select();ok();toast("Seleziona e copia il testo, poi salvalo in una nota o in una mail")};
+    try{navigator.clipboard.writeText(txt).then(()=>{ta.hidden=true;ok();toast("Backup copiato: incollalo in una nota o in una mail a te stesso")},fallback)}catch(e){fallback()}
+  };
+  $("bkOpen").onclick=()=>{$("bkImport").hidden=!$("bkImport").hidden;if(!$("bkImport").hidden)$("bkIn").focus()};
+  $("bkRestore").onclick=()=>{
+    let obj;try{obj=JSON.parse($("bkIn").value.trim())}catch(e){obj=null}
+    if(!obj||obj.app!=="nole-coach"||!obj.data||!obj.data.profile){$("bkMsg").innerHTML='<span class="warn">Questo testo non è un backup di Nole Coach. Incolla tutto il testo copiato, dalla prima all\'ultima parentesi graffa.</span>';return}
+    const d=parseKey(obj.date||key(today()));
+    $("bkMsg").innerHTML='<span>Sostituisco tutti i dati attuali con il backup del '+d.getDate()+" "+MONTHS[d.getMonth()]+'?</span><div class="btnrow"><button type="button" class="btn btn-danger" id="bkYes">Sì, ripristina</button><button type="button" class="btn btn-sec" id="bkNo">Annulla</button></div>';
+    $("bkYes").onclick=()=>{S=Object.assign(defaults(),obj.data);save();$("bkIn").value="";$("bkMsg").innerHTML="";$("bkImport").hidden=true;sel=today();render();renderYou();toast("Dati ripristinati")};
+    $("bkNo").onclick=()=>{$("bkMsg").innerHTML=""};
+  };
+}
+
 function renderYou(){
   const st=parseKey(S.profile.start), t=today();
   let wins=0,workouts=0,d=st;
@@ -1116,6 +1277,7 @@ function renderYou(){
     h+='<div class="'+c+(isToday(d)?" today":"")+'" title="'+key(d)+" · "+Math.round(pc*100)+'%">'+d.getDate()+"</div>";
   }
   $("heat").innerHTML=h;
+  renderWeight();renderJournal();renderBackup();
   // form
   const P=S.profile;
   if(document.activeElement!==$("f-name"))$("f-name").value=P.name;
@@ -1226,6 +1388,9 @@ document.addEventListener("click",e=>{
   if(b.dataset.nsex){setNutri({sex:b.dataset.nsex});return}
   if(b.dataset.ngoal!==undefined){setNutri({goal:+b.dataset.ngoal});return}
   if(b.id==="goNeeds"){switchView("tu");setTimeout(()=>{$("needs").scrollIntoView({block:"start"});const c=nutriCfg();if(c.mode==="base")setNutri({mode:"calc"})},60);return}
+  if(b.dataset.jsave){setDone(sel,"medpm",true);toast("Diario salvato. Buonanotte.");return}
+  if(b.dataset.wdel){delete S.weights[b.dataset.wdel];save();renderWeight();return}
+  if(b.dataset.apply){setNutri({mode:"manual",kcal:+b.dataset.apply});renderWeight();toast("Obiettivo aggiornato: "+b.dataset.apply+" kcal");return}
   if(b.dataset.level){S.profile.level=+b.dataset.level;S.setup=true;save();render();renderYou();toast("Livello: "+LEVELS[+b.dataset.level]);return}
   if(b.dataset.v){switchView(b.dataset.v);return}
 });
@@ -1320,9 +1485,16 @@ function bindReset(){$("resetBtn").onclick=()=>{
 function restoreReset(){$("resetRow").innerHTML='<button type="button" class="btn btn-sec" id="resetBtn">Azzera i progressi</button>';bindReset()}
 bindReset();
 
+document.addEventListener("input",e=>{
+  const q=e.target.dataset&&e.target.dataset.j;if(!q)return;
+  const k=key(sel);S.journal[k]=S.journal[k]||{};S.journal[k][q]=e.target.value;save();
+});
+$("wForm").addEventListener("submit",e=>{e.preventDefault();addWeight()});
+bindBackup();
+
 // aggiorna "prossima azione" ogni minuto e al cambio di giorno
 let lastDay=key(today());
-setInterval(()=>{const k=key(today());if(k!==lastDay){if(key(sel)===lastDay)sel=today();lastDay=k}if(!OV)render()},60000);
+setInterval(()=>{const k=key(today());if(k!==lastDay){if(key(sel)===lastDay)sel=today();lastDay=k}const typing=document.activeElement&&/TEXTAREA|INPUT|SELECT/.test(document.activeElement.tagName);if(!OV&&!typing)render()},60000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!OV)render();if(!document.hidden&&OV)lockScreen(true)});
 
 render();

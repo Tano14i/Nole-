@@ -15,6 +15,9 @@ Apri `index.html` in un browser (su telefono o computer). Non serve installare n
 - **Settimana**: il piano dei 7 giorni e la fase del ciclo di 4 settimane (Fondamenta, Costruzione, Intensità, Recupero). Nella scheda *Lista della spesa* trovi tutti gli ingredienti della settimana divisi per reparto, con quantità per 1 persona, spunte salvate settimana per settimana e un pulsante per copiare cosa manca.
 - **Medita**: 7 pratiche guidate con un cerchio che segue il respiro, più un reset da 60 secondi quando sei bloccato.
 - **Il tuo fabbisogno** (in Progressi): scegli porzioni base, calcolo automatico (sesso, età, peso, altezza, attività e obiettivo, con la formula di Mifflin-St Jeor) oppure inserisci tu le kcal. Le dosi delle ricette, i macronutrienti e la lista della spesa si adattano da soli.
+- **Diario del peso** (in Progressi): segni il peso, vedi il grafico con la media di 7 giorni e, dopo almeno 4 pesate in 14 giorni, il coach ti dice se le calorie sono giuste per il tuo obiettivo e propone la correzione con un tocco.
+- **Diario serale**: nella voce delle 22 scrivi cosa è andato bene, cosa migliorare e tre grazie. Rileggi le ultime due settimane in Progressi.
+- **Backup**: «Copia backup» copia tutti i tuoi dati come testo da salvare in una nota o in una mail; «Ripristina da backup» li reinserisce su un altro telefono o browser.
 - **Progressi**: serie di giornate vinte (almeno il 70% del piano), calendario del ciclo e impostazioni (sveglia, momento dell'allenamento, livello, il tuo perché).
 
 ## Avvertenza
