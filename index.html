@@ -2,6 +2,14 @@
 <html lang="it">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Nole Coach">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<!-- inizio contenuto pagina -->
 <title>Nole Coach</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#1D5A3D">
@@ -204,6 +212,13 @@ fieldset.needs legend{font-weight:700;font-size:.9rem;padding:0 6px}
 .jdl dd{margin:0;white-space:pre-wrap;font-size:.93rem}
 .warn{color:var(--warn);font-weight:600}
 
+/* promemoria */
+.remgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px 12px;margin-top:10px}
+.remitem{display:flex;align-items:center;gap:8px;font-size:.92rem;font-weight:500;cursor:pointer}
+.remitem input{width:20px;height:20px;accent-color:var(--court);margin:0;flex:none}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.sel{user-select:all;word-break:break-all}
+
 /* spesa */
 #settSeg button{flex:1 1 0;min-width:0}
 .pane{display:flex;flex-direction:column;gap:16px}
@@ -317,6 +332,10 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
       <button class="iconbtn" id="nextDay" aria-label="Giorno successivo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 5l7 7-7 7"/></svg></button>
     </div>
 
+    <div class="banner" id="remBanner" hidden>
+      <p>Vuoi che ti scriva all'ora di ogni attività, e di nuovo se non hai ancora iniziato?</p>
+      <div class="btnrow"><button class="btn btn-court" id="remBannerOn">Attiva i promemoria</button><button class="btn btn-ghost" id="remBannerNo">No, grazie</button></div>
+    </div>
     <div class="banner" id="firstRun" hidden>
       <p>Il piano è già pronto. Imposta sveglia, livello e il tuo «perché» per renderlo tuo.</p>
       <button class="btn btn-court" id="goSetup">Personalizza</button>
@@ -419,6 +438,27 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
   <!-- TU -->
   <section class="view" id="v-tu" role="tabpanel" aria-labelledby="t-tu" hidden>
     <div class="stats" id="stats"></div>
+
+    <div class="phase card-block" id="appCard">
+      <div class="section-h" style="margin:0"><h2>App e promemoria</h2></div>
+      <p id="appStatus" style="margin:0"></p>
+      <div class="btnrow"><button type="button" class="btn btn-go" id="instBtn" hidden>Installa l'app</button></div>
+      <div class="needs-out"><span id="remState" style="color:var(--ink)"></span></div>
+      <div class="btnrow">
+        <button type="button" class="btn btn-court" id="remToggle">Attiva i promemoria</button>
+        <button type="button" class="btn btn-sec" id="remTest">Prova una notifica</button>
+      </div>
+      <details class="rec-card"><summary><b>Scegli quali attività ricordare</b></summary>
+        <div class="remgrid" id="remList"></div>
+        <label class="remitem" for="remNudge" style="margin-top:8px"><input type="checkbox" id="remNudge"> Spintarella dopo 20 minuti se non hai ancora iniziato</label>
+      </details>
+      <div class="needs-out">
+        <b style="font-size:1rem">Promemoria anche ad app chiusa</b>
+        <span>Il telefono può sospendere l'app quando la chiudi, e con lei le notifiche. Per avvisi sicuri al 100%, aggiungi il programma al calendario del telefono: un evento con avviso per ogni attività, ripetuto ogni settimana.</span>
+        <div class="btnrow"><button type="button" class="btn btn-sec" id="icsBtn">Aggiungi al calendario</button></div>
+        <span>Se cambi sveglia, orario di allenamento o porzioni, scarica di nuovo il calendario e cancella quello vecchio.</span>
+      </div>
+    </div>
     <div class="phase">
       <div class="section-h" style="margin:0"><h2 id="heatTitle">Ciclo 1</h2><span class="eyebrow">28 giorni</span></div>
       <div class="heat" id="heat" style="margin-top:12px"></div>
@@ -825,7 +865,7 @@ function addDays(d,n){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate())
 function diffDays(a,b){return Math.round((parseKey(key(b))-parseKey(key(a)))/864e5)}
 function today(){return parseKey(key(new Date()))}
 
-function defaults(){return{profile:{name:"",wake:"06:30",slot:"mattina",level:0,why:"",start:key(today())},log:{},medMin:{},shop:{},weights:{},journal:{},lastBackup:null,setup:false,sound:true}}
+function defaults(){return{profile:{name:"",wake:"06:30",slot:"mattina",level:0,why:"",start:key(today())},log:{},medMin:{},shop:{},weights:{},journal:{},rem:{on:false,nudge:true,ids:{},dismiss:false},lastBackup:null,setup:false,sound:true}}
 let S=(function(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&s.profile)return Object.assign(defaults(),s)}catch(e){}return defaults()})();
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 
@@ -1000,6 +1040,8 @@ function render(){
   if(view==="sett")renderWeek();
   if(view==="medita")renderMed();
   if(view==="tu")renderYou();
+  $("remBanner").hidden=!(ENV.notif&&!S.rem.on&&!S.rem.dismiss&&isToday(sel));
+  scheduleReminders();
 }
 function startBtn(x){return '<div class="btnrow"><button class="btn btn-court" data-start="'+x.id+'">'+(x.med?"Avvia meditazione guidata":x.rec?"Cucina con il timer · "+x.dur+" min":"Avvia timer · "+x.dur+" min")+'</button></div>'}
 function energy(n){const p=n.p*4,c=n.c*4,f=n.f*9,t=p+c+f||1;return{p:Math.round(p/t*100),c:Math.round(c/t*100),f:Math.round(f/t*100)}}
@@ -1260,6 +1302,97 @@ function bindBackup(){
   };
 }
 
+/* ---------- APP INSTALLABILE E PROMEMORIA ---------- */
+const SITE_URL="https://tano14i.github.io/Nole-/";
+const REM=[["wake","Risveglio"],["medam","Meditazione del mattino"],["colaz","Colazione"],["train","Allenamento"],["pranzo","Pranzo"],["snack","Spuntino"],["cena","Cena"],["medpm","Diario serale"],["sleep","Luci spente"]];
+const ENV=(function(){
+  let framed=true;try{framed=window.self!==window.top}catch(e){}
+  const site=(location.protocol==="https:"||location.hostname==="localhost")&&!framed;
+  return{site,sw:site&&"serviceWorker" in navigator,notif:site&&"Notification" in window,
+    standalone:(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true,
+    ios:/iphone|ipad|ipod/i.test(navigator.userAgent)};
+})();
+let swReg=null,installEvt=null,remTimers=[];
+if(ENV.sw)navigator.serviceWorker.register("sw.js").then(r=>{swReg=r}).catch(()=>{});
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;if(view==="tu")renderApp()});
+window.addEventListener("appinstalled",()=>{installEvt=null;toast("App installata. La trovi tra le tue app.");if(view==="tu")renderApp()});
+
+function remOn(id){return S.rem.on&&S.rem.ids[id]!==false}
+function notify(title,body,tag){
+  const opt={body,tag,icon:"icons/icon-192.png",badge:"icons/icon-192.png",renotify:true};
+  try{if(swReg&&swReg.showNotification)return swReg.showNotification(title,opt);new Notification(title,opt)}catch(e){}
+}
+// i timer funzionano finché l'app è aperta o in background; ad app chiusa vale il calendario
+function scheduleReminders(){
+  remTimers.forEach(clearTimeout);remTimers=[];
+  if(!ENV.notif||!S.rem.on||Notification.permission!=="granted")return;
+  const d=today(),k=key(d),now=Date.now(),plan=buildDay(d);
+  plan.tasks.forEach(x=>{
+    if(!remOn(x.id)||dayLog(k)[x.id])return;
+    const at=d.getTime()+x.t*60000;
+    if(at>now)remTimers.push(setTimeout(()=>{if(!dayLog(k)[x.id])notify(fmt(x.t)+" · "+x.title,x.sum.slice(0,140)+" Tocca per iniziare.","nc-"+k+"-"+x.id)},at-now));
+    const nudge=at+20*60000;
+    if(S.rem.nudge&&nudge>now)remTimers.push(setTimeout(()=>{if(!dayLog(k)[x.id])notify("Ancora da fare: "+x.title,"Non serve la voglia. Fai solo la versione da 2 minuti: "+x.micro,"nc-"+k+"-"+x.id+"-n")},nudge-now));
+  });
+  // a mezzanotte e un minuto riprogramma il giorno nuovo
+  remTimers.push(setTimeout(scheduleReminders,addDays(d,1).getTime()+60000-now));
+}
+async function enableReminders(){
+  if(!ENV.notif){toast("Qui le notifiche non sono disponibili: apri l'app dal sito.");return}
+  let p=Notification.permission;
+  if(p==="default")p=await Notification.requestPermission();
+  if(p!=="granted"){S.rem.on=false;save();renderApp();toast("Notifiche bloccate: abilitale nelle impostazioni del browser per questo sito.");return}
+  S.rem.on=true;S.rem.dismiss=true;save();scheduleReminders();renderApp();render();
+  toast("Promemoria attivi. Ti scrivo all'ora di ogni attività.");
+}
+
+/* calendario .ics: promemoria affidabili anche ad app chiusa */
+function icsEsc(t){return String(t).replace(/\\/g,"\\\\").replace(/;/g,"\;").replace(/,/g,"\\,").replace(/\n/g,"\\n")}
+function icsFold(line){
+  const enc=new TextEncoder();let out="",cur="",len=0;
+  for(const ch of line){const b=enc.encode(ch).length;if(len+b>74){out+=cur+"\r\n ";cur="";len=1}cur+=ch;len+=b}
+  return out+cur;
+}
+function icsDate(d,min){const x=new Date(d.getTime()+min*60000),p=n=>String(n).padStart(2,"0");return x.getFullYear()+p(x.getMonth()+1)+p(x.getDate())+"T"+p(x.getHours())+p(x.getMinutes())+"00"}
+function buildICS(){
+  const BYDAY=["MO","TU","WE","TH","FR","SA","SU"],now=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Nole Coach//IT","CALSCALE:GREGORIAN","X-WR-CALNAME:Nole Coach"];
+  for(let i=0;i<7;i++){
+    const d=addDays(today(),i),wd=(d.getDay()+6)%7,plan=buildDay(d);
+    plan.tasks.forEach(x=>{
+      if(S.rem.ids[x.id]===false)return;
+      L.push("BEGIN:VEVENT","UID:nolecoach-"+x.id+"-"+BYDAY[wd]+"@nolecoach","DTSTAMP:"+now,"DTSTART:"+icsDate(d,x.t),"DURATION:PT"+Math.max(5,x.dur||5)+"M",
+        "RRULE:FREQ=WEEKLY;BYDAY="+BYDAY[wd],icsFold("SUMMARY:"+icsEsc("Nole · "+x.title)),icsFold("DESCRIPTION:"+icsEsc(x.sum+"\n\nVersione da 2 minuti: "+x.micro)),
+        "BEGIN:VALARM","ACTION:DISPLAY",icsFold("DESCRIPTION:"+icsEsc(x.title)),"TRIGGER:PT0M","END:VALARM","END:VEVENT");
+    });
+  }
+  L.push("END:VCALENDAR");
+  return L.join("\r\n")+"\r\n";
+}
+function downloadICS(){
+  if(!ENV.site){toast("Il file calendario si scarica dall'app installata o dal sito.");return}
+  const url=URL.createObjectURL(new Blob([buildICS()],{type:"text/calendar"}));
+  const a=document.createElement("a");a.href=url;a.download="nole-coach.ics";document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  toast("Calendario scaricato. Aprilo per aggiungere gli eventi.");
+}
+
+function renderApp(){
+  const st=$("appStatus"),ib=$("instBtn");
+  ib.hidden=!installEvt;
+  if(!ENV.site)st.innerHTML='Questa è l\'anteprima: qui il telefono non permette di installare l\'app né di inviare notifiche. Apri il sito <b class="mono sel">'+SITE_URL+'</b> dal telefono e installala da lì.';
+  else if(ENV.standalone)st.innerHTML="<b>App installata.</b> Funziona anche offline.";
+  else if(installEvt)st.textContent="Puoi installare Nole Coach sul telefono: la apri come un'app, anche senza connessione.";
+  else if(ENV.ios)st.innerHTML="Per installarla su iPhone: tocca <b>Condividi</b> in Safari, poi <b>Aggiungi alla schermata Home</b>. Le notifiche su iPhone funzionano solo dall'app installata (iOS 16.4 o successivo).";
+  else st.textContent="Per installarla apri il menu del browser e scegli «Installa app» o «Aggiungi a schermata Home».";
+  const perm=ENV.notif?Notification.permission:"na";
+  $("remToggle").textContent=S.rem.on&&perm==="granted"?"Disattiva i promemoria":"Attiva i promemoria";
+  $("remToggle").disabled=!ENV.notif;$("remTest").disabled=!(ENV.notif&&perm==="granted");$("icsBtn").disabled=!ENV.site;
+  $("remState").innerHTML=!ENV.notif?"Non disponibili in questa anteprima.":perm==="denied"?'<span class="warn">Notifiche bloccate dal browser: riabilitale nelle impostazioni del sito.</span>':S.rem.on&&perm==="granted"?"<b>Attivi.</b> Ti avviso all'ora di ogni attività"+(S.rem.nudge?" e di nuovo dopo 20 minuti se non l'hai ancora spuntata.":"."):"Spenti.";
+  $("remList").innerHTML=REM.map(r=>'<label class="remitem" for="rm-'+r[0]+'"><input type="checkbox" id="rm-'+r[0]+'" data-rem="'+r[0]+'"'+(S.rem.ids[r[0]]!==false?" checked":"")+"> "+r[1]+"</label>").join("");
+  $("remNudge").checked=!!S.rem.nudge;
+}
+
 function renderYou(){
   const st=parseKey(S.profile.start), t=today();
   let wins=0,workouts=0,d=st;
@@ -1277,7 +1410,7 @@ function renderYou(){
     h+='<div class="'+c+(isToday(d)?" today":"")+'" title="'+key(d)+" · "+Math.round(pc*100)+'%">'+d.getDate()+"</div>";
   }
   $("heat").innerHTML=h;
-  renderWeight();renderJournal();renderBackup();
+  renderWeight();renderJournal();renderBackup();renderApp();
   // form
   const P=S.profile;
   if(document.activeElement!==$("f-name"))$("f-name").value=P.name;
@@ -1391,6 +1524,12 @@ document.addEventListener("click",e=>{
   if(b.dataset.jsave){setDone(sel,"medpm",true);toast("Diario salvato. Buonanotte.");return}
   if(b.dataset.wdel){delete S.weights[b.dataset.wdel];save();renderWeight();return}
   if(b.dataset.apply){setNutri({mode:"manual",kcal:+b.dataset.apply});renderWeight();toast("Obiettivo aggiornato: "+b.dataset.apply+" kcal");return}
+  if(b.id==="remToggle"){if(S.rem.on&&ENV.notif&&Notification.permission==="granted"){S.rem.on=false;save();scheduleReminders();renderApp();render();toast("Promemoria spenti")}else enableReminders();return}
+  if(b.id==="remBannerOn"){enableReminders();return}
+  if(b.id==="remBannerNo"){S.rem.dismiss=true;save();render();toast("Va bene. Li trovi in Progressi se cambi idea.");return}
+  if(b.id==="remTest"){notify("Nole Coach","Così ti arriveranno i promemoria. Ora fai la prossima cosa della lista.","nc-test");return}
+  if(b.id==="icsBtn"){downloadICS();return}
+  if(b.id==="instBtn"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;renderApp()})}return}
   if(b.dataset.level){S.profile.level=+b.dataset.level;S.setup=true;save();render();renderYou();toast("Livello: "+LEVELS[+b.dataset.level]);return}
   if(b.dataset.v){switchView(b.dataset.v);return}
 });
@@ -1404,6 +1543,8 @@ $("prevDay").onclick=()=>{sel=addDays(sel,-1);openTask=null;$("excuseBox").hidde
 $("nextDay").onclick=()=>{sel=addDays(sel,1);openTask=null;$("excuseBox").hidden=true;render()};
 $("goToday").onclick=()=>{sel=today();openTask=null;render()};
 document.addEventListener("change",e=>{
+  if(e.target.dataset&&e.target.dataset.rem){S.rem.ids[e.target.dataset.rem]=e.target.checked;save();scheduleReminders();return}
+  if(e.target.id==="remNudge"){S.rem.nudge=e.target.checked;save();scheduleReminders();renderApp();return}
   const id=e.target.dataset&&e.target.dataset.shop;if(!id)return;
   const k=weekKey();S.shop[k]=S.shop[k]||{};
   if(e.target.checked)S.shop[k][id]=true;else delete S.shop[k][id];

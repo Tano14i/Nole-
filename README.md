@@ -20,6 +20,19 @@ Apri `index.html` in un browser (su telefono o computer). Non serve installare n
 - **Backup**: «Copia backup» copia tutti i tuoi dati come testo da salvare in una nota o in una mail; «Ripristina da backup» li reinserisce su un altro telefono o browser.
 - **Progressi**: serie di giornate vinte (almeno il 70% del piano), calendario del ciclo e impostazioni (sveglia, momento dell'allenamento, livello, il tuo perché).
 
+## Installarla sul telefono, con i promemoria
+
+L'app è una web app installabile: funziona offline e manda notifiche all'ora di ogni attività, più una «spintarella» dopo 20 minuti se non l'hai ancora iniziata.
+
+1. Pubblica il sito con GitHub Pages: **Settings → Pages → Build and deployment → Deploy from a branch**, scegli il branch con questi file e la cartella `/ (root)`, poi **Save**. Dopo un paio di minuti il sito è su `https://tano14i.github.io/Nole-/`.
+   - GitHub Pages è gratuito per i repository pubblici. Per un repository privato serve GitHub Pro.
+2. Apri l'indirizzo dal telefono:
+   - **Android (Chrome)**: tocca «Installa l'app» in Progressi, oppure menu ⋮ → «Installa app».
+   - **iPhone (Safari)**: Condividi → «Aggiungi alla schermata Home». Le notifiche funzionano solo dall'app installata, con iOS 16.4 o successivo.
+3. In **Progressi → App e promemoria** tocca «Attiva i promemoria» e consenti le notifiche.
+
+Le notifiche arrivano finché il telefono tiene l'app attiva o in background. Per avvisi garantiti anche ad app chiusa, usa **«Aggiungi al calendario»**: scarica un file `.ics` con un evento settimanale e un avviso per ogni attività.
+
 ## Avvertenza
 
 Non è un programma ufficiale né affiliato a Novak Djokovic. Non sostituisce il parere di medico o nutrizionista.
