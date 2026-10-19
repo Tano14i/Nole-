@@ -26,6 +26,7 @@
   --court:#3FA673; --court-ink:#06140D; --accent:#BA9DE8; --accent-soft:#2A2140; --ball:#D4E157; --ball-ink:#1B2A00; --warn:#E59A5E; color-scheme:dark}
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -129,6 +130,29 @@ h1,h2,h3{font-family:var(--f-display);line-height:1.1;margin:0;text-wrap:balance
 .phases{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
 .phases div{border-radius:8px;padding:6px;text-align:center;font-size:.72rem;font-weight:700;background:var(--surface-2);color:var(--muted)}
 .phases div.on{background:var(--ink);color:var(--bg)}
+
+/* spesa */
+#settSeg button{flex:1 1 120px}
+.pane{display:flex;flex-direction:column;gap:16px}
+.shop-sum{background:var(--surface);border:2px solid var(--ink);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px}
+.shop-sum-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.shop-sum-top b{font-size:1.6rem}
+.shop-sum-top span{color:var(--muted);font-weight:600;font-size:.9rem}
+.hide-toggle{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.88rem;color:var(--muted)}
+.hide-toggle input{width:18px;height:18px;accent-color:var(--court)}
+.shop-text{width:100%;min-height:140px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:var(--f-mono);font-size:.82rem}
+.shop-groups{display:flex;flex-direction:column;gap:12px}
+.shop-group{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.shop-group h3{font-size:1rem;font-weight:800;display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
+.shop-group h3 span{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);font-weight:700}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.item:last-child{border-bottom:0}
+.item input{width:22px;height:22px;accent-color:var(--court);margin:0}
+.item .nm{min-width:0}
+.item .nm small{display:block;color:var(--muted);font-size:.78rem}
+.item .q{font-family:var(--f-mono);font-weight:700;font-size:.82rem;white-space:nowrap;color:var(--muted)}
+.item.got .nm b{text-decoration:line-through;color:var(--muted);font-weight:500}
+.item .nm b{font-weight:600}
 
 /* meditate */
 .medlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
@@ -253,17 +277,22 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
 
   <!-- SETTIMANA -->
   <section class="view" id="v-sett" role="tabpanel" aria-labelledby="t-sett" hidden>
-    <div class="phase">
-      <div class="eyebrow" id="phaseEyebrow">Ciclo 1 · Settimana 1 di 4</div>
-      <h2 id="phaseTitle" style="font-size:1.35rem;font-weight:800;margin-top:4px">Fondamenta</h2>
-      <p id="phaseText"></p>
-      <div class="phases" id="phaseBar"></div>
+    <div class="seg" id="settSeg" role="group" aria-label="Vista settimana">
+      <button type="button" data-pane="plan" aria-pressed="true">Piano</button>
+      <button type="button" data-pane="shop" aria-pressed="false">Lista della spesa</button>
     </div>
     <div class="section-h"><h2 id="weekTitle">Questa settimana</h2>
       <div style="display:flex;gap:6px">
         <button class="iconbtn" id="prevWeek" aria-label="Settimana precedente"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg></button>
         <button class="iconbtn" id="nextWeek" aria-label="Settimana successiva"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 5l7 7-7 7"/></svg></button>
       </div>
+    </div>
+    <div class="pane" id="sett-plan">
+    <div class="phase">
+      <div class="eyebrow" id="phaseEyebrow">Ciclo 1 · Settimana 1 di 4</div>
+      <h2 id="phaseTitle" style="font-size:1.35rem;font-weight:800;margin-top:4px">Fondamenta</h2>
+      <p id="phaseText"></p>
+      <div class="phases" id="phaseBar"></div>
     </div>
     <div class="weekgrid" id="weekGrid"></div>
     <div class="phase">
@@ -276,6 +305,21 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
         <li>Acqua a temperatura ambiente o tiepida durante tutto il giorno.</li>
         <li>Mangia lentamente, mastica bene, niente telefono a tavola.</li>
       </ul>
+    </div>
+    </div>
+    <div class="pane" id="sett-shop" hidden>
+      <div class="shop-sum">
+        <div class="shop-sum-top"><div><div class="eyebrow">Per 1 persona · 7 giorni</div><b class="mono" id="shopCount">0/0</b> <span>nel carrello</span></div>
+          <label class="hide-toggle"><input type="checkbox" id="shopHide"> Nascondi già presi</label></div>
+        <div class="bar"><i id="shopBar" style="width:0"></i></div>
+        <div class="btnrow">
+          <button type="button" class="btn btn-court" id="shopCopy">Copia cosa manca</button>
+          <button type="button" class="btn btn-sec" id="shopReset">Azzera spunte</button>
+        </div>
+        <textarea id="shopText" class="shop-text" readonly hidden aria-label="Lista da copiare"></textarea>
+        <p class="note" style="margin:0">Consiglio del coach: fai la spesa nel weekend e cuoci in anticipo riso, quinoa e legumi. Cibo pronto in frigo vuol dire una scusa in meno.</p>
+      </div>
+      <div class="shop-groups" id="shopGroups"></div>
     </div>
   </section>
 
@@ -443,6 +487,84 @@ const MEALS={
     "Insalata tiepida di quinoa, ceci, zucca e cavolo nero"]
 };
 
+// lista della spesa per 1 persona e 7 giorni: [id, nome, quantità, a cosa serve]
+const SHOP=[
+  ["Frutta",[
+    ["banane","Banane","5","colazioni di lun, mar, dom · spuntino mer"],
+    ["mele","Mele","3","frullato mar, porridge mer, spuntino lun"],
+    ["bosco","Frutti di bosco (anche surgelati)","400 g","colazioni lun e dom · spuntino gio"],
+    ["mirtilli","Mirtilli","125 g","colazione sab"],
+    ["kiwi","Kiwi","2","colazione sab"],
+    ["mango","Mango","1","colazione gio"],
+    ["pera","Pera","1","spuntino sab"],
+    ["limoni","Limoni","3","acqua e limone, quinoa di mar"],
+    ["avocado","Avocado","4","colazione, pranzo, spuntino e cena di ven"],
+    ["datteri","Datteri","1 confezione","spuntino dom"]]],
+  ["Verdura ed erbe",[
+    ["spinaci","Spinaci","300 g","frullato mar, curry mer"],
+    ["zucchine","Zucchine","2","pranzo lun"],
+    ["broccoli","Broccoli","2","pranzo gio, cena lun"],
+    ["melanzane","Melanzane","2","pranzi mar e sab"],
+    ["peperoni","Peperoni","1","verdure grigliate mar"],
+    ["pomodorini","Pomodorini","250 g","colazione ven"],
+    ["pomodori","Pomodori maturi","4","pranzo sab"],
+    ["carote","Carote","6","bowl ven, hummus mar, minestrone"],
+    ["sedano","Sedano","1 cespo","spuntino mar, succo del mattino"],
+    ["cavolo","Cavolo cappuccio","¼","bowl ven"],
+    ["cavolonero","Cavolo nero","1 mazzo","cena dom"],
+    ["zucca","Zucca","400 g","cena dom"],
+    ["patata","Patata dolce","1","cena lun"],
+    ["funghi","Funghi","250 g","pranzo dom"],
+    ["finocchi","Finocchi","2","insalata dom"],
+    ["insalata","Insalata verde e rucola","2 buste","pranzo lun, cena mar"],
+    ["stagione","Verdure di stagione","1,5 kg","cartoccio gio, tofu mer, minestrone sab"],
+    ["erbe","Basilico, prezzemolo, zenzero","1 mazzo/pezzo","pesto, funghi, tofu"],
+    ["aglio","Aglio e peperoncino","q.b.","pranzo gio"]]],
+  ["Cereali senza glutine",[
+    ["avena","Fiocchi d'avena senza glutine (certificati)","250 g","colazioni lun e dom"],
+    ["saraceno","Grano saraceno in chicchi","100 g","porridge mer"],
+    ["quinoa","Quinoa","200 g","pranzo mar, cena dom"],
+    ["soffiata","Quinoa soffiata","1 confezione","colazione sab"],
+    ["riso","Riso integrale","250 g","pranzo e cena mer"],
+    ["risonero","Riso nero","80 g","bowl ven"],
+    ["miglio","Miglio","80 g","pranzo dom"],
+    ["pastariso","Pasta di riso integrale","100 g","pranzo lun"],
+    ["pastasar","Pasta di grano saraceno","100 g","pranzo gio"],
+    ["pastaleg","Pasta di legumi","100 g","pranzo sab"],
+    ["pane","Pane senza glutine","1 confezione","colazione ven"],
+    ["gallette","Gallette di riso","1 confezione","colazione mar, spuntino ven"]]],
+  ["Legumi, pesce e proteine",[
+    ["ceci","Ceci cotti","3 vasetti","pranzo mar, cene sab e dom"],
+    ["lenticrosse","Lenticchie rosse","100 g","curry mer"],
+    ["lenticchie","Lenticchie","100 g","zuppa mar"],
+    ["fagioli","Fagioli neri cotti","1 vasetto","burger ven"],
+    ["edamame","Edamame","100 g","bowl ven"],
+    ["tofu","Tofu","200 g","cena mer"],
+    ["hummus","Hummus","1 vaschetta","spuntino mar"],
+    ["salmone","Salmone (o tempeh)","1 filetto","cena lun"],
+    ["branzino","Branzino (o ceci in più)","1","cena gio"]]],
+  ["Frutta secca e semi",[
+    ["noci","Noci","100 g","colazioni, spuntini gio e sab"],
+    ["mandorle","Mandorle","100 g","colazione sab, spuntino lun"],
+    ["nocciole","Nocciole","50 g","spuntino dom"],
+    ["brasile","Noci del Brasile","3","spuntino sab"],
+    ["pinoli","Pinoli","30 g","pesto lun"],
+    ["chia","Semi di chia","60 g","colazioni lun e gio"],
+    ["lino","Semi di lino","30 g","frullato mar"],
+    ["zuccasemi","Semi di zucca","30 g","colazione gio"],
+    ["sesamo","Semi di sesamo","20 g","colazione ven"],
+    ["burromand","Burro di mandorle","1 vasetto","frullato mar, spuntino mer"],
+    ["tahina","Tahina","1 vasetto","bowl ven"]]],
+  ["Alternative vegetali",[
+    ["bevmand","Bevanda di mandorla","1 l","colazione lun, porridge"],
+    ["cocco","Latte di cocco","1 lattina","frullato mar, budino gio"],
+    ["yogurt","Yogurt di cocco","1 vasetto","colazione sab"]]],
+  ["Dispensa",[
+    ["olio","Olio extravergine d'oliva","se manca","tutti i giorni"],
+    ["miele","Miele","se manca","colazione lun"],
+    ["spezie","Cannella e curry","se mancano","porridge mer, curry mer"]]]
+];
+
 // p = schema respiratorio [inspira, trattieni, espira, pausa] in secondi
 const MEDS=[
   {id:"box",name:"Respiro quadrato",sum:"Calma e lucidità in quattro tempi uguali.",p:[4,4,4,4],steps:[
@@ -491,11 +613,11 @@ function addDays(d,n){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate())
 function diffDays(a,b){return Math.round((parseKey(key(b))-parseKey(key(a)))/864e5)}
 function today(){return parseKey(key(new Date()))}
 
-function defaults(){return{profile:{name:"",wake:"06:30",slot:"mattina",level:0,why:"",start:key(today())},log:{},medMin:{},setup:false,sound:true}}
+function defaults(){return{profile:{name:"",wake:"06:30",slot:"mattina",level:0,why:"",start:key(today())},log:{},medMin:{},shop:{},setup:false,sound:true}}
 let S=(function(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&s.profile)return Object.assign(defaults(),s)}catch(e){}return defaults()})();
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 
-let sel=today(), weekSel=today(), view="oggi", openTask=null, excuseIdx=0;
+let sel=today(), weekSel=today(), view="oggi", openTask=null, excuseIdx=0, pane="plan";
 
 /* ---------- COSTRUZIONE GIORNATA ---------- */
 function toMin(hhmm){const p=(hhmm||"06:30").split(":").map(Number);return p[0]*60+(p[1]||0)}
@@ -685,6 +807,37 @@ function renderWeek(){
       '<div class="bar"><i style="width:'+Math.round(pc*100)+'%"></i></div></div></button>';
   }
   $("weekGrid").innerHTML=h;
+  ["plan","shop"].forEach(n=>{$("sett-"+n).hidden=n!==pane});
+  $("settSeg").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.pane===pane));
+  if(pane==="shop")renderShop();
+}
+
+/* ---------- LISTA DELLA SPESA ---------- */
+function weekKey(){return key(addDays(weekSel,-((weekSel.getDay()+6)%7)))}
+function shopLog(){return S.shop[weekKey()]||{}}
+function renderShop(){
+  const got=shopLog(), hide=$("shopHide").checked;
+  let tot=0,n=0,h="";
+  SHOP.forEach(g=>{
+    const items=g[1], gGot=items.filter(i=>got[i[0]]).length;
+    tot+=items.length;n+=gGot;
+    const vis=items.filter(i=>!(hide&&got[i[0]]));
+    if(!vis.length)return;
+    h+='<div class="shop-group"><h3>'+esc(g[0])+"<span>"+gGot+"/"+items.length+"</span></h3>"+vis.map(i=>
+      '<label class="item'+(got[i[0]]?" got":"")+'" for="sh-'+i[0]+'"><input type="checkbox" id="sh-'+i[0]+'" data-shop="'+i[0]+'"'+(got[i[0]]?" checked":"")+'>'+
+      '<span class="nm"><b>'+esc(i[1])+"</b><small>"+esc(i[3])+'</small></span><span class="q">'+esc(i[2])+"</span></label>").join("")+"</div>";
+  });
+  if(!h)h='<div class="shop-group"><h3>Spesa completata</h3><p class="note" style="margin:0">Hai tutto. Ora prepara in anticipo riso, quinoa e legumi per la settimana.</p></div>';
+  $("shopGroups").innerHTML=h;
+  $("shopCount").textContent=n+"/"+tot;
+  $("shopBar").style.width=Math.round(n/tot*100)+"%";
+}
+function shopMissing(){
+  const got=shopLog();
+  return "Lista della spesa · Nole Coach\n"+SHOP.map(g=>{
+    const m=g[1].filter(i=>!got[i[0]]);
+    return m.length?"\n"+g[0].toUpperCase()+"\n"+m.map(i=>"- "+i[1]+" ("+i[2]+")").join("\n"):"";
+  }).join("")+"\n";
 }
 
 /* ---------- MEDITA ---------- */
@@ -821,6 +974,7 @@ document.addEventListener("click",e=>{
   if(b.dataset.day){sel=parseKey(b.dataset.day);openTask=null;switchView("oggi");return}
   if(b.dataset.med){medSel=b.dataset.med;renderMed();return}
   if(b.dataset.dur){durSel=+b.dataset.dur;renderMed();return}
+  if(b.dataset.pane){pane=b.dataset.pane;$("shopText").hidden=true;renderWeek();return}
   if(b.dataset.slot){S.profile.slot=b.dataset.slot;S.setup=true;save();render();renderYou();toast("Orari aggiornati");return}
   if(b.dataset.level){S.profile.level=+b.dataset.level;S.setup=true;save();render();renderYou();toast("Livello: "+LEVELS[+b.dataset.level]);return}
   if(b.dataset.v){switchView(b.dataset.v);return}
@@ -834,6 +988,21 @@ function switchView(v){
 $("prevDay").onclick=()=>{sel=addDays(sel,-1);openTask=null;$("excuseBox").hidden=true;render()};
 $("nextDay").onclick=()=>{sel=addDays(sel,1);openTask=null;$("excuseBox").hidden=true;render()};
 $("goToday").onclick=()=>{sel=today();openTask=null;render()};
+document.addEventListener("change",e=>{
+  const id=e.target.dataset&&e.target.dataset.shop;if(!id)return;
+  const k=weekKey();S.shop[k]=S.shop[k]||{};
+  if(e.target.checked)S.shop[k][id]=true;else delete S.shop[k][id];
+  save();renderShop();
+  const left=SHOP.reduce((a,g)=>a+g[1].filter(i=>!S.shop[k][i[0]]).length,0);
+  if(e.target.checked&&left===0)toast("Spesa fatta. La settimana parte già in vantaggio.");
+});
+$("shopHide").addEventListener("change",renderShop);
+$("shopCopy").onclick=()=>{
+  const txt=shopMissing(),ta=$("shopText");
+  const fallback=()=>{ta.value=txt;ta.hidden=false;ta.focus();ta.select();toast("Seleziona e copia il testo qui sotto")};
+  try{navigator.clipboard.writeText(txt).then(()=>{ta.hidden=true;toast("Lista copiata: incollala dove vuoi")},fallback)}catch(err){fallback()}
+};
+$("shopReset").onclick=()=>{delete S.shop[weekKey()];save();renderShop();toast("Spunte azzerate per questa settimana")};
 $("prevWeek").onclick=()=>{weekSel=addDays(weekSel,-7);renderWeek()};
 $("nextWeek").onclick=()=>{weekSel=addDays(weekSel,7);renderWeek()};
 $("goSetup").onclick=()=>{switchView("tu");setTimeout(()=>$("f-name").focus(),60)};

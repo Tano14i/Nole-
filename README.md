@@ -11,7 +11,7 @@ Apri `index.html` in un browser (su telefono o computer). Non serve installare n
   - *Inizia ora*: avvia il timer dell'attività.
   - *Solo 2 minuti*: una versione mini, poi decidi se continuare.
   - *Non ho voglia*: il coach risponde e ti ricorda il tuo «perché».
-- **Settimana**: il piano dei 7 giorni e la fase del ciclo di 4 settimane (Fondamenta, Costruzione, Intensità, Recupero).
+- **Settimana**: il piano dei 7 giorni e la fase del ciclo di 4 settimane (Fondamenta, Costruzione, Intensità, Recupero). Nella scheda *Lista della spesa* trovi tutti gli ingredienti della settimana divisi per reparto, con quantità per 1 persona, spunte salvate settimana per settimana e un pulsante per copiare cosa manca.
 - **Medita**: 7 pratiche guidate con un cerchio che segue il respiro, più un reset da 60 secondi quando sei bloccato.
 - **Progressi**: serie di giornate vinte (almeno il 70% del piano), calendario del ciclo e impostazioni (sveglia, momento dell'allenamento, livello, il tuo perché).
 
