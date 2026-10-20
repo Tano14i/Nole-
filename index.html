@@ -603,6 +603,7 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
       <button class="btn btn-sec" id="ovPause" style="flex:1">Pausa</button>
       <button class="btn btn-go" id="ovDone" style="flex:2">Fatto</button>
     </div>
+    <button class="btn btn-ghost" id="ovVoice" hidden>Attiva la guida vocale e metti il telefono a faccia in giù</button>
     <div id="ovList"></div>
   </div>
 </div>
@@ -906,6 +907,14 @@ const GENERIC=[
   "La costanza batte l'intensità. Ogni giorno, anche poco."
 ];
 
+// rituale del risveglio: [indicazione, secondi]
+const RITUAL=[
+  ["Bevi un grande bicchiere d'acqua tiepida. Se vuoi, succo di sedano o acqua e limone.",45],
+  ["Apri la finestra e fai 5 respiri lenti e profondi.",60],
+  ["Un minuto di gratitudine: una persona, una cosa del tuo corpo e una cosa di oggi per cui dire grazie.",60],
+  ["Metti il telefono a faccia in giù. Da qui è solo una guida: niente social, mail e notizie.",15]
+];
+
 /* ---------- STATO ---------- */
 const LS="nolecoach.v1";
 function key(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
@@ -944,9 +953,9 @@ function buildDay(d){
   const woDur=Math.round(wo.dur[lvl]*(I.week===3?.85:1));
   const R={colazione:recipeFor("colazione",I.wd),pranzo:recipeFor("pranzo",I.wd),spuntino:recipeFor("spuntino",I.wd),cena:recipeFor("cena",I.wd)};
   const tasks=[
-    {id:"wake",t:W,kind:"rituale",title:"Risveglio da campione",dur:5,
-      sum:"Acqua tiepida, un minuto di gratitudine, niente telefono per 30 minuti.",
-      list:["Appena sveglio bevi un grande bicchiere d'acqua tiepida.","Facoltativo: un bicchiere di succo di sedano o acqua e limone.","Apri la finestra e fai 5 respiri profondi.","Pensa a una cosa per cui sei grato.","Il telefono resta lontano per i primi 30 minuti."],
+    {id:"wake",t:W,kind:"rituale",title:"Risveglio da campione",dur:3,seq:RITUAL,
+      sum:"3 minuti guidati: acqua, respiri alla finestra, gratitudine. Poi telefono a faccia in giù: per 30 minuti niente social, mail e notizie.",
+      list:RITUAL.map(r=>r[0]+" ("+(r[1]>=60?r[1]/60+" min":r[1]+" s")+")").concat(["Avvia il rituale e lascia il telefono a faccia in giù: con la guida vocale ti basta ascoltare. Alla fine parte la meditazione."]),
       micro:"Alzati e bevi un bicchiere d'acqua. Basta questo per iniziare."},
     {id:"medam",t:W+15,kind:"mente",title:"Meditazione: "+med.name,dur:medMin,med:med,
       sum:med.sum+" "+medMin+" minuti.",list:med.steps,
@@ -972,7 +981,7 @@ function buildDay(d){
       micro:"Scrivi una sola riga: cosa è andato bene oggi."},
     {id:"sleep",t:W+960,kind:"sonno",title:"Luci spente",dur:5,
       sum:"Stessa ora ogni sera. Schermi spenti, stanza fresca e buia.",
-      list:["Schermi spenti 30 minuti prima.","Prepara i vestiti per l'allenamento di domani: domattina avrai una scusa in meno.","Stanza fresca, buia e silenziosa.","Punta a 7–8 ore di sonno."],
+      list:["Schermi spenti 30 minuti prima.","Prepara i vestiti per l'allenamento di domani: domattina avrai una scusa in meno.","Metti un bicchiere d'acqua sul comodino: il primo gesto di domani è già pronto.","Stanza fresca, buia e silenziosa.","Punta a 7–8 ore di sonno."],
       micro:"Metti il telefono in carica fuori dalla camera."}
   ];
   return{info:I,tasks,wo,med,medMin};
@@ -1177,7 +1186,7 @@ function coachLine(d,plan,pct){
   if(pct===1)return "Giornata completa, "+n+". È il lavoro che nessuno vede a fare la differenza.";
   if(pct>=.7)return "Giornata già vinta. Chiudi in bellezza e vai a dormire fiero.";
   if(I.idx===0&&pct===0)return "Giorno 1, "+n+". Non devi cambiare vita oggi. Devi solo fare la prossima cosa della lista.";
-  if(h<11&&pct===0)return "Buongiorno "+n+". La giornata si decide nei primi 30 minuti: acqua, respiro, niente telefono.";
+  if(h<11&&pct===0)return "Buongiorno "+n+". La giornata si decide nei primi 30 minuti: avvia il rituale, poi telefono a faccia in giù e niente social.";
   if(h>=18&&pct<.4)return "Non è troppo tardi. Scegli una cosa sola qui sotto e falla adesso. Una.";
   if(I.wd===6)return "Domenica: si recupera. Riposare bene fa parte del piano, non è una pausa dal piano.";
   return GENERIC[((I.idx%GENERIC.length)+GENERIC.length)%GENERIC.length];
@@ -1683,6 +1692,8 @@ function openOverlay(o){
   $("ovList").innerHTML=o.list||"";
   $("ovMsg").textContent=o.med?o.med.steps[0]:(o.msg||"");
   hush();if(o.med)speak(o.med.steps[0]);
+  if(o.seq){OV.seqI=0;$("ovMsg").textContent=o.seq[0][0];speak(o.seq[0][0]);$("ovDone").textContent=o.next?"Fatto · passa alla meditazione":"Fatto"}
+  $("ovVoice").hidden=!((o.seq||o.med)&&VOICE_OK&&!S.voice);
   OV.end=Date.now()+o.secs*1000;
   OV.tick=setInterval(tick,250);
   if(o.med)breathLoop(0);
@@ -1698,6 +1709,10 @@ function tick(){
   if(OV.med){
     const el=OV.secs-OV.left, every=Math.max(15,OV.secs/OV.med.steps.length), i=Math.min(OV.med.steps.length-1,Math.floor(el/every));
     if(i!==OV.msgI){OV.msgI=i;$("ovMsg").textContent=OV.med.steps[i];speak(OV.med.steps[i])}
+  }
+  if(OV.seq){
+    let el=OV.secs-OV.left,i=0;while(i<OV.seq.length-1&&el>=OV.seq[i][1]){el-=OV.seq[i][1];i++}
+    if(i!==OV.seqI){OV.seqI=i;$("ovMsg").textContent=OV.seq[i][0];bell(660);speak(OV.seq[i][0])}
   }
   if(OV.left<=0)finish();
 }
@@ -1721,6 +1736,9 @@ function finish(){
     $("ovMsg").textContent="Due minuti fatti. Hai già battuto la procrastinazione. Vuoi continuare con la versione completa?";
     $("ovDone").textContent="Continua";$("ovPause").textContent="Basta così";
     o.state="miniEnd";
+  }else if(o.seq){
+    const t=o.next?"Rituale fatto. Ora la meditazione: telefono giù, ascolta e basta.":"Rituale fatto. Buona giornata.";
+    $("ovMsg").textContent=t;speak(t);$("ovDone").textContent=o.next?"Avvia la meditazione":"Fatto";o.state="end";
   }else{
     $("ovMsg").textContent=o.med?"Fine. Resta un attimo in silenzio prima di alzarti.":"Tempo finito. Segna come fatto e passa alla prossima.";
     if(o.med){$("orbTxt").textContent="Fine";speak("Fine. Resta un attimo in silenzio prima di alzarti.")}
@@ -1736,6 +1754,12 @@ function startTask(id,mini){
   const plan=buildDay(sel),x=plan.tasks.find(t=>t.id===id);if(!x)return;
   if(mini){openOverlay({title:x.title,eyebrow:"Versione 2 minuti",secs:120,mini:true,task:id,day:sel,msg:x.micro});return}
   if(x.med){openOverlay({title:x.med.name,eyebrow:breathLabel(x.med.p),secs:x.dur*60,med:x.med,task:id,day:sel});return}
+  if(x.seq){
+    const nextId=!dayLog(key(sel)).medam&&isToday(sel)?"medam":null;
+    openOverlay({title:x.title,eyebrow:"Rituale del mattino · 3 minuti",secs:x.seq.reduce((a,r)=>a+r[1],0),seq:x.seq,task:id,day:sel,next:nextId,
+      list:'<div class="phase"><ol class="steps">'+x.seq.map(r=>"<li>"+esc(r[0])+' <span class="mono rec-min">'+(r[1]>=60?r[1]/60+" min":r[1]+" s")+"</span></li>").join("")+"</ol></div>"});
+    return;
+  }
   let list="";
   if(x.ex)list='<div class="phase"><div class="eyebrow">Esercizi · tocca per la spiegazione</div>'+x.ex.map(e=>exHTML(e,+S.profile.level||0,WEEKS[plan.info.week].factor)).join("")+'<p class="tip" style="margin-top:8px">'+esc(x.tip)+"</p></div>";
   else if(x.rec)list='<div class="phase">'+recipeHTML(x.rec,x.eat)+"</div>";
@@ -1822,6 +1846,7 @@ $("nextExcuse").onclick=()=>{
 $("sosBtn").onclick=()=>openOverlay({title:SOS.name,eyebrow:breathLabel(SOS.p),secs:60,med:SOS});
 $("medStart").onclick=()=>{const m=MEDS.find(x=>x.id===medSel);openOverlay({title:m.name,eyebrow:breathLabel(m.p),secs:durSel*60,med:m,task:"medam",day:today()})};
 $("ovClose").onclick=()=>closeOverlay();
+$("ovVoice").onclick=()=>{S.voice=true;save();$("ovVoice").hidden=true;speak($("ovMsg").textContent);toast("Guida vocale attiva. Puoi girare il telefono.")};
 $("ovPause").onclick=()=>{
   if(!OV)return;
   if(OV.state==="miniEnd"){closeOverlay(true);toast("Bene così. Due minuti valgono più di zero.");render();return}
@@ -1835,7 +1860,9 @@ $("ovDone").onclick=()=>{
   if(o.mini&&o.state!=="end"){closeOverlay(true);startTask(o.task,false);return}
   if(o.med&&o.day&&!o.state){const el=Math.round((o.secs-o.left)/60);if(el>0){const k=key(o.day);S.medMin[k]=(S.medMin[k]||0)+el;save()}}
   const d=o.day,t=o.task;closeOverlay(true);
-  if(t&&d){if(!dayLog(key(d))[t])setDone(d,t,true);else render();toast(o.mini?"Iniziato è già mezzo fatto.":"Fatto. Avanti il prossimo.")}
+  if(t&&d){if(!dayLog(key(d))[t])setDone(d,t,true);else render();
+    if(o.next&&!dayLog(key(d))[o.next]){startTask(o.next,false);return}
+    toast(o.mini?"Iniziato è già mezzo fatto.":"Fatto. Avanti il prossimo.")}
   else{render();toast("Ben fatto. Ora la prossima azione.")}
 };
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&OV)closeOverlay()});
