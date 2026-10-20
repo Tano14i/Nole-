@@ -24,6 +24,8 @@ Apri `index.html` in un browser (su telefono o computer). Non serve installare n
 - **Allenamento che si adatta**: dopo l'allenamento scegli «troppo facile», «giusto» o «troppo duro»; il volume dei successivi sale o scende (da −25% a +30%).
 - **Menù su misura**: in Ricette puoi cambiare ogni piatto con un altro della stessa categoria; nel fabbisogno puoi scegliere «Vegetariano» (il pesce diventa tempeh e ceci) e «Più proteine» (+18 g al giorno).
 - **Acqua e sonno**: in Oggi segni i bicchieri d'acqua e le ore di sonno.
+- **Digiuno intermittente 16:8** (facoltativo, nel fabbisogno): tutti i pasti in una finestra di 8 ore scelta da te; l'allenamento si sposta dentro la finestra. Con le avvertenze su chi non dovrebbe farlo.
+- **Caffè** (facoltativo): limite giornaliero e ora dell'ultimo caffè, contatore in Oggi, promemoria all'ora limite e caffè tardivi nel resoconto settimanale.
 - **Resoconto settimanale**: in Progressi, gli ultimi 7 giorni, il punto debole con un consiglio e l'obiettivo della settimana, che compare ogni giorno in Oggi. La domenica un avviso ti invita a farlo.
 - **Jolly della serie**: un giorno storto a settimana non azzera la serie, se il giorno prima era vinto.
 - **Guida vocale**: nelle meditazioni una voce legge le indicazioni.

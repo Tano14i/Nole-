@@ -247,6 +247,9 @@ fieldset.needs legend{font-weight:700;font-size:.9rem;padding:0 6px}
 .vc-hint{color:var(--muted);font-weight:600}
 #voiceCfg select{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
 
+.hab-wide{grid-column:1/-1}
+.hab .btnrow .btn{padding:8px 14px;font-size:.9rem}
+
 /* spesa */
 #settSeg button{flex:1 1 0;min-width:0}
 .pane{display:flex;flex-direction:column;gap:16px}
@@ -581,6 +584,18 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
         </div>
         <div id="n-manual" class="field" hidden><label for="n-kcal">Calorie al giorno</label><input id="n-kcal" type="number" inputmode="numeric" min="1200" max="5000" step="50"><small>Per esempio il valore che ti ha dato il nutrizionista.</small></div>
         <label class="remitem" for="n-veg"><input type="checkbox" id="n-veg"> Vegetariano: sostituisci il pesce con tempeh e ceci</label>
+        <label class="remitem" for="n-fast"><input type="checkbox" id="n-fast"> Digiuno intermittente 16:8: tutti i pasti in 8 ore</label>
+        <div id="fastBox" class="needs-out" hidden>
+          <div class="field"><label for="n-fast-start">Primo pasto alle</label><input id="n-fast-start" type="time" value="11:00"><small id="fastInfo"></small></div>
+          <span class="warn">Non adatto con diabete o farmaci per la glicemia, in gravidanza o allattamento, con disturbi alimentari o sotto i 18 anni: in questi casi chiedi prima al medico.</span>
+          <span>Nelle ore di digiuno: acqua, tisane e caffè nero senza zucchero. Se ti senti debole o hai le vertigini, mangia e torna agli orari normali. Le prime 1–2 settimane la fame si fa sentire: è normale.</span>
+        </div>
+        <label class="remitem" for="n-coffee"><input type="checkbox" id="n-coffee"> Bevo caffè</label>
+        <div id="coffeeBox" class="needs-out" hidden>
+          <div class="needs-grid"><div class="field"><label for="n-cof-max">Al massimo al giorno</label><select id="n-cof-max"><option value="1">1 caffè</option><option value="2">2 caffè</option><option value="3">3 caffè</option><option value="4">4 caffè</option></select></div>
+          <div class="field"><label for="n-cof-cut">Ultimo caffè entro le</label><input id="n-cof-cut" type="time" value="14:00"></div></div>
+          <span>Per un adulto sano l'EFSA considera sicuri fino a circa 400 mg di caffeina al giorno (circa 4 espressi). La caffeina dura diverse ore: se la bevi tardi, il sonno ne risente.</span>
+        </div>
         <label class="remitem" for="n-prot"><input type="checkbox" id="n-prot"> Più proteine: yogurt di soia allo spuntino ed edamame a cena (+18 g al giorno)</label>
         <div class="needs-out" id="n-out" aria-live="polite"></div>
       </fieldset>
@@ -934,7 +949,7 @@ function addDays(d,n){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate())
 function diffDays(a,b){return Math.round((parseKey(key(b))-parseKey(key(a)))/864e5)}
 function today(){return parseKey(key(new Date()))}
 
-function defaults(){return{profile:{name:"",wake:"06:30",slot:"mattina",level:0,why:"",start:key(today())},log:{},medMin:{},shop:{},weights:{},journal:{},rem:{on:false,nudge:true,ids:{},dismiss:false},swaps:{},rpe:{},water:{},sleep:{},weekGoal:null,reviewSeen:null,voice:false,lastBackup:null,setup:false,sound:true}}
+function defaults(){return{profile:{name:"",wake:"06:30",slot:"mattina",level:0,why:"",start:key(today())},log:{},medMin:{},shop:{},weights:{},journal:{},rem:{on:false,nudge:true,ids:{},dismiss:false},swaps:{},rpe:{},water:{},sleep:{},coffee:{},weekGoal:null,reviewSeen:null,voice:false,lastBackup:null,setup:false,sound:true}}
 let S=(function(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&s.profile)return Object.assign(defaults(),s)}catch(e){}return defaults()})();
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 
@@ -959,8 +974,11 @@ function buildDay(d){
   const P=S.profile, lvl=+P.level||0, I=dayInfo(d), W=toMin(P.wake), f=WEEKS[I.week].factor;
   const wo=WORKOUTS[I.wd], med=MEDS[I.wd];
   const medMin=MED_MIN[lvl][I.week];
-  const trainAt=P.slot==="pranzo"?W+345:P.slot==="sera"?W+720:W+120;
-  const lunchAt=P.slot==="pranzo"?W+420:W+390;
+  let trainAt=P.slot==="pranzo"?W+345:P.slot==="sera"?W+720:W+120;
+  let lunchAt=P.slot==="pranzo"?W+420:W+390,colazAt=W+45,snackAt=W+600,cenaAt=W+810;
+  // digiuno 16:8: tutti i pasti in 8 ore; l'allenamento si sposta dentro la finestra, dopo il primo pasto
+  const FW=fastWindow();
+  if(FW){colazAt=FW;lunchAt=FW+180;snackAt=FW+330;cenaAt=FW+450;trainAt=P.slot==="sera"?FW+390:FW+90}
   const woDur=Math.round(wo.dur[lvl]*(I.week===3?.85:1));
   const R={colazione:recipeFor("colazione",I.wd),pranzo:recipeFor("pranzo",I.wd),spuntino:recipeFor("spuntino",I.wd),cena:recipeFor("cena",I.wd)};
   const tasks=[
@@ -971,7 +989,7 @@ function buildDay(d){
     {id:"medam",t:W+15,kind:"mente",title:"Meditazione: "+med.name,dur:medMin,med:med,
       sum:med.sum+" "+medMin+" minuti.",list:med.steps,
       micro:"Siediti, chiudi gli occhi e fai 5 respiri lenti contando le espirazioni."},
-    {id:"colaz",t:W+45,kind:"cibo",title:"Colazione: "+R.colazione.t,dur:R.colazione.min,rec:R.colazione,sum:R.colazione.desc+" · circa "+R.colazione.n.k+" kcal",
+    {id:"colaz",t:colazAt,kind:"cibo",title:(FW?"Primo pasto: ":"Colazione: ")+R.colazione.t,dur:R.colazione.min,rec:R.colazione,sum:(FW?"Rompi il digiuno. ":"")+R.colazione.desc+" · circa "+R.colazione.n.k+" kcal",
       eat:"Siediti a tavola, senza schermi, e mastica lentamente.",
       micro:"Prepara solo gli ingredienti sul tavolo. Il resto viene facile."},
     {id:"train",t:trainAt,kind:"corpo",title:wo.name,dur:woDur,ex:wo.ex,tip:wo.tip,
@@ -980,10 +998,10 @@ function buildDay(d){
     {id:"pranzo",t:lunchAt,kind:"cibo",title:"Pranzo: "+R.pranzo.t,dur:R.pranzo.min,rec:R.pranzo,sum:R.pranzo.desc+" · circa "+R.pranzo.n.k+" kcal",
       eat:"Mangia lentamente: posate giù tra un boccone e l'altro.",
       micro:"Scegli la ricetta e metti l'acqua sul fuoco. Fatto il primo passo."},
-    {id:"snack",t:W+600,kind:"cibo",title:"Spuntino: "+R.spuntino.t,dur:R.spuntino.min,rec:R.spuntino,sum:R.spuntino.desc+" · circa "+R.spuntino.n.k+" kcal",
+    {id:"snack",t:snackAt,kind:"cibo",title:"Spuntino: "+R.spuntino.t,dur:R.spuntino.min,rec:R.spuntino,sum:R.spuntino.desc+" · circa "+R.spuntino.n.k+" kcal",
       eat:"Accompagnalo con un bicchiere d'acqua.",
       micro:"Prendi il frutto. Mangialo lontano dalla scrivania."},
-    {id:"cena",t:W+810,kind:"cibo",title:"Cena: "+R.cena.t,dur:R.cena.min,rec:R.cena,sum:R.cena.desc+" · circa "+R.cena.n.k+" kcal",
+    {id:"cena",t:cenaAt,kind:"cibo",title:"Cena: "+R.cena.t,dur:R.cena.min,rec:R.cena,sum:R.cena.desc+" · circa "+R.cena.n.k+" kcal"+(FW?". Finisci entro le "+fmt(FW+480)+": da lì parte il digiuno":""),
       eat:"Finisci di cenare almeno 2 ore prima di dormire.",
       micro:"Lava e taglia le verdure. Il resto della cena parte da lì."},
     {id:"medpm",t:W+930,kind:"mente",title:"Chiusura: diario e gratitudine",dur:5,med:MEDS[6],
@@ -1119,7 +1137,24 @@ function renderHabits(){
   box.innerHTML='<div class="hab"><div class="hab-h"><b>Acqua</b><span class="mono">'+w+'/8 bicchieri</span></div><div class="drops">'+
     Array.from({length:8},(_,i)=>'<button type="button" class="drop'+(i<w?" on":"")+'" data-water="'+(i+1)+'" aria-label="'+(i+1)+' bicchieri"></button>').join("")+'</div></div>'+
     '<div class="hab"><div class="hab-h"><b>Sonno di stanotte</b><span class="mono">'+(sl?sl+" ore":"—")+'</span></div><div class="durs">'+
-    [5,6,7,8,9].map(h=>'<button type="button" data-sleep="'+h+'" aria-pressed="'+(sl===h)+'">'+(h===9?"9+":h)+" h</button>").join("")+"</div></div>";
+    [5,6,7,8,9].map(h=>'<button type="button" data-sleep="'+h+'" aria-pressed="'+(sl===h)+'">'+(h===9?"9+":h)+" h</button>").join("")+"</div></div>"+coffeeHTML(k);
+}
+
+/* ---------- DIGIUNO 16:8 E CAFFÈ ---------- */
+// minuti del primo pasto, o null se il digiuno è spento; mai prima di un'ora dopo la sveglia
+function fastWindow(){
+  const P=S.profile;if(!P.fast)return null;
+  return Math.max(toMin(P.wake)+60,toMin(P.fastStart||"11:00"));
+}
+function coffeeCfg(){return Object.assign({on:false,max:2,cutoff:"14:00"},S.profile.coffee||{})}
+function coffeeHTML(k){
+  const c=coffeeCfg();if(!c.on)return"";
+  const cups=S.coffee[k]||[],late=cups.filter(m=>m>toMin(c.cutoff)).length,over=cups.length>c.max;
+  const now=nowMin(),past=isToday(sel)&&now>toMin(c.cutoff);
+  return '<div class="hab hab-wide"><div class="hab-h"><b>Caffè</b><span class="mono">'+cups.length+"/"+c.max+" · ultimo entro le "+c.cutoff+'</span></div>'+
+    '<div class="btnrow"><button type="button" class="btn btn-sec" data-coffee="1">+ 1 caffè</button>'+(cups.length?'<button type="button" class="btn btn-ghost" data-coffee="-1">Togli l\'ultimo</button>':"")+"</div>"+
+    (over?'<p class="note warn" style="margin:0">Hai superato il tuo limite di oggi.</p>':late?'<p class="note warn" style="margin:0">'+late+(late===1?" caffè dopo le ":" caffè dopo le ")+c.cutoff+": stasera il sonno potrebbe risentirne.</p>":
+     past?'<p class="note" style="margin:0">Dopo le '+c.cutoff+" meglio una tisana: liquirizia, menta o camomilla.</p>":"")+"</div>";
 }
 
 /* ---------- RESOCONTO SETTIMANALE ---------- */
@@ -1133,17 +1168,18 @@ const WEAK_TIP={
 function weekStats(){
   const t=today(),st=parseKey(S.profile.start),days=[];
   for(let i=6;i>=0;i--){const d=addDays(t,-i);if(diffDays(st,d)>=0)days.push(d)}
-  const by={},cnt={};let wins=0,wo=0,med=0,meals=0,mealsTot=0,wat=[],slp=[],woMiss=0;
+  const by={},cnt={};let wins=0,wo=0,med=0,meals=0,mealsTot=0,wat=[],slp=[],woMiss=0,cof=0,cofLate=0;
   days.forEach(d=>{
     const k=key(d),l=dayLog(k),p=buildDay(d);
     if(won(d))wins++;if(l.train)wo++;else if(!isToday(d))woMiss++;
     med+=S.medMin[k]||0;
     p.tasks.forEach(x=>{by[x.kind]=(by[x.kind]||0)+(l[x.id]?1:0);cnt[x.kind]=(cnt[x.kind]||0)+1;if(x.kind==="cibo"){mealsTot++;if(l[x.id])meals++}});
     if(S.water[k])wat.push(S.water[k]);if(S.sleep[k])slp.push(S.sleep[k]);
+    const cc=S.coffee[k]||[];cof+=cc.length;cofLate+=cc.filter(m=>m>toMin(coffeeCfg().cutoff)).length;
   });
   let weak=null,wp=2;for(const kd in cnt){const p=by[kd]/cnt[kd];if(p<wp){wp=p;weak=kd}}
   const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length*10)/10:null;
-  return{n:days.length,wins,wo,med,mealPct:mealsTot?Math.round(meals/mealsTot*100):0,water:avg(wat),sleep:avg(slp),weak,weakPct:Math.round(wp*100),woMiss};
+  return{n:days.length,wins,wo,med,mealPct:mealsTot?Math.round(meals/mealsTot*100):0,water:avg(wat),sleep:avg(slp),weak,weakPct:Math.round(wp*100),woMiss,cof:Math.round(cof/Math.max(1,days.length)*10)/10,cofLate};
 }
 function renderReview(){
   const w=weekStats();
@@ -1152,7 +1188,8 @@ function renderReview(){
     (w.weakPct>=90?"Settimana quasi perfetta. Il prossimo passo è mantenerla, non aggiungere altro.":
     "Il punto da migliorare è «"+labelKind(w.weak).toLowerCase()+"» ("+w.weakPct+"% fatto). "+WEAK_TIP[w.weak]);
   if(w.woMiss>=3&&(+S.profile.level||0)>0)tip+=" Hai saltato "+w.woMiss+" allenamenti: prova un livello più basso per due settimane.";
-  if(w.sleep!==null&&w.sleep<7)tip+=" Dormi in media meno di 7 ore: il recupero è parte dell'allenamento.";
+  if(w.sleep!==null&&w.sleep<7)tip+=" Dormi in media meno di 7 ore: il recupero è parte dell'allenamento."+(w.cofLate?" Hai bevuto "+w.cofLate+(w.cofLate===1?" caffè":" caffè")+" dopo le "+coffeeCfg().cutoff+": prova a spostarli prima.":"");
+  if(coffeeCfg().on)tiles.push([fmtNum(w.cof),"caffè al giorno"+(w.cofLate?" · "+w.cofLate+" tardi":"")]);
   $("reviewTiles").innerHTML=tiles.map(x=>'<div class="stat"><b>'+x[0]+"</b><span>"+x[1]+"</span></div>").join("");
   $("reviewTip").textContent=tip;
   if(document.activeElement!==$("wgoal"))$("wgoal").value=S.weekGoal&&S.weekGoal.text||"";
@@ -1589,7 +1626,7 @@ function bindBackup(){
 
 /* ---------- APP INSTALLABILE E PROMEMORIA ---------- */
 const SITE_URL="https://tano14i.github.io/match-point-coach/";
-const REM=[["wake","Risveglio"],["medam","Meditazione del mattino"],["colaz","Colazione"],["train","Allenamento"],["pranzo","Pranzo"],["snack","Spuntino"],["cena","Cena"],["medpm","Diario serale"],["sleep","Luci spente"]];
+const REM=[["wake","Risveglio"],["medam","Meditazione del mattino"],["colaz","Colazione"],["train","Allenamento"],["pranzo","Pranzo"],["snack","Spuntino"],["cena","Cena"],["medpm","Diario serale"],["sleep","Luci spente"],["coffee","Ora dell'ultimo caffè (se lo bevi)"]];
 const ENV=(function(){
   let framed=true;try{framed=window.self!==window.top}catch(e){}
   const site=(location.protocol==="https:"||location.hostname==="localhost")&&!framed;
@@ -1629,6 +1666,8 @@ function scheduleReminders(){
     const nudge=at+20*60000;
     if(S.rem.nudge&&nudge>now)remTimers.push(setTimeout(()=>{if(!dayLog(k)[x.id])notify("Ancora da fare: "+x.title,"Non serve la voglia. Fai solo la versione da 2 minuti: "+x.micro,"nc-"+k+"-"+x.id+"-n")},nudge-now));
   });
+  const cc=coffeeCfg(),cut=d.getTime()+toMin(cc.cutoff)*60000;
+  if(cc.on&&S.rem.ids.coffee!==false&&cut>now)remTimers.push(setTimeout(()=>notify("Ultimo caffè per oggi","Da ora meglio una tisana: il sonno di stanotte ringrazia.","nc-"+k+"-coffee"),cut-now));
   // a mezzanotte e un minuto riprogramma il giorno nuovo
   remTimers.push(setTimeout(scheduleReminders,addDays(d,1).getTime()+60000-now));
 }
@@ -1850,6 +1889,10 @@ document.addEventListener("click",e=>{
   if(b.id==="instBtn"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;renderApp()})}return}
   if(b.dataset.rpe!==undefined){setRpe(+b.dataset.rpe);return}
   if(b.dataset.water){const k=key(sel),n=+b.dataset.water;S.water[k]=(S.water[k]===n?n-1:n);save();renderHabits();if(S.water[k]===8)toast("8 bicchieri: idratazione da campione.");return}
+  if(b.dataset.coffee){const k=key(sel),c=coffeeCfg();S.coffee[k]=S.coffee[k]||[];
+    if(b.dataset.coffee==="1"){const m=isToday(sel)?nowMin():toMin(c.cutoff)-60;S.coffee[k].push(m);
+      if(m>toMin(c.cutoff))toast("Caffè dopo le "+c.cutoff+": stasera fai caso a come dormi.");else if(S.coffee[k].length>c.max)toast("Oltre il tuo limite di "+c.max+" al giorno.")}
+    else S.coffee[k].pop();save();renderHabits();return}
   if(b.dataset.sleep){const k=key(sel);S.sleep[k]=+b.dataset.sleep;save();renderHabits();if(+b.dataset.sleep<7)toast("Meno di 7 ore: stasera luci spente un po' prima.");return}
   if(b.id==="sunGo"){S.reviewSeen=key(today());save();switchView("tu");setTimeout(()=>$("reviewCard").scrollIntoView({block:"start"}),60);return}
   if(b.dataset.level){S.profile.level=+b.dataset.level;S.setup=true;save();render();renderYou();toast("Livello: "+LEVELS[+b.dataset.level]);return}
@@ -1867,6 +1910,11 @@ $("goToday").onclick=()=>{sel=today();openTask=null;render()};
 document.addEventListener("change",e=>{
   if(e.target.dataset&&e.target.dataset.swap){const sw=e.target.dataset.swap,wd=+sw.split("-")[0],v=+e.target.value;if(v===wd)delete S.swaps[sw];else S.swaps[sw]=v;save();renderRecipes();render();toast("Piatto cambiato");return}
   if(e.target.id==="n-veg"){S.profile.veg=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Menù vegetariano: il pesce diventa tempeh e ceci":"Pesce di nuovo nel menù");return}
+  if(e.target.id==="n-fast"){S.profile.fast=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Digiuno 16:8: orari dei pasti aggiornati":"Orari dei pasti normali");return}
+  if(e.target.id==="n-fast-start"){if(e.target.value){S.profile.fastStart=e.target.value;save();renderNeeds();render();toast("Finestra dei pasti aggiornata")}return}
+  if(e.target.id==="n-coffee"){S.profile.coffee=Object.assign(coffeeCfg(),{on:e.target.checked});save();renderNeeds();render();return}
+  if(e.target.id==="n-cof-max"){S.profile.coffee=Object.assign(coffeeCfg(),{max:+e.target.value});save();render();return}
+  if(e.target.id==="n-cof-cut"){if(e.target.value){S.profile.coffee=Object.assign(coffeeCfg(),{cutoff:e.target.value});save();renderNeeds();render();scheduleReminders()}return}
   if(e.target.id==="n-prot"){S.profile.protein=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Più proteine: +18 g al giorno":"Proteine come da ricetta");return}
   if(e.target.id==="vc-voice"){setVoice({name:e.target.value});hush();say("Respira lentamente. Sei esattamente dove devi essere.");return}
   if(e.target.id==="voiceOn"){S.voice=e.target.checked;save();renderVoices();if(S.voice)speak("Guida vocale attiva.");else hush();return}
@@ -1941,6 +1989,11 @@ function renderNeeds(){
   $("n-act").value=c.act;$("n-acthint").textContent="Scegli questo se hai: "+ACTS[c.act][2]+".";
   ["age","weight","height","kcal"].forEach(k=>{if(document.activeElement!==$("n-"+k))$("n-"+k).value=c[k]});
   $("n-veg").checked=!!S.profile.veg;$("n-prot").checked=!!S.profile.protein;
+  $("n-fast").checked=!!S.profile.fast;$("fastBox").hidden=!S.profile.fast;
+  if(document.activeElement!==$("n-fast-start"))$("n-fast-start").value=S.profile.fastStart||"11:00";
+  const FW=fastWindow();$("fastInfo").textContent=FW?"Mangi dalle "+fmt(FW)+" alle "+fmt(FW+480)+". L'allenamento si sposta dentro la finestra, dopo il primo pasto.":"";
+  const cc=coffeeCfg();$("n-coffee").checked=cc.on;$("coffeeBox").hidden=!cc.on;$("n-cof-max").value=cc.max;
+  if(document.activeElement!==$("n-cof-cut"))$("n-cof-cut").value=cc.cutoff;
   const t=target(),out=$("n-out");
   let pAvg=0;for(let i=0;i<7;i++)pAvg+=dayNutri(i).p;pAvg=Math.round(pAvg/7);
   const wl=Object.keys(S.weights).sort().pop(),kg=wl?S.weights[wl]:(c.mode==="calc"?c.weight:null);
