@@ -250,6 +250,13 @@ fieldset.needs legend{font-weight:700;font-size:.9rem;padding:0 6px}
 .hab-wide{grid-column:1/-1}
 .hab .btnrow .btn{padding:8px 14px;font-size:.9rem}
 
+.bigtime.target{font-size:clamp(2.4rem,12vw,3.6rem)}
+.wk-ex{border-left:3px solid transparent;padding-left:8px;margin-left:-11px}
+.wk-ex.cur{border-left-color:var(--ball)}
+.wk-ex.cur .ex span:first-child{font-weight:700}
+.wk-ex.done{opacity:.55}
+#amb-vol{width:100%;accent-color:var(--court)}
+
 /* spesa */
 #settSeg button{flex:1 1 0;min-width:0}
 .pane{display:flex;flex-direction:column;gap:16px}
@@ -484,6 +491,12 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
       <div class="field"><label for="vc-pitch">Tono <span class="vc-hint" id="vc-pitch-v"></span></label><input id="vc-pitch" type="range" min="0.8" max="1.2" step="0.05"></div>
       <div class="btnrow"><button type="button" class="btn btn-court" id="vc-test">Ascolta</button><button type="button" class="btn btn-ghost" id="vc-reset">Valori consigliati</button></div>
       <p class="note" id="vc-none" style="margin:0">Hai poche voci italiane. Su Android puoi installarne di più naturali: Impostazioni → Accessibilità → Sintesi vocale → Motore Google → Installa dati vocali → Italiano. Poi riapri questa pagina.</p>
+    </div>
+    <div class="phase card-block" id="ambBox">
+      <div class="eyebrow">Audio</div>
+      <label class="remitem" for="amb-med"><input type="checkbox" id="amb-med"> Sottofondo leggero in meditazione e nel rituale: mette in pausa la musica delle altre app</label>
+      <div class="field"><label for="amb-vol">Volume del sottofondo</label><input id="amb-vol" type="range" min="0.05" max="0.6" step="0.05"></div>
+      <label class="remitem" for="amb-train"><input type="checkbox" id="amb-train"> Metti in pausa la musica anche durante l'allenamento guidato</label>
     </div>
     <button class="btn btn-go" id="medStart">Inizia la meditazione</button>
   </section>
@@ -1205,13 +1218,24 @@ function itVoices(){
   return speechSynthesis.getVoices().filter(v=>/^it/i.test(v.lang)).sort((a,b)=>score(b)-score(a));
 }
 function voiceCfg(){return Object.assign({name:"",rate:.9,pitch:.95},S.voiceCfg||{})}
-function say(t){
-  if(!VOICE_OK)return;
-  try{const c=voiceCfg(),vs=itVoices(),u=new SpeechSynthesisUtterance(t);
-    u.lang="it-IT";u.rate=c.rate;u.pitch=c.pitch;
-    const v=vs.find(x=>x.name===c.name)||vs[0];if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){}
+let sayToken=0;
+function utter(t,calm){
+  const c=voiceCfg(),vs=itVoices(),u=new SpeechSynthesisUtterance(t);
+  u.lang="it-IT";u.rate=calm?Math.max(.7,c.rate-.12):c.rate;u.pitch=calm?Math.max(.8,c.pitch-.03):c.pitch;
+  const v=vs.find(x=>x.name===c.name)||vs[0];if(v)u.voice=v;return u;
 }
-function speak(t){if(S.voice)say(t)}
+// in meditazione la voce va più piano e a frasi brevi, con pause dopo virgole e punti: suona molto meno meccanica
+function say(t,calm){
+  if(!VOICE_OK)return;
+  try{
+    if(!calm){speechSynthesis.speak(utter(t,false));return}
+    const tok=++sayToken,parts=t.split(/(?<=[.,:;!?])\s+/).filter(Boolean);
+    const next=i=>{if(tok!==sayToken||i>=parts.length)return;const u=utter(parts[i],true);
+      u.onend=()=>setTimeout(()=>next(i+1),/[.!?:]$/.test(parts[i])?800:350);speechSynthesis.speak(u)};
+    next(0);
+  }catch(e){}
+}
+function speak(t){if(S.voice)say(t,!!(OV&&(OV.med||OV.seq)))}
 function renderVoices(){
   const box=$("voiceCfg");if(!VOICE_OK){box.hidden=true;return}
   box.hidden=!S.voice;
@@ -1225,7 +1249,119 @@ function renderVoices(){
 }
 function setVoice(patch){S.voiceCfg=Object.assign(voiceCfg(),patch);save();renderVoices()}
 if(VOICE_OK&&"onvoiceschanged" in speechSynthesis)speechSynthesis.onvoiceschanged=()=>{if(view==="medita")renderVoices()};
-function hush(){try{if(VOICE_OK)speechSynthesis.cancel()}catch(e){}}
+function hush(){sayToken++;try{if(VOICE_OK)speechSynthesis.cancel()}catch(e){}}
+
+/* ---------- SOTTOFONDO AUDIO ---------- */
+// un vero file audio in riproduzione chiede al telefono il controllo dell'audio: la musica delle altre app va in pausa
+function ambCfg(){return Object.assign({med:true,train:false,vol:.25},S.amb||{})}
+let ambEl=null,ambUrl=null;
+function ambientUrl(){
+  if(ambUrl)return ambUrl;
+  const sr=16000,N=sr*16,X=sr,d=new Float32Array(N+X);let last=0;
+  for(let i=0;i<N+X;i++){last=(last+.02*(Math.random()*2-1))/1.02;d[i]=last*3.5}   // rumore marrone, come onde lontane
+  for(let i=0;i<X;i++){const a=i/X;d[i]=d[i]*a+d[N+i]*(1-a)}                      // dissolvenza: il giro si ripete senza scatti
+  const buf=new ArrayBuffer(44+N*2),v=new DataView(buf),w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
+  w(0,"RIFF");v.setUint32(4,36+N*2,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,N*2,true);
+  for(let i=0;i<N;i++)v.setInt16(44+i*2,Math.max(-1,Math.min(1,d[i]))*32767,true);
+  ambUrl=URL.createObjectURL(new Blob([buf],{type:"audio/wav"}));return ambUrl;
+}
+function ambient(on,title,vol){
+  try{
+    if(!on){if(ambEl)ambEl.pause();return}
+    if(!ambEl){ambEl=new Audio();ambEl.loop=true;ambEl.src=ambientUrl()}
+    ambEl.volume=vol===undefined?ambCfg().vol:vol;ambEl.currentTime=0;
+    const p=ambEl.play();if(p&&p.catch)p.catch(()=>{});
+    if("mediaSession" in navigator&&window.MediaMetadata)navigator.mediaSession.metadata=new MediaMetadata({title:title||"Match Point Coach",artist:"Match Point Coach",artwork:[{src:"icons/icon-512.png",sizes:"512x512",type:"image/png"}]});
+  }catch(e){}
+}
+
+/* ---------- ALLENAMENTO GUIDATO ---------- */
+const WK_UNIT={"rip":"ripetizioni","per lato":"ripetizioni per lato","per gamba":"ripetizioni per gamba","giri":"giri","sec":"secondi","sec per lato":"secondi per lato","min":"minuti"};
+const WK_SHORT={"rip":"rip","per lato":"per lato","per gamba":"per gamba","giri":"giri"};
+function wkSteps(x,lvl,f){
+  const st=[],REST=[60,45,40][lvl]||45,adj=trainAdj();
+  x.ex.forEach((e,ei)=>{
+    const sets=e.s[lvl],r=e.fixed?e.r[lvl]:Math.max(1,Math.round(e.r[lvl]*f*adj));
+    const side=e.u==="sec per lato",timed=/^sec/.test(e.u)||e.u==="min";
+    const secs=e.u==="min"?r*60:/^sec/.test(e.u)?(side?r*2+5:r):0;
+    for(let s=1;s<=sets;s++){
+      st.push({type:"work",ei,e,set:s,sets,r,secs,side,timed});
+      if(s<sets)st.push({type:"rest",secs:REST});
+    }
+    if(ei<x.ex.length-1)st.push({type:"rest",secs:e.u==="min"?20:60,newEx:true});
+  });
+  return st;
+}
+function openWorkout(x,plan){
+  const lvl=+S.profile.level||0,f=WEEKS[plan.info.week].factor;
+  openOverlay({title:x.title,eyebrow:"Allenamento guidato",noTimer:true,task:"train",day:sel,msg:""});
+  OV.wk={x,lvl,f,steps:wkSteps(x,lvl,f),i:0};
+  $("ovTime").hidden=$("ovProg").hidden=false;
+  $("ovVoice").hidden=!(VOICE_OK&&!S.voice);
+  if(ambCfg().train)ambient(true,x.title,.05);
+  lockScreen(true);
+  OV.tick=setInterval(wkTick,250);
+  wkShow(0);
+}
+function wkList(cur){
+  const w=OV.wk;
+  return '<div class="phase"><div class="eyebrow">Esercizi · tocca per la spiegazione</div>'+w.x.ex.map((e,j)=>'<div class="wk-ex'+(j===cur?" cur":j<cur?" done":"")+'">'+exHTML(e,w.lvl,w.f)+"</div>").join("")+"</div>";
+}
+function wkShow(i){
+  const w=OV.wk,s=w.steps[i];w.i=i;w.ann={};w.end=null;
+  $("ovBar").style.width=(i/w.steps.length*100).toFixed(1)+"%";
+  $("ovTime").classList.remove("target");
+  hush();
+  if(s.type==="work"){
+    const n=w.x.ex.length,h=HOW[s.e.n];
+    $("ovTitle").textContent=s.e.n;
+    $("ovEyebrow").textContent="Esercizio "+(s.ei+1)+" di "+n+(s.sets>1?" · serie "+s.set+" di "+s.sets:"");
+    $("ovMsg").textContent=s.set===1?(h?h[0][0]:""):"Serie "+s.set+": stessa tecnica, respira.";
+    $("ovDone").textContent=s.timed?"Salta · prossima":"Fatto · prossima";
+    $("ovPause").hidden=!s.timed;$("ovPause").textContent="Pausa";
+    if(s.timed){w.end=Date.now()+s.secs*1000;wkTime(s.secs)}
+    else{$("ovTime").textContent=s.r+" "+(WK_SHORT[s.e.u]||s.e.u);$("ovTime").classList.add("target")}
+    $("ovList").innerHTML=wkList(s.ei);
+    const amount=s.r+" "+WK_UNIT[s.e.u];
+    speak(s.set===1?"Esercizio "+(s.ei+1)+": "+s.e.n+". "+(s.sets>1?s.sets+" serie da "+amount:amount)+". "+(h?h[0][0]+" ":"")+(s.timed?"Via!":"Quando hai finito, tocca prossima."):
+      "Serie "+s.set+"."+(s.timed?" Via!":""));
+  }else{
+    const nx=w.steps[i+1];
+    $("ovTitle").textContent="Recupero";
+    $("ovEyebrow").textContent="Poi: "+nx.e.n+(nx.sets>1?" · serie "+nx.set+" di "+nx.sets:"");
+    $("ovMsg").textContent="Respira lento. Un sorso d'acqua.";
+    $("ovDone").textContent="Salta il recupero";
+    $("ovPause").hidden=false;$("ovPause").textContent="Pausa";
+    w.end=Date.now()+s.secs*1000;wkTime(s.secs);
+    $("ovList").innerHTML=wkList(nx.ei);
+    speak("Recupero, "+s.secs+" secondi."+(s.newEx?" Poi: "+nx.e.n+".":""));
+  }
+}
+function wkTime(left){const t=Math.ceil(left);$("ovTime").textContent=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0")}
+function wkTick(){
+  if(!OV||!OV.wk||OV.paused||OV.wk.done)return;
+  const w=OV.wk,s=w.steps[w.i];if(!w.end)return;
+  const left=Math.max(0,(w.end-Date.now())/1000);wkTime(left);
+  if(s.side&&!w.ann.side&&s.secs-left>=s.r){w.ann.side=1;bell(660);speak("Cambia lato.")}
+  if(s.secs>=25&&left<=10.5&&!w.ann.ten){w.ann.ten=1;speak(s.type==="rest"?"Pronti.":"Ancora dieci secondi.")}
+  if(left<=0){bell(s.type==="rest"?660:528);if(s.type==="work")speak("Stop.");wkNext()}
+}
+function wkNext(){
+  const w=OV.wk;
+  if(w.i+1<w.steps.length){wkShow(w.i+1);return}
+  w.done=true;OV.state="end";hush();
+  $("ovBar").style.width="100%";$("ovTitle").textContent="Allenamento completato";$("ovEyebrow").textContent=w.x.title;
+  $("ovTime").textContent="Fatto";$("ovTime").classList.add("target");$("ovPause").hidden=true;
+  $("ovMsg").textContent="Ottimo lavoro. Ora qualche minuto di stretching e un bicchiere d'acqua.";$("ovDone").textContent="Segna come fatto";
+  $("ovList").innerHTML=wkList(w.x.ex.length);
+  bell(396);speak("Allenamento completato. Ottimo lavoro.");
+}
+function wkPause(){
+  const w=OV.wk;
+  if(OV.paused){OV.paused=false;if(w.end)w.end=Date.now()+w.left*1000;$("ovPause").textContent="Pausa"}
+  else{OV.paused=true;if(w.end)w.left=Math.max(0,(w.end-Date.now())/1000);$("ovPause").textContent="Riprendi";hush()}
+}
 
 /* ---------- UTILITY UI ---------- */
 const $=id=>document.getElementById(id);
@@ -1337,7 +1473,7 @@ function render(){
   renderHabits();
   scheduleReminders();
 }
-function startBtn(x){return '<div class="btnrow"><button class="btn btn-court" data-start="'+x.id+'">'+(x.med?"Avvia meditazione guidata":x.rec?"Apri la ricetta a schermo intero":"Avvia timer · "+x.dur+" min")+'</button></div>'}
+function startBtn(x){return '<div class="btnrow"><button class="btn btn-court" data-start="'+x.id+'">'+(x.med?"Avvia meditazione guidata":x.rec?"Apri la ricetta a schermo intero":x.ex?"Avvia l'allenamento guidato":"Avvia timer · "+x.dur+" min")+'</button></div>'}
 function energy(n){const p=n.p*4,c=n.c*4,f=n.f*9,t=p+c+f||1;return{p:Math.round(p/t*100),c:Math.round(c/t*100),f:Math.round(f/t*100)}}
 function macroHTML(n,label){
   if(!n)return "";
@@ -1509,6 +1645,7 @@ function shopMissing(){
 let medSel=null, durSel=null;
 function renderMed(){
   $("voiceRow").hidden=!VOICE_OK;$("voiceOn").checked=!!S.voice;renderVoices();
+  const ac=ambCfg();$("amb-med").checked=ac.med;$("amb-train").checked=ac.train;$("amb-vol").value=ac.vol;
   const p=buildDay(today());
   if(!medSel)medSel=p.med.id;
   if(!durSel)durSel=p.medMin;
@@ -1783,6 +1920,7 @@ function openOverlay(o){
   hush();if(o.med)speak(o.med.steps[0]);
   if(o.seq){OV.seqI=0;$("ovMsg").textContent=o.seq[0][0];speak(o.seq[0][0]);$("ovDone").textContent=o.next?"Fatto · passa alla meditazione":"Fatto"}
   $("ovVoice").hidden=!((o.seq||o.med)&&VOICE_OK&&!S.voice);
+  if((o.med||o.seq)&&ambCfg().med)ambient(true,o.title);
   // ricette: niente conto alla rovescia, solo ingredienti e passaggi
   $("ovTime").hidden=$("ovProg").hidden=$("ovPause").hidden=!!o.noTimer;
   if(o.noTimer){$("ovDone").textContent=o.doneLabel||"Fatto";setTimeout(()=>$("ovDone").focus(),50);return}
@@ -1838,7 +1976,7 @@ function finish(){
   }
 }
 function closeOverlay(silent){
-  if(!OV)return;clearInterval(OV.tick);clearTimeout(OV.bt);OV=null;hush();
+  if(!OV)return;clearInterval(OV.tick);clearTimeout(OV.bt);OV=null;hush();ambient(false);
   $("overlay").hidden=true;document.body.style.overflow="";lockScreen(false);
   if(!silent)render();
 }
@@ -1846,6 +1984,7 @@ function startTask(id,mini){
   const plan=buildDay(sel),x=plan.tasks.find(t=>t.id===id);if(!x)return;
   if(mini){openOverlay({title:x.title,eyebrow:"Versione 2 minuti",secs:120,mini:true,task:id,day:sel,msg:x.micro});return}
   if(x.med){openOverlay({title:x.med.name,eyebrow:breathLabel(x.med.p),secs:x.dur*60,med:x.med,task:id,day:sel});return}
+  if(x.ex){openWorkout(x,plan);return}
   if(x.seq){
     const nextId=!dayLog(key(sel)).medam&&isToday(sel)?"medam":null;
     openOverlay({title:x.title,eyebrow:"Rituale del mattino · 3 minuti",secs:x.seq.reduce((a,r)=>a+r[1],0),seq:x.seq,task:id,day:sel,next:nextId,
@@ -1916,6 +2055,7 @@ document.addEventListener("change",e=>{
   if(e.target.id==="n-cof-max"){S.profile.coffee=Object.assign(coffeeCfg(),{max:+e.target.value});save();render();return}
   if(e.target.id==="n-cof-cut"){if(e.target.value){S.profile.coffee=Object.assign(coffeeCfg(),{cutoff:e.target.value});save();renderNeeds();render();scheduleReminders()}return}
   if(e.target.id==="n-prot"){S.profile.protein=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Più proteine: +18 g al giorno":"Proteine come da ricetta");return}
+  if(e.target.id==="amb-med"||e.target.id==="amb-train"){S.amb=Object.assign(ambCfg(),{[e.target.id==="amb-med"?"med":"train"]:e.target.checked});save();return}
   if(e.target.id==="vc-voice"){setVoice({name:e.target.value});hush();say("Respira lentamente. Sei esattamente dove devi essere.");return}
   if(e.target.id==="voiceOn"){S.voice=e.target.checked;save();renderVoices();if(S.voice)speak("Guida vocale attiva.");else hush();return}
   if(e.target.dataset&&e.target.dataset.rem){S.rem.ids[e.target.dataset.rem]=e.target.checked;save();scheduleReminders();return}
@@ -1949,13 +2089,15 @@ $("nextExcuse").onclick=()=>{
 $("sosBtn").onclick=()=>openOverlay({title:SOS.name,eyebrow:breathLabel(SOS.p),secs:60,med:SOS});
 $("medStart").onclick=()=>{const m=MEDS.find(x=>x.id===medSel);openOverlay({title:m.name,eyebrow:breathLabel(m.p),secs:durSel*60,med:m,task:"medam",day:today()})};
 $("ovClose").onclick=()=>closeOverlay();
+$("amb-vol").addEventListener("input",e=>{S.amb=Object.assign(ambCfg(),{vol:+e.target.value});save();if(ambEl&&!ambEl.paused)ambEl.volume=+e.target.value});
 $("vc-rate").addEventListener("input",e=>setVoice({rate:+e.target.value}));
 $("vc-pitch").addEventListener("input",e=>setVoice({pitch:+e.target.value}));
-$("vc-test").onclick=()=>{hush();say("Inspira dal naso. Espira lentamente. Oggi fai solo la prossima cosa.")};
+$("vc-test").onclick=()=>{hush();say("Inspira dal naso, lentamente. Espira, e lascia andare le spalle. Oggi fai solo la prossima cosa.",true)};
 $("vc-reset").onclick=()=>{setVoice({rate:.9,pitch:.95});hush();say("Così suona più calma.")};
 $("ovVoice").onclick=()=>{S.voice=true;save();$("ovVoice").hidden=true;speak($("ovMsg").textContent);toast("Guida vocale attiva. Puoi girare il telefono.")};
 $("ovPause").onclick=()=>{
   if(!OV)return;
+  if(OV.wk&&!OV.wk.done){wkPause();return}
   if(OV.state==="miniEnd"){closeOverlay(true);toast("Bene così. Due minuti valgono più di zero.");render();return}
   if(OV.state==="end"){closeOverlay();return}
   if(OV.paused){OV.paused=false;OV.end=Date.now()+OV.left*1000;$("ovPause").textContent="Pausa";if(OV.med){clearTimeout(OV.bt);breathLoop(0)}}
@@ -1964,6 +2106,7 @@ $("ovPause").onclick=()=>{
 $("ovDone").onclick=()=>{
   if(!OV)return;
   const o=OV;
+  if(o.wk&&!o.wk.done){if(o.paused)wkPause();wkNext();return}
   if(o.mini&&o.state!=="end"){closeOverlay(true);startTask(o.task,false);return}
   if(o.med&&o.day&&!o.state){const el=Math.round((o.secs-o.left)/60);if(el>0){const k=key(o.day);S.medMin[k]=(S.medMin[k]||0)+el;save()}}
   const d=o.day,t=o.task;closeOverlay(true);
