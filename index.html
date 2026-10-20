@@ -256,6 +256,16 @@ fieldset.needs legend{font-weight:700;font-size:.9rem;padding:0 6px}
 .wk-ex.cur .ex span:first-child{font-weight:700}
 .wk-ex.done{opacity:.55}
 
+/* la mia voce */
+.vlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.vrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.vrow:last-child{border-bottom:0}
+.vtxt{font-size:.9rem;min-width:0}
+.vrow.has .vtxt{color:var(--muted)}
+.vbtns{display:flex;gap:4px;flex-wrap:nowrap}
+.vbtn{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:7px 10px;font-weight:700;font-size:.82rem;white-space:nowrap}
+.vbtn.rec{background:var(--warn);color:#fff;border-color:var(--warn)}
+
 /* spesa */
 #settSeg button{flex:1 1 0;min-width:0}
 .pane{display:flex;flex-direction:column;gap:16px}
@@ -491,6 +501,7 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
       <div class="btnrow"><button type="button" class="btn btn-court" id="vc-test">Ascolta</button><button type="button" class="btn btn-ghost" id="vc-reset">Valori consigliati</button></div>
       <p class="note" id="vc-none" style="margin:0">Hai poche voci italiane. Su Android puoi installarne di più naturali: Impostazioni → Accessibilità → Sintesi vocale → Motore Google → Installa dati vocali → Italiano. Poi riapri questa pagina.</p>
     </div>
+    <div class="phase card-block" id="myVoice"></div>
     <button class="btn btn-go" id="medStart">Inizia la meditazione</button>
   </section>
 
@@ -1228,7 +1239,11 @@ function say(t,calm){
     next(0);
   }catch(e){}
 }
-function speak(t){if(S.voice)say(t,!!(OV&&(OV.med||OV.seq)))}
+function speak(t){
+  // la registrazione dell'utente ha la precedenza sulla sintesi vocale
+  if(S.myVoice!==false&&typeof myClips!=="undefined"&&myClips.has(t)){hush();playClip(t);return}
+  if(S.voice)say(t,!!(OV&&(OV.med||OV.seq)));
+}
 function renderVoices(){
   const box=$("voiceCfg");if(!VOICE_OK){box.hidden=true;return}
   box.hidden=!S.voice;
@@ -1242,7 +1257,7 @@ function renderVoices(){
 }
 function setVoice(patch){S.voiceCfg=Object.assign(voiceCfg(),patch);save();renderVoices()}
 if(VOICE_OK&&"onvoiceschanged" in speechSynthesis)speechSynthesis.onvoiceschanged=()=>{if(view==="medita")renderVoices()};
-function hush(){sayToken++;try{if(VOICE_OK)speechSynthesis.cancel()}catch(e){}}
+function hush(){sayToken++;try{if(VOICE_OK)speechSynthesis.cancel()}catch(e){}if(typeof stopClip==="function")stopClip()}
 
 /* ---------- ALLENAMENTO GUIDATO ---------- */
 const WK_UNIT={"rip":"ripetizioni","per lato":"ripetizioni per lato","per gamba":"ripetizioni per gamba","giri":"giri","sec":"secondi","sec per lato":"secondi per lato","min":"minuti"};
@@ -1328,6 +1343,80 @@ function wkPause(){
   const w=OV.wk;
   if(OV.paused){OV.paused=false;if(w.end)w.end=Date.now()+w.left*1000;$("ovPause").textContent="Pausa"}
   else{OV.paused=true;if(w.end)w.left=Math.max(0,(w.end-Date.now())/1000);$("ovPause").textContent="Riprendi";hush()}
+}
+
+/* ---------- LA MIA VOCE ---------- */
+// frasi fisse che si possono registrare; la chiave è il testo esatto che l'app pronuncia
+const RITUAL_END=["Rituale fatto. Ora la meditazione: telefono giù, ascolta e basta.","Rituale fatto. Buona giornata."];
+const MED_END="Fine. Resta un attimo in silenzio prima di alzarti.";
+function voiceSets(){
+  return[["Rituale del mattino",RITUAL.map(r=>r[0]).concat(RITUAL_END)]]
+    .concat(MEDS.map(m=>[m.name,m.steps]))
+    .concat([[SOS.name,SOS.steps],["Fine della meditazione",[MED_END]]]);
+}
+const REC_OK=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder&&window.indexedDB);
+const myClips=new Map();   // testo → URL dell'audio registrato
+let clipEl=null,recState=null;
+function idb(){
+  return new Promise((ok,ko)=>{const r=indexedDB.open("mpc-voce",1);
+    r.onupgradeneeded=()=>r.result.createObjectStore("clips");r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)});
+}
+async function idbDo(mode,fn){const db=await idb();return new Promise((ok,ko)=>{const tx=db.transaction("clips",mode),st=tx.objectStore("clips"),req=fn(st);
+  tx.oncomplete=()=>ok(req&&req.result);tx.onerror=()=>ko(tx.error)})}
+async function loadClips(){
+  if(!window.indexedDB)return;
+  try{
+    const db=await idb();
+    await new Promise(ok=>{const cur=db.transaction("clips").objectStore("clips").openCursor();
+      cur.onsuccess=()=>{const c=cur.result;if(!c){ok();return}myClips.set(c.key,URL.createObjectURL(c.value));c.continue()};cur.onerror=()=>ok()});
+  }catch(e){}
+  if(view==="medita")renderMyVoice();
+}
+function playClip(t){
+  stopClip();
+  clipEl=new Audio(myClips.get(t));const p=clipEl.play();if(p&&p.catch)p.catch(()=>{});
+}
+function stopClip(){if(clipEl){clipEl.pause();clipEl=null}}
+async function startRec(t,btn){
+  if(recState){stopRec();return}
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})}
+  catch(e){toast("Microfono non disponibile: consenti l'accesso al microfono per questo sito.");return}
+  hush();
+  const rec=new MediaRecorder(stream),chunks=[];
+  recState={rec,stream,t,started:Date.now()};
+  rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+  rec.onstop=async()=>{
+    stream.getTracks().forEach(x=>x.stop());
+    const blob=new Blob(chunks,{type:rec.mimeType||"audio/webm"});recState=null;
+    if(blob.size<1500){toast("Registrazione troppo corta, riprova.");renderMyVoice();return}
+    try{await idbDo("readwrite",st=>st.put(blob,t));if(myClips.has(t))URL.revokeObjectURL(myClips.get(t));myClips.set(t,URL.createObjectURL(blob));
+      toast("Registrata. Tocca ▶ per riascoltarla.")}catch(e){toast("Non riesco a salvare la registrazione sul telefono.")}
+    renderMyVoice();
+  };
+  rec.start();renderMyVoice();
+  recState.timer=setTimeout(()=>{if(recState&&recState.rec===rec)stopRec()},30000);   // massimo 30 secondi a frase
+}
+function stopRec(){if(recState){clearTimeout(recState.timer);try{recState.rec.stop()}catch(e){}}}
+async function delClip(t){
+  try{await idbDo("readwrite",st=>st.delete(t))}catch(e){}
+  if(myClips.has(t))URL.revokeObjectURL(myClips.get(t));myClips.delete(t);renderMyVoice();
+}
+function renderMyVoice(){
+  const box=$("myVoice");if(!box)return;
+  if(!REC_OK||!ENV.site){box.innerHTML='<div class="eyebrow">La mia voce</div><p class="note" style="margin:0">Registrare la tua voce funziona nell\'app installata dal sito, non in questa anteprima.</p>';return}
+  const sets=voiceSets(),all=[...new Set(sets.flatMap(s=>s[1]))],done=all.filter(t=>myClips.has(t)).length;
+  const row=t=>{const rec=recState&&recState.t===t,has=myClips.has(t);
+    return '<li class="vrow'+(has?" has":"")+'"><span class="vtxt">'+esc(t)+'</span><span class="vbtns">'+
+      '<button type="button" class="vbtn'+(rec?" rec":"")+'" data-vrec="'+esc(t)+'" aria-label="'+(rec?"Ferma la registrazione":"Registra questa frase")+'">'+(rec?"■ Stop":"● "+(has?"Rifai":"Registra"))+"</button>"+
+      (has?'<button type="button" class="vbtn" data-vplay="'+esc(t)+'" aria-label="Riascolta">▶</button><button type="button" class="vbtn" data-vdel="'+esc(t)+'" aria-label="Elimina la registrazione">✕</button>':"")+"</span></li>"};
+  const open=box.querySelectorAll("details[open]"),openIdx=[...open].map(d=>d.dataset.i);
+  box.innerHTML='<div class="section-h" style="margin:0"><h2 style="font-size:1.05rem">La mia voce</h2><span class="eyebrow mono">'+done+"/"+all.length+" frasi</span></div>"+
+    '<p class="note" style="margin:0">Registra le frasi con la tua voce: l\'app usa le tue registrazioni dove ci sono e la voce del telefono per il resto. Parla piano, come a un amico, in una stanza silenziosa. Massimo 30 secondi a frase.</p>'+
+    '<label class="remitem" for="myVoiceOn"><input type="checkbox" id="myVoiceOn"'+(S.myVoice!==false?" checked":"")+"> Usa la mia voce dove l'ho registrata</label>"+
+    sets.map((s,i)=>{const n=s[1].filter(t=>myClips.has(t)).length;
+      return '<details class="rec-card" data-i="'+i+'"'+(openIdx.includes(String(i))||(recState&&s[1].includes(recState.t))?" open":"")+'><summary><b>'+esc(s[0])+'</b><span class="mono rec-min">'+n+"/"+s[1].length+'</span></summary><ol class="vlist">'+s[1].map(row).join("")+"</ol></details>"}).join("")+
+    '<p class="note" style="margin:0">Le registrazioni restano solo su questo telefono e non sono incluse nel backup.</p>';
 }
 
 /* ---------- UTILITY UI ---------- */
@@ -1611,7 +1700,7 @@ function shopMissing(){
 /* ---------- MEDITA ---------- */
 let medSel=null, durSel=null;
 function renderMed(){
-  $("voiceRow").hidden=!VOICE_OK;$("voiceOn").checked=!!S.voice;renderVoices();
+  $("voiceRow").hidden=!VOICE_OK;$("voiceOn").checked=!!S.voice;renderVoices();renderMyVoice();
   const p=buildDay(today());
   if(!medSel)medSel=p.med.id;
   if(!durSel)durSel=p.medMin;
@@ -1932,11 +2021,11 @@ function finish(){
     $("ovDone").textContent="Continua";$("ovPause").textContent="Basta così";
     o.state="miniEnd";
   }else if(o.seq){
-    const t=o.next?"Rituale fatto. Ora la meditazione: telefono giù, ascolta e basta.":"Rituale fatto. Buona giornata.";
+    const t=o.next?RITUAL_END[0]:RITUAL_END[1];
     $("ovMsg").textContent=t;speak(t);$("ovDone").textContent=o.next?"Avvia la meditazione":"Fatto";o.state="end";
   }else{
     $("ovMsg").textContent=o.med?"Fine. Resta un attimo in silenzio prima di alzarti.":"Tempo finito. Segna come fatto e passa alla prossima.";
-    if(o.med){$("orbTxt").textContent="Fine";speak("Fine. Resta un attimo in silenzio prima di alzarti.")}
+    if(o.med){$("orbTxt").textContent="Fine";speak(MED_END)}
     o.state="end";
   }
 }
@@ -1991,6 +2080,9 @@ document.addEventListener("click",e=>{
   if(b.id==="instBannerNo"){S.instDismiss=true;save();render();toast("Le istruzioni restano in Progressi → App e promemoria");return}
   if(b.id==="instBannerBtn"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;render()})}return}
   if(b.id==="instBtn"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;renderApp()})}return}
+  if(b.dataset.vrec!==undefined){if(recState&&recState.t!==b.dataset.vrec){stopRec();return}startRec(b.dataset.vrec,b);return}
+  if(b.dataset.vplay!==undefined){hush();playClip(b.dataset.vplay);return}
+  if(b.dataset.vdel!==undefined){delClip(b.dataset.vdel);toast("Registrazione eliminata");return}
   if(b.dataset.rpe!==undefined){setRpe(+b.dataset.rpe);return}
   if(b.dataset.water){const k=key(sel),n=+b.dataset.water;S.water[k]=(S.water[k]===n?n-1:n);save();renderHabits();if(S.water[k]===8)toast("8 bicchieri: idratazione da campione.");return}
   if(b.dataset.coffee){const k=key(sel),c=coffeeCfg();S.coffee[k]=S.coffee[k]||[];
@@ -2020,6 +2112,7 @@ document.addEventListener("change",e=>{
   if(e.target.id==="n-cof-max"){S.profile.coffee=Object.assign(coffeeCfg(),{max:+e.target.value});save();render();return}
   if(e.target.id==="n-cof-cut"){if(e.target.value){S.profile.coffee=Object.assign(coffeeCfg(),{cutoff:e.target.value});save();renderNeeds();render();scheduleReminders()}return}
   if(e.target.id==="n-prot"){S.profile.protein=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Più proteine: +18 g al giorno":"Proteine come da ricetta");return}
+  if(e.target.id==="myVoiceOn"){S.myVoice=e.target.checked;save();toast(e.target.checked?"Uso la tua voce dove l'hai registrata":"Uso solo la voce del telefono");return}
   if(e.target.id==="vc-voice"){setVoice({name:e.target.value});hush();say("Respira lentamente. Sei esattamente dove devi essere.");return}
   if(e.target.id==="voiceOn"){S.voice=e.target.checked;save();renderVoices();if(S.voice)speak("Guida vocale attiva.");else hush();return}
   if(e.target.dataset&&e.target.dataset.rem){S.rem.ids[e.target.dataset.rem]=e.target.checked;save();scheduleReminders();return}
@@ -2140,5 +2233,6 @@ setInterval(()=>{const k=key(today());if(k!==lastDay){if(key(sel)===lastDay)sel=
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!OV)render();if(!document.hidden&&OV)lockScreen(true)});
 
 render();
+loadClips();
 })();
 </script>
