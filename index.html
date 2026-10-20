@@ -608,7 +608,7 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
     </div>
     <div class="breath" id="ovBreath" hidden><div class="orb" id="orb"><span id="orbTxt">Pronto</span></div></div>
     <div class="bigtime" id="ovTime">02:00</div>
-    <div class="progress"><i id="ovBar"></i></div>
+    <div class="progress" id="ovProg"><i id="ovBar"></i></div>
     <p class="ov-msg" id="ovMsg"></p>
     <div class="btnrow">
       <button class="btn btn-sec" id="ovPause" style="flex:1">Pausa</button>
@@ -1264,7 +1264,7 @@ function render(){
     $("nextTitle").textContent=next.title;
     $("nextMeta").textContent=next.sum;
     nc.dataset.id=next.id;
-    $("nextGo").textContent=next.med?"Inizia a meditare":next.id==="train"?"Inizia l'allenamento":"Inizia ora";
+    $("nextGo").textContent=next.med?"Inizia a meditare":next.id==="train"?"Inizia l'allenamento":next.rec?"Apri la ricetta":"Inizia ora";
   }
 
   // timeline
@@ -1300,7 +1300,7 @@ function render(){
   renderHabits();
   scheduleReminders();
 }
-function startBtn(x){return '<div class="btnrow"><button class="btn btn-court" data-start="'+x.id+'">'+(x.med?"Avvia meditazione guidata":x.rec?"Cucina con il timer · "+x.dur+" min":"Avvia timer · "+x.dur+" min")+'</button></div>'}
+function startBtn(x){return '<div class="btnrow"><button class="btn btn-court" data-start="'+x.id+'">'+(x.med?"Avvia meditazione guidata":x.rec?"Apri la ricetta a schermo intero":"Avvia timer · "+x.dur+" min")+'</button></div>'}
 function energy(n){const p=n.p*4,c=n.c*4,f=n.f*9,t=p+c+f||1;return{p:Math.round(p/t*100),c:Math.round(c/t*100),f:Math.round(f/t*100)}}
 function macroHTML(n,label){
   if(!n)return "";
@@ -1727,6 +1727,9 @@ function openOverlay(o){
   hush();if(o.med)speak(o.med.steps[0]);
   if(o.seq){OV.seqI=0;$("ovMsg").textContent=o.seq[0][0];speak(o.seq[0][0]);$("ovDone").textContent=o.next?"Fatto · passa alla meditazione":"Fatto"}
   $("ovVoice").hidden=!((o.seq||o.med)&&VOICE_OK&&!S.voice);
+  // ricette: niente conto alla rovescia, solo ingredienti e passaggi
+  $("ovTime").hidden=$("ovProg").hidden=$("ovPause").hidden=!!o.noTimer;
+  if(o.noTimer){$("ovDone").textContent=o.doneLabel||"Fatto";setTimeout(()=>$("ovDone").focus(),50);return}
   OV.end=Date.now()+o.secs*1000;
   OV.tick=setInterval(tick,250);
   if(o.med)breathLoop(0);
@@ -1795,7 +1798,8 @@ function startTask(id,mini){
   }
   let list="";
   if(x.ex)list='<div class="phase"><div class="eyebrow">Esercizi · tocca per la spiegazione</div>'+x.ex.map(e=>exHTML(e,+S.profile.level||0,WEEKS[plan.info.week].factor)).join("")+'<p class="tip" style="margin-top:8px">'+esc(x.tip)+"</p></div>";
-  else if(x.rec)list='<div class="phase">'+recipeHTML(x.rec,x.eat)+"</div>";
+  else if(x.rec){openOverlay({title:x.title,eyebrow:"In cucina · circa "+x.rec.min+" min",noTimer:true,doneLabel:x.id==="snack"?"Fatto":"Ho mangiato",task:id,day:sel,
+    list:'<div class="phase">'+recipeHTML(x.rec,x.eat)+"</div>",msg:"Prenditi il tempo che serve. Segui i passaggi qui sotto."});return}
   else if(x.list)list='<div class="phase"><ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">'+x.list.map(s=>"<li>"+esc(s)+"</li>").join("")+"</ul></div>";
   openOverlay({title:x.title,eyebrow:x.id==="train"?"Allenamento":x.rec?"In cucina":"In corso",secs:x.dur*60,task:id,day:sel,list,msg:x.id==="train"?"Inizia dal primo esercizio. Pensa solo a quello.":x.rec?"Segui i passaggi qui sotto, uno alla volta.":x.sum});
 }
