@@ -243,6 +243,10 @@ fieldset.needs legend{font-weight:700;font-size:.9rem;padding:0 6px}
 .swap{margin-bottom:10px}
 .swap select{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;width:100%}
 
+#voiceCfg input[type=range]{width:100%;accent-color:var(--court)}
+.vc-hint{color:var(--muted);font-weight:600}
+#voiceCfg select{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+
 /* spesa */
 #settSeg button{flex:1 1 0;min-width:0}
 .pane{display:flex;flex-direction:column;gap:16px}
@@ -471,6 +475,13 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
     <div class="durs" id="durs"></div>
     <div class="phase" id="medPreview"></div>
     <label class="remitem" for="voiceOn" id="voiceRow"><input type="checkbox" id="voiceOn"> Guida vocale: una voce legge le indicazioni (alza il volume)</label>
+    <div class="phase card-block" id="voiceCfg" hidden>
+      <div class="field"><label for="vc-voice">Voce</label><select id="vc-voice"></select></div>
+      <div class="field"><label for="vc-rate">Velocità <span class="mono vc-hint" id="vc-rate-v"></span></label><input id="vc-rate" type="range" min="0.7" max="1.1" step="0.05"></div>
+      <div class="field"><label for="vc-pitch">Tono <span class="vc-hint" id="vc-pitch-v"></span></label><input id="vc-pitch" type="range" min="0.8" max="1.2" step="0.05"></div>
+      <div class="btnrow"><button type="button" class="btn btn-court" id="vc-test">Ascolta</button><button type="button" class="btn btn-ghost" id="vc-reset">Valori consigliati</button></div>
+      <p class="note" id="vc-none" style="margin:0">Hai poche voci italiane. Su Android puoi installarne di più naturali: Impostazioni → Accessibilità → Sintesi vocale → Motore Google → Installa dati vocali → Italiano. Poi riapri questa pagina.</p>
+    </div>
     <button class="btn btn-go" id="medStart">Inizia la meditazione</button>
   </section>
 
@@ -1150,11 +1161,33 @@ function goalActive(){return S.weekGoal&&S.weekGoal.text&&diffDays(parseKey(S.we
 
 /* ---------- GUIDA VOCALE ---------- */
 const VOICE_OK="speechSynthesis" in window&&"SpeechSynthesisUtterance" in window;
-function speak(t){
-  if(!S.voice||!VOICE_OK)return;
-  try{const u=new SpeechSynthesisUtterance(t);u.lang="it-IT";u.rate=.9;
-    const v=speechSynthesis.getVoices().find(x=>/^it/i.test(x.lang));if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){}
+// voci italiane, le più naturali per prime (i motori migliori lo dicono nel nome)
+function itVoices(){
+  if(!VOICE_OK)return[];
+  const score=v=>(/neural|natural|enhanced|premium|wavenet|online/i.test(v.name)?4:0)+(/google/i.test(v.name)?2:0)+(v.localService===false?1:0);
+  return speechSynthesis.getVoices().filter(v=>/^it/i.test(v.lang)).sort((a,b)=>score(b)-score(a));
 }
+function voiceCfg(){return Object.assign({name:"",rate:.9,pitch:.95},S.voiceCfg||{})}
+function say(t){
+  if(!VOICE_OK)return;
+  try{const c=voiceCfg(),vs=itVoices(),u=new SpeechSynthesisUtterance(t);
+    u.lang="it-IT";u.rate=c.rate;u.pitch=c.pitch;
+    const v=vs.find(x=>x.name===c.name)||vs[0];if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){}
+}
+function speak(t){if(S.voice)say(t)}
+function renderVoices(){
+  const box=$("voiceCfg");if(!VOICE_OK){box.hidden=true;return}
+  box.hidden=!S.voice;
+  const vs=itVoices(),c=voiceCfg(),sel=$("vc-voice");
+  if(document.activeElement!==sel){
+    sel.innerHTML=vs.length?vs.map((v,i)=>'<option value="'+esc(v.name)+'"'+((c.name?v.name===c.name:i===0)?" selected":"")+">"+esc(v.name.replace(/^(Microsoft|Google)\s+/,"$1 · "))+(i===0?" (consigliata)":"")+"</option>").join(""):'<option value="">Nessuna voce italiana installata</option>';
+  }
+  $("vc-none").hidden=vs.length>1;
+  $("vc-rate").value=c.rate;$("vc-rate-v").textContent=fmtNum(c.rate)+"×";
+  $("vc-pitch").value=c.pitch;$("vc-pitch-v").textContent=c.pitch<.97?"più grave":c.pitch>1.03?"più acuto":"naturale";
+}
+function setVoice(patch){S.voiceCfg=Object.assign(voiceCfg(),patch);save();renderVoices()}
+if(VOICE_OK&&"onvoiceschanged" in speechSynthesis)speechSynthesis.onvoiceschanged=()=>{if(view==="medita")renderVoices()};
 function hush(){try{if(VOICE_OK)speechSynthesis.cancel()}catch(e){}}
 
 /* ---------- UTILITY UI ---------- */
@@ -1421,7 +1454,7 @@ function shopMissing(){
 /* ---------- MEDITA ---------- */
 let medSel=null, durSel=null;
 function renderMed(){
-  $("voiceRow").hidden=!VOICE_OK;$("voiceOn").checked=!!S.voice;
+  $("voiceRow").hidden=!VOICE_OK;$("voiceOn").checked=!!S.voice;renderVoices();
   const p=buildDay(today());
   if(!medSel)medSel=p.med.id;
   if(!durSel)durSel=p.medMin;
@@ -1814,7 +1847,8 @@ document.addEventListener("change",e=>{
   if(e.target.dataset&&e.target.dataset.swap){const sw=e.target.dataset.swap,wd=+sw.split("-")[0],v=+e.target.value;if(v===wd)delete S.swaps[sw];else S.swaps[sw]=v;save();renderRecipes();render();toast("Piatto cambiato");return}
   if(e.target.id==="n-veg"){S.profile.veg=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Menù vegetariano: il pesce diventa tempeh e ceci":"Pesce di nuovo nel menù");return}
   if(e.target.id==="n-prot"){S.profile.protein=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Più proteine: +18 g al giorno":"Proteine come da ricetta");return}
-  if(e.target.id==="voiceOn"){S.voice=e.target.checked;save();if(S.voice)speak("Guida vocale attiva.");else hush();return}
+  if(e.target.id==="vc-voice"){setVoice({name:e.target.value});hush();say("Respira lentamente. Sei esattamente dove devi essere.");return}
+  if(e.target.id==="voiceOn"){S.voice=e.target.checked;save();renderVoices();if(S.voice)speak("Guida vocale attiva.");else hush();return}
   if(e.target.dataset&&e.target.dataset.rem){S.rem.ids[e.target.dataset.rem]=e.target.checked;save();scheduleReminders();return}
   if(e.target.id==="remNudge"){S.rem.nudge=e.target.checked;save();scheduleReminders();renderApp();return}
   const id=e.target.dataset&&e.target.dataset.shop;if(!id)return;
@@ -1846,6 +1880,10 @@ $("nextExcuse").onclick=()=>{
 $("sosBtn").onclick=()=>openOverlay({title:SOS.name,eyebrow:breathLabel(SOS.p),secs:60,med:SOS});
 $("medStart").onclick=()=>{const m=MEDS.find(x=>x.id===medSel);openOverlay({title:m.name,eyebrow:breathLabel(m.p),secs:durSel*60,med:m,task:"medam",day:today()})};
 $("ovClose").onclick=()=>closeOverlay();
+$("vc-rate").addEventListener("input",e=>setVoice({rate:+e.target.value}));
+$("vc-pitch").addEventListener("input",e=>setVoice({pitch:+e.target.value}));
+$("vc-test").onclick=()=>{hush();say("Inspira dal naso. Espira lentamente. Oggi fai solo la prossima cosa.")};
+$("vc-reset").onclick=()=>{setVoice({rate:.9,pitch:.95});hush();say("Così suona più calma.")};
 $("ovVoice").onclick=()=>{S.voice=true;save();$("ovVoice").hidden=true;speak($("ovMsg").textContent);toast("Guida vocale attiva. Puoi girare il telefono.")};
 $("ovPause").onclick=()=>{
   if(!OV)return;
