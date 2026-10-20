@@ -22,7 +22,7 @@ Apri `index.html` in un browser (su telefono o computer). Non serve installare n
 
 - **Esercizi spiegati**: tocca un esercizio per vedere come si esegue, l'errore da evitare e la versione più facile.
 - **Allenamento guidato**: «Avvia l'allenamento guidato» porta esercizio per esercizio e serie per serie; la voce annuncia esercizio, serie e prima indicazione tecnica; per le ripetizioni tocchi «Fatto · prossima», gli esercizi a tempo e i recuperi partono e finiscono da soli.
-- **Audio**: in meditazione e nel rituale un sottofondo leggero mette in pausa la musica delle altre app (facoltativo anche per l'allenamento); la voce delle meditazioni parla più piano, a frasi brevi con pause.
+- **Voce delle meditazioni**: parla più piano, a frasi brevi con pause. La musica di altre app (per esempio Spotify) non si ferma da sola: mettila in pausa prima di iniziare.
 - **Allenamento che si adatta**: dopo l'allenamento scegli «troppo facile», «giusto» o «troppo duro»; il volume dei successivi sale o scende (da −25% a +30%).
 - **Menù su misura**: in Ricette puoi cambiare ogni piatto con un altro della stessa categoria; nel fabbisogno puoi scegliere «Vegetariano» (il pesce diventa tempeh e ceci) e «Più proteine» (+18 g al giorno).
 - **Acqua e sonno**: in Oggi segni i bicchieri d'acqua e le ore di sonno.

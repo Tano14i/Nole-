@@ -255,7 +255,6 @@ fieldset.needs legend{font-weight:700;font-size:.9rem;padding:0 6px}
 .wk-ex.cur{border-left-color:var(--ball)}
 .wk-ex.cur .ex span:first-child{font-weight:700}
 .wk-ex.done{opacity:.55}
-#amb-vol{width:100%;accent-color:var(--court)}
 
 /* spesa */
 #settSeg button{flex:1 1 0;min-width:0}
@@ -491,12 +490,6 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
       <div class="field"><label for="vc-pitch">Tono <span class="vc-hint" id="vc-pitch-v"></span></label><input id="vc-pitch" type="range" min="0.8" max="1.2" step="0.05"></div>
       <div class="btnrow"><button type="button" class="btn btn-court" id="vc-test">Ascolta</button><button type="button" class="btn btn-ghost" id="vc-reset">Valori consigliati</button></div>
       <p class="note" id="vc-none" style="margin:0">Hai poche voci italiane. Su Android puoi installarne di più naturali: Impostazioni → Accessibilità → Sintesi vocale → Motore Google → Installa dati vocali → Italiano. Poi riapri questa pagina.</p>
-    </div>
-    <div class="phase card-block" id="ambBox">
-      <div class="eyebrow">Audio</div>
-      <label class="remitem" for="amb-med"><input type="checkbox" id="amb-med"> Sottofondo leggero in meditazione e nel rituale: mette in pausa la musica delle altre app</label>
-      <div class="field"><label for="amb-vol">Volume del sottofondo</label><input id="amb-vol" type="range" min="0.05" max="0.6" step="0.05"></div>
-      <label class="remitem" for="amb-train"><input type="checkbox" id="amb-train"> Metti in pausa la musica anche durante l'allenamento guidato</label>
     </div>
     <button class="btn btn-go" id="medStart">Inizia la meditazione</button>
   </section>
@@ -1251,43 +1244,6 @@ function setVoice(patch){S.voiceCfg=Object.assign(voiceCfg(),patch);save();rende
 if(VOICE_OK&&"onvoiceschanged" in speechSynthesis)speechSynthesis.onvoiceschanged=()=>{if(view==="medita")renderVoices()};
 function hush(){sayToken++;try{if(VOICE_OK)speechSynthesis.cancel()}catch(e){}}
 
-/* ---------- SOTTOFONDO AUDIO ---------- */
-// un vero file audio in riproduzione chiede al telefono il controllo dell'audio: la musica delle altre app va in pausa
-function ambCfg(){return Object.assign({med:true,train:false,vol:.25},S.amb||{})}
-let ambEl=null,ambUrl=null;
-function ambientUrl(){
-  if(ambUrl)return ambUrl;
-  const sr=16000,N=sr*16,X=sr,d=new Float32Array(N+X);let last=0;
-  for(let i=0;i<N+X;i++){last=(last+.02*(Math.random()*2-1))/1.02;d[i]=last*3.5}   // rumore marrone, come onde lontane
-  for(let i=0;i<X;i++){const a=i/X;d[i]=d[i]*a+d[N+i]*(1-a)}                      // dissolvenza: il giro si ripete senza scatti
-  const buf=new ArrayBuffer(44+N*2),v=new DataView(buf),w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
-  w(0,"RIFF");v.setUint32(4,36+N*2,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
-  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,N*2,true);
-  for(let i=0;i<N;i++)v.setInt16(44+i*2,Math.max(-1,Math.min(1,d[i]))*32767,true);
-  ambUrl=URL.createObjectURL(new Blob([buf],{type:"audio/wav"}));return ambUrl;
-}
-function ambient(on,title,vol){
-  try{
-    const ms="mediaSession" in navigator?navigator.mediaSession:null;
-    if(!on){if(ambEl)ambEl.pause();if(ms)ms.playbackState="none";return}
-    if(!ambEl){
-      // file vero del sito, inserito nella pagina: Chrome lo tratta come contenuto multimediale e chiede alle altre app di fermarsi
-      ambEl=document.createElement("audio");ambEl.loop=true;ambEl.preload="auto";ambEl.hidden=true;
-      ambEl.src=ENV.site?"audio/sottofondo.wav":ambientUrl();document.body.appendChild(ambEl);
-    }
-    ambEl.volume=vol===undefined?ambCfg().vol:vol;ambEl.currentTime=0;
-    const p=ambEl.play();if(p&&p.catch)p.catch(()=>{});
-    if(ms){
-      if(window.MediaMetadata)ms.metadata=new MediaMetadata({title:title||"Match Point Coach",artist:"Match Point Coach",artwork:[{src:"icons/icon-512.png",sizes:"512x512",type:"image/png"}]});
-      ms.playbackState="playing";
-      // i comandi della notifica multimediale mettono in pausa e riprendono la sessione
-      const toggle=()=>{if(OV&&!OV.state)$("ovPause").click()};
-      try{ms.setActionHandler("pause",()=>{ambEl.pause();ms.playbackState="paused";toggle()});
-          ms.setActionHandler("play",()=>{ambEl.play();ms.playbackState="playing";toggle()})}catch(e){}
-    }
-  }catch(e){}
-}
-
 /* ---------- ALLENAMENTO GUIDATO ---------- */
 const WK_UNIT={"rip":"ripetizioni","per lato":"ripetizioni per lato","per gamba":"ripetizioni per gamba","giri":"giri","sec":"secondi","sec per lato":"secondi per lato","min":"minuti"};
 const WK_SHORT={"rip":"rip","per lato":"per lato","per gamba":"per gamba","giri":"giri"};
@@ -1311,7 +1267,6 @@ function openWorkout(x,plan){
   OV.wk={x,lvl,f,steps:wkSteps(x,lvl,f),i:0};
   $("ovTime").hidden=$("ovProg").hidden=false;
   $("ovVoice").hidden=!(VOICE_OK&&!S.voice);
-  if(ambCfg().train)ambient(true,x.title,.05);
   lockScreen(true);
   OV.tick=setInterval(wkTick,250);
   wkShow(0);
@@ -1657,7 +1612,6 @@ function shopMissing(){
 let medSel=null, durSel=null;
 function renderMed(){
   $("voiceRow").hidden=!VOICE_OK;$("voiceOn").checked=!!S.voice;renderVoices();
-  const ac=ambCfg();$("amb-med").checked=ac.med;$("amb-train").checked=ac.train;$("amb-vol").value=ac.vol;
   const p=buildDay(today());
   if(!medSel)medSel=p.med.id;
   if(!durSel)durSel=p.medMin;
@@ -1932,7 +1886,6 @@ function openOverlay(o){
   hush();if(o.med)speak(o.med.steps[0]);
   if(o.seq){OV.seqI=0;$("ovMsg").textContent=o.seq[0][0];speak(o.seq[0][0]);$("ovDone").textContent=o.next?"Fatto · passa alla meditazione":"Fatto"}
   $("ovVoice").hidden=!((o.seq||o.med)&&VOICE_OK&&!S.voice);
-  if((o.med||o.seq)&&ambCfg().med)ambient(true,o.title);
   // ricette: niente conto alla rovescia, solo ingredienti e passaggi
   $("ovTime").hidden=$("ovProg").hidden=$("ovPause").hidden=!!o.noTimer;
   if(o.noTimer){$("ovDone").textContent=o.doneLabel||"Fatto";setTimeout(()=>$("ovDone").focus(),50);return}
@@ -1988,7 +1941,7 @@ function finish(){
   }
 }
 function closeOverlay(silent){
-  if(!OV)return;clearInterval(OV.tick);clearTimeout(OV.bt);OV=null;hush();ambient(false);
+  if(!OV)return;clearInterval(OV.tick);clearTimeout(OV.bt);OV=null;hush();
   $("overlay").hidden=true;document.body.style.overflow="";lockScreen(false);
   if(!silent)render();
 }
@@ -2067,7 +2020,6 @@ document.addEventListener("change",e=>{
   if(e.target.id==="n-cof-max"){S.profile.coffee=Object.assign(coffeeCfg(),{max:+e.target.value});save();render();return}
   if(e.target.id==="n-cof-cut"){if(e.target.value){S.profile.coffee=Object.assign(coffeeCfg(),{cutoff:e.target.value});save();renderNeeds();render();scheduleReminders()}return}
   if(e.target.id==="n-prot"){S.profile.protein=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Più proteine: +18 g al giorno":"Proteine come da ricetta");return}
-  if(e.target.id==="amb-med"||e.target.id==="amb-train"){S.amb=Object.assign(ambCfg(),{[e.target.id==="amb-med"?"med":"train"]:e.target.checked});save();return}
   if(e.target.id==="vc-voice"){setVoice({name:e.target.value});hush();say("Respira lentamente. Sei esattamente dove devi essere.");return}
   if(e.target.id==="voiceOn"){S.voice=e.target.checked;save();renderVoices();if(S.voice)speak("Guida vocale attiva.");else hush();return}
   if(e.target.dataset&&e.target.dataset.rem){S.rem.ids[e.target.dataset.rem]=e.target.checked;save();scheduleReminders();return}
@@ -2101,7 +2053,6 @@ $("nextExcuse").onclick=()=>{
 $("sosBtn").onclick=()=>openOverlay({title:SOS.name,eyebrow:breathLabel(SOS.p),secs:60,med:SOS});
 $("medStart").onclick=()=>{const m=MEDS.find(x=>x.id===medSel);openOverlay({title:m.name,eyebrow:breathLabel(m.p),secs:durSel*60,med:m,task:"medam",day:today()})};
 $("ovClose").onclick=()=>closeOverlay();
-$("amb-vol").addEventListener("input",e=>{S.amb=Object.assign(ambCfg(),{vol:+e.target.value});save();if(ambEl&&!ambEl.paused)ambEl.volume=+e.target.value});
 $("vc-rate").addEventListener("input",e=>setVoice({rate:+e.target.value}));
 $("vc-pitch").addEventListener("input",e=>setVoice({pitch:+e.target.value}));
 $("vc-test").onclick=()=>{hush();say("Inspira dal naso, lentamente. Espira, e lascia andare le spalle. Oggi fai solo la prossima cosa.",true)};
