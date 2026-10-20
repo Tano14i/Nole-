@@ -7,10 +7,10 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Nole Coach">
+<meta name="apple-mobile-web-app-title" content="Match Point">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <!-- inizio contenuto pagina -->
-<title>Nole Coach</title>
+<title>Match Point Coach</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#1D5A3D">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -340,7 +340,7 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
       <div class="brand-mark" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B2A00" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M4.5 5.5c3.5 3 3.5 10 0 13M19.5 5.5c-3.5 3-3.5 10 0 13"/></svg>
       </div>
-      <div><h1>Nole Coach</h1><small id="hdr-sub">Giorno 1 · Fondamenta</small></div>
+      <div><h1>Match Point Coach</h1><small id="hdr-sub">Giorno 1 · Fondamenta</small></div>
     </div>
     <div class="streak" title="Giorni vinti di fila (almeno 70% del piano)">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-4-1-6 1-9.5z"/></svg>
@@ -426,7 +426,7 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
     </div>
     <div class="weekgrid" id="weekGrid"></div>
     <div class="phase">
-      <div class="eyebrow">Le regole della cucina di Nole</div>
+      <div class="eyebrow">Le regole della cucina</div>
       <ul style="margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:.93rem">
         <li>Niente glutine: riso, quinoa, grano saraceno, miglio, avena certificata.</li>
         <li>Niente latticini: bevande vegetali di mandorla, cocco o riso.</li>
@@ -916,7 +916,7 @@ const RITUAL=[
 ];
 
 /* ---------- STATO ---------- */
-const LS="nolecoach.v1";
+const LS="nolecoach.v1"; // nome storico dell'archivio: non cambiarlo, o i dati salvati non si ritrovano
 function key(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 function parseKey(k){const a=k.split("-").map(Number);return new Date(a[0],a[1]-1,a[2])}
 function addDays(d,n){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()+n);return x}
@@ -1257,7 +1257,7 @@ function render(){
   if(view==="tu")renderYou();
   const showInst=ENV.site&&!ENV.standalone&&!S.instDismiss&&isToday(sel);
   $("instBanner").hidden=!showInst;
-  if(showInst){$("instText").innerHTML=installEvt?"Installa Nole Coach: si apre come un'app, anche senza connessione, e ti manda i promemoria.":"<b>Installa Nole Coach sul telefono.</b> "+installHelp();$("instBannerBtn").hidden=!installEvt}
+  if(showInst){$("instText").innerHTML=installEvt?"Installa Match Point Coach: si apre come un'app, anche senza connessione, e ti manda i promemoria.":"<b>Installa Match Point Coach sul telefono.</b> "+installHelp();$("instBannerBtn").hidden=!installEvt}
   $("remBanner").hidden=showInst||!(ENV.notif&&!S.rem.on&&!S.rem.dismiss&&isToday(sel));
   const sk=key(today());
   $("sunBanner").hidden=!(isToday(sel)&&today().getDay()===0&&S.reviewSeen!==sk);
@@ -1277,7 +1277,7 @@ function macroHTML(n,label){
     '<dl class="macro-g"><div><dt><i class="m-p"></i>Proteine</dt><dd class="mono">'+n.p+' g</dd></div><div><dt><i class="m-c"></i>Carboidrati</dt><dd class="mono">'+n.c+' g</dd></div><div><dt><i class="m-f"></i>Grassi</dt><dd class="mono">'+n.f+' g</dd></div><div><dt><i class="m-fi"></i>Fibre</dt><dd class="mono">'+n.fi+' g</dd></div></dl></div>';
 }
 /* ---------- FABBISOGNO E PORZIONI ---------- */
-const ACTS=[[1.2,"Sedentario","lavoro seduto, poco movimento oltre al piano"],[1.375,"Leggero","il piano di Nole Coach e poco altro"],[1.55,"Moderato","il piano più sport o un lavoro in piedi"],[1.725,"Intenso","allenamenti duri quasi ogni giorno"]];
+const ACTS=[[1.2,"Sedentario","lavoro seduto, poco movimento oltre al piano"],[1.375,"Leggero","il piano di Match Point Coach e poco altro"],[1.55,"Moderato","il piano più sport o un lavoro in piedi"],[1.725,"Intenso","allenamenti duri quasi ogni giorno"]];
 const GOALS=[[-.15,"Perdere peso"],[0,"Mantenere"],[.1,"Aumentare massa"]];
 function nutriCfg(){return Object.assign({mode:"base",sex:"m",age:35,weight:75,height:175,act:1,goal:1,kcal:2200},S.profile.nutri||{})}
 function baseDay(wd){const t={k:0,p:0,c:0,f:0,fi:0};["colazione","pranzo","spuntino","cena"].forEach(m=>{const n=rawRecipe(m,wd).n;for(const x in t)t[x]+=n[x]});return t}
@@ -1412,7 +1412,7 @@ function renderShop(){
 }
 function shopMissing(){
   const got=shopLog(),SHOP=shopGroups();
-  return "Lista della spesa · Nole Coach\n"+SHOP.map(g=>{
+  return "Lista della spesa · Match Point Coach\n"+SHOP.map(g=>{
     const m=g[1].filter(i=>!got[i[0]]);
     return m.length?"\n"+g[0].toUpperCase()+"\n"+m.map(i=>"- "+i[1]+" ("+scaleShopQty(i[2],weekFactor())+")").join("\n"):"";
   }).join("")+"\n";
@@ -1512,7 +1512,7 @@ function renderJournal(){
 }
 
 /* ---------- BACKUP ---------- */
-function backupText(){return JSON.stringify({app:"nole-coach",v:1,date:key(today()),data:S})}
+function backupText(){return JSON.stringify({app:"match-point-coach",v:1,date:key(today()),data:S})}
 function renderBackup(){
   const lb=S.lastBackup,days=lb?diffDays(parseKey(lb),today()):null;
   const hasData=Object.keys(S.log).length||Object.keys(S.weights).length||Object.keys(S.journal).length;
@@ -1529,7 +1529,7 @@ function bindBackup(){
   $("bkOpen").onclick=()=>{$("bkImport").hidden=!$("bkImport").hidden;if(!$("bkImport").hidden)$("bkIn").focus()};
   $("bkRestore").onclick=()=>{
     let obj;try{obj=JSON.parse($("bkIn").value.trim())}catch(e){obj=null}
-    if(!obj||obj.app!=="nole-coach"||!obj.data||!obj.data.profile){$("bkMsg").innerHTML='<span class="warn">Questo testo non è un backup di Nole Coach. Incolla tutto il testo copiato, dalla prima all\'ultima parentesi graffa.</span>';return}
+    if(!obj||!["match-point-coach","nole-coach"].includes(obj.app)||!obj.data||!obj.data.profile){$("bkMsg").innerHTML='<span class="warn">Questo testo non è un backup di Match Point Coach. Incolla tutto il testo copiato, dalla prima all\'ultima parentesi graffa.</span>';return}
     const d=parseKey(obj.date||key(today()));
     $("bkMsg").innerHTML='<span>Sostituisco tutti i dati attuali con il backup del '+d.getDate()+" "+MONTHS[d.getMonth()]+'?</span><div class="btnrow"><button type="button" class="btn btn-danger" id="bkYes">Sì, ripristina</button><button type="button" class="btn btn-sec" id="bkNo">Annulla</button></div>';
     $("bkYes").onclick=()=>{S=Object.assign(defaults(),obj.data);save();$("bkIn").value="";$("bkMsg").innerHTML="";$("bkImport").hidden=true;sel=today();render();renderYou();toast("Dati ripristinati")};
@@ -1601,13 +1601,13 @@ function icsFold(line){
 function icsDate(d,min){const x=new Date(d.getTime()+min*60000),p=n=>String(n).padStart(2,"0");return x.getFullYear()+p(x.getMonth()+1)+p(x.getDate())+"T"+p(x.getHours())+p(x.getMinutes())+"00"}
 function buildICS(){
   const BYDAY=["MO","TU","WE","TH","FR","SA","SU"],now=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
-  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Nole Coach//IT","CALSCALE:GREGORIAN","X-WR-CALNAME:Nole Coach"];
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Match Point Coach//IT","CALSCALE:GREGORIAN","X-WR-CALNAME:Match Point Coach"];
   for(let i=0;i<7;i++){
     const d=addDays(today(),i),wd=(d.getDay()+6)%7,plan=buildDay(d);
     plan.tasks.forEach(x=>{
       if(S.rem.ids[x.id]===false)return;
-      L.push("BEGIN:VEVENT","UID:nolecoach-"+x.id+"-"+BYDAY[wd]+"@nolecoach","DTSTAMP:"+now,"DTSTART:"+icsDate(d,x.t),"DURATION:PT"+Math.max(5,x.dur||5)+"M",
-        "RRULE:FREQ=WEEKLY;BYDAY="+BYDAY[wd],icsFold("SUMMARY:"+icsEsc("Nole · "+x.title)),icsFold("DESCRIPTION:"+icsEsc(x.sum+"\n\nVersione da 2 minuti: "+x.micro)),
+      L.push("BEGIN:VEVENT","UID:mpcoach-"+x.id+"-"+BYDAY[wd]+"@matchpointcoach","DTSTAMP:"+now,"DTSTART:"+icsDate(d,x.t),"DURATION:PT"+Math.max(5,x.dur||5)+"M",
+        "RRULE:FREQ=WEEKLY;BYDAY="+BYDAY[wd],icsFold("SUMMARY:"+icsEsc("Match Point · "+x.title)),icsFold("DESCRIPTION:"+icsEsc(x.sum+"\n\nVersione da 2 minuti: "+x.micro)),
         "BEGIN:VALARM","ACTION:DISPLAY",icsFold("DESCRIPTION:"+icsEsc(x.title)),"TRIGGER:PT0M","END:VALARM","END:VEVENT");
     });
   }
@@ -1617,7 +1617,7 @@ function buildICS(){
 function downloadICS(){
   if(!ENV.site){toast("Il file calendario si scarica dall'app installata o dal sito.");return}
   const url=URL.createObjectURL(new Blob([buildICS()],{type:"text/calendar"}));
-  const a=document.createElement("a");a.href=url;a.download="nole-coach.ics";document.body.appendChild(a);a.click();a.remove();
+  const a=document.createElement("a");a.href=url;a.download="match-point-coach.ics";document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),4000);
   toast("Calendario scaricato. Aprilo per aggiungere gli eventi.");
 }
@@ -1627,7 +1627,7 @@ function renderApp(){
   ib.hidden=!installEvt;
   if(!ENV.site)st.innerHTML='Questa è l\'anteprima: qui il telefono non permette di installare l\'app né di inviare notifiche. Apri il sito <b class="mono sel">'+SITE_URL+'</b> dal telefono e installala da lì.';
   else if(ENV.standalone)st.innerHTML="<b>App installata.</b> Funziona anche offline.";
-  else if(installEvt)st.textContent="Puoi installare Nole Coach sul telefono: la apri come un'app, anche senza connessione.";
+  else if(installEvt)st.textContent="Puoi installare Match Point Coach sul telefono: la apri come un'app, anche senza connessione.";
   else st.innerHTML="Per installarla: "+installHelp()+(ENV.ios?" Le notifiche su iPhone funzionano solo dall'app installata (iOS 16.4 o successivo).":"");
   const perm=ENV.notif?Notification.permission:"na";
   $("remToggle").textContent=S.rem.on&&perm==="granted"?"Disattiva i promemoria":"Attiva i promemoria";
@@ -1789,7 +1789,7 @@ document.addEventListener("click",e=>{
   if(b.id==="remToggle"){if(S.rem.on&&ENV.notif&&Notification.permission==="granted"){S.rem.on=false;save();scheduleReminders();renderApp();render();toast("Promemoria spenti")}else enableReminders();return}
   if(b.id==="remBannerOn"){enableReminders();return}
   if(b.id==="remBannerNo"){S.rem.dismiss=true;save();render();toast("Va bene. Li trovi in Progressi se cambi idea.");return}
-  if(b.id==="remTest"){notify("Nole Coach","Così ti arriveranno i promemoria. Ora fai la prossima cosa della lista.","nc-test");return}
+  if(b.id==="remTest"){notify("Match Point Coach","Così ti arriveranno i promemoria. Ora fai la prossima cosa della lista.","nc-test");return}
   if(b.id==="icsBtn"){downloadICS();return}
   if(b.id==="instBannerNo"){S.instDismiss=true;save();render();toast("Le istruzioni restano in Progressi → App e promemoria");return}
   if(b.id==="instBannerBtn"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;render()})}return}

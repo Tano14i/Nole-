@@ -1,7 +1,7 @@
 {
-  "name": "Nole Coach",
-  "short_name": "Nole Coach",
-  "description": "Il coach quotidiano ispirato a Djokovic: cosa mangiare, cosa allenare, quando meditare.",
+  "name": "Match Point Coach",
+  "short_name": "Match Point",
+  "description": "Il coach quotidiano per alimentazione, allenamento e meditazione, contro la procrastinazione.",
   "lang": "it",
   "start_url": "./",
   "scope": "./",
