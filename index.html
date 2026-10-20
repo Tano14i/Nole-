@@ -996,11 +996,16 @@ function buildDay(d){
   const P=S.profile, lvl=+P.level||0, I=dayInfo(d), W=toMin(P.wake), f=WEEKS[I.week].factor;
   const wo=WORKOUTS[I.wd], med=MEDS[I.wd];
   const medMin=MED_MIN[lvl][I.week];
-  let trainAt=P.slot==="pranzo"?W+345:P.slot==="sera"?W+720:W+120;
-  let lunchAt=P.slot==="pranzo"?W+420:W+390,colazAt=W+45,snackAt=W+600,cenaAt=W+810;
+  // pranzo e cena restano in orari normali qualunque sia la sveglia; la cena almeno 2 ore e mezza prima di dormire
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),q15=v=>Math.round(v/15)*15;
+  let colazAt=W+45,lunchAt=clamp(W+390,750,810),cenaAt=Math.min(clamp(W+810,1170,1230),W+960-150);
+  if(P.slot==="pranzo")lunchAt+=30;
+  let snackAt=q15((lunchAt+cenaAt)/2);
+  let trainAt=P.slot==="pranzo"?lunchAt-75:P.slot==="sera"?cenaAt-90:W+120;
   // digiuno 16:8: tutti i pasti in 8 ore; l'allenamento si sposta dentro la finestra, dopo il primo pasto
   const FW=fastWindow();
-  if(FW){colazAt=FW;lunchAt=FW+180;snackAt=FW+330;cenaAt=FW+450;trainAt=P.slot==="sera"?FW+390:FW+90}
+  if(FW){colazAt=FW;lunchAt=FW+180;snackAt=FW+330;cenaAt=FW+450;trainAt=FW+90;
+    if(P.slot==="sera"){snackAt=FW+300;trainAt=FW+360}}   // la sera: spuntino e allenamento prima, la cena resta libera
   const woDur=Math.round(wo.dur[lvl]*(I.week===3?.85:1));
   const R={colazione:recipeFor("colazione",I.wd),pranzo:recipeFor("pranzo",I.wd),spuntino:recipeFor("spuntino",I.wd),cena:recipeFor("cena",I.wd)};
   const tasks=[
@@ -1035,6 +1040,7 @@ function buildDay(d){
       list:["Schermi spenti 30 minuti prima.","Prepara i vestiti per l'allenamento di domani: domattina avrai una scusa in meno.","Metti un bicchiere d'acqua sul comodino: il primo gesto di domani è già pronto.","Stanza fresca, buia e silenziosa.","Punta a 7–8 ore di sonno."],
       micro:"Metti il telefono in carica fuori dalla camera."}
   ];
+  tasks.sort((a,b)=>a.t-b.t);   // la giornata sempre in ordine di orario
   return{info:I,tasks,wo,med,medMin};
 }
 function dayLog(k){return S.log[k]||{}}
