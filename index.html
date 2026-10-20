@@ -1,0 +1,2144 @@
+<!doctype html>
+<html lang="it">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Match Point">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<!-- inizio contenuto pagina -->
+<title>Match Point Coach</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#1D5A3D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: una colonna da app, la giornata come il programma di un match (orari a sinistra), tab bar fissa in basso */
+:root{
+  --bg:#F2F5EF; --surface:#FFFFFF; --surface-2:#E7EEE5; --ink:#10241B; --muted:#56675D; --line:#D6DFD3;
+  --court:#1D5A3D; --court-ink:#FFFFFF; --accent:#5B2A86; --accent-soft:#EFE7F7; --ball:#D4E157; --ball-ink:#1B2A00; --warn:#A8501A;
+  --f-display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:16px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0B1612; --surface:#11211A; --surface-2:#182D23; --ink:#E6EFE8; --muted:#97AA9E; --line:#25392F;
+  --court:#3FA673; --court-ink:#06140D; --accent:#BA9DE8; --accent-soft:#2A2140; --ball:#D4E157; --ball-ink:#1B2A00; --warn:#E59A5E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1612; --surface:#11211A; --surface-2:#182D23; --ink:#E6EFE8; --muted:#97AA9E; --line:#25392F;
+  --court:#3FA673; --court-ink:#06140D; --accent:#BA9DE8; --accent-soft:#2A2140; --ball:#D4E157; --ball-ink:#1B2A00; --warn:#E59A5E; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+h1,h2,h3{font-family:var(--f-display);line-height:1.1;margin:0;text-wrap:balance}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+
+.app{max-width:620px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 110px}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:8px 14px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{width:36px;height:36px;border-radius:50%;background:var(--ball);display:grid;place-items:center;flex:none}
+.brand h1{font-size:1.25rem;font-weight:800;letter-spacing:-.01em}
+.brand small{display:block;color:var(--muted);font-size:.78rem;font-weight:600}
+.streak{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:700;font-size:.85rem;white-space:nowrap}
+.streak b{font-family:var(--f-mono);font-size:1rem}
+
+.view{display:flex;flex-direction:column;gap:16px}
+
+/* date nav */
+.datenav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.datenav .mid{text-align:center;min-width:0}
+.datenav .mid h2{font-size:1.5rem;font-weight:800}
+.iconbtn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;flex:none}
+.todaylink{background:none;border:0;color:var(--accent);font-weight:700;font-size:.85rem;padding:2px 6px}
+
+/* coach */
+.coach{background:var(--court);color:var(--court-ink);border-radius:var(--r);padding:18px;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}
+.ring{position:relative;width:76px;height:76px}
+.ring svg{display:block;transform:rotate(-90deg)}
+.ring .pct{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-mono);font-weight:700;font-size:1.05rem}
+.coach p{margin:0;font-size:1.02rem;font-weight:500}
+.coach .eyebrow{color:inherit;opacity:.75;margin-bottom:4px}
+
+/* next action */
+.next{background:var(--surface);border:2px solid var(--ink);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:12px}
+.next h3{font-size:1.35rem;font-weight:800}
+.next .meta{color:var(--muted);font-size:.92rem}
+.btnrow{display:flex;flex-wrap:wrap;gap:10px}
+.btn{border:0;border-radius:12px;padding:12px 18px;font-weight:700;font-size:1rem;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn-go{background:var(--ball);color:var(--ball-ink);flex:1 1 180px;font-size:1.1rem;padding:15px 18px}
+.btn-sec{background:var(--surface-2);color:var(--ink)}
+.btn-ghost{background:transparent;color:var(--accent);padding:12px 8px}
+.btn-court{background:var(--court);color:var(--court-ink)}
+.btn-danger{background:var(--warn);color:#fff}
+.excuse{background:var(--accent-soft);border-radius:12px;padding:12px 14px;font-weight:500}
+.excuse b{color:var(--accent)}
+
+.banner{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--accent-soft);border-radius:var(--r);padding:12px 14px;flex-wrap:wrap}
+.banner p{margin:0;font-weight:600;font-size:.95rem;flex:1 1 220px}
+
+/* timeline */
+.section-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:4px}
+.section-h h2{font-size:1.15rem;font-weight:800}
+.timeline{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.task{display:grid;grid-template-columns:52px 1fr;gap:12px;position:relative}
+.task .time{font-family:var(--f-mono);font-weight:700;font-size:.88rem;color:var(--muted);padding-top:16px;text-align:right}
+.task .body{border-left:2px solid var(--line);padding:10px 0 10px 16px;position:relative;min-width:0}
+.task .body::before{content:"";position:absolute;left:-7px;top:20px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--line)}
+.task.done .body::before{background:var(--court);border-color:var(--court)}
+.task.now .body::before{background:var(--ball);border-color:var(--ink)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 12px 12px 14px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+.task.done .card{opacity:.62}
+.task.done .card h3{text-decoration:line-through;text-decoration-thickness:2px}
+.card h3{font-size:1.02rem;font-weight:700;font-family:var(--f-body)}
+.card .sum{color:var(--muted);font-size:.9rem;margin-top:2px}
+.chip{display:inline-block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;border-radius:6px;padding:2px 7px;margin-bottom:5px}
+.k-rituale{background:var(--surface-2);color:var(--ink)}
+.k-mente{background:var(--accent-soft);color:var(--accent)}
+.k-cibo{background:var(--ball);color:var(--ball-ink)}
+.k-corpo{background:var(--court);color:var(--court-ink)}
+.k-sonno{background:var(--ink);color:var(--bg)}
+.check{width:40px;height:40px;border-radius:50%;border:2px solid var(--line);background:transparent;display:grid;place-items:center;flex:none}
+.task.done .check{background:var(--court);border-color:var(--court);color:var(--court-ink)}
+.expand{background:none;border:0;padding:0;text-align:left;width:100%;min-width:0}
+.details{grid-column:1/-1;border-top:1px dashed var(--line);padding-top:10px;display:flex;flex-direction:column;gap:10px}
+.details ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.details li{font-size:.93rem}
+.ex{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:.93rem;padding:6px 0;border-bottom:1px solid var(--line)}
+.ex:last-child{border-bottom:0}
+.ex small{display:block;color:var(--muted);font-size:.8rem}
+.ex .dose{font-family:var(--f-mono);font-weight:700;white-space:nowrap;font-size:.85rem}
+.tip{font-size:.85rem;color:var(--muted);font-style:italic}
+
+/* week */
+.weekgrid{display:flex;flex-direction:column;gap:10px}
+.wday{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:56px 1fr;gap:12px;text-align:left;width:100%}
+.wday.is-today{border:2px solid var(--ink)}
+.wday .dn{font-family:var(--f-display);font-weight:800;font-size:1.3rem;line-height:1}
+.wday .dn small{display:block;font-family:var(--f-mono);font-size:.75rem;color:var(--muted);font-weight:500;margin-top:4px}
+.wday .lines{display:flex;flex-direction:column;gap:3px;font-size:.9rem;min-width:0}
+.wday .lines span{color:var(--muted)}
+.wday .lines b{color:var(--ink);font-weight:600}
+.bar{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--court);border-radius:99px}
+.phase{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.phase p{margin:4px 0 0;color:var(--muted);font-size:.93rem}
+.phases{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.phases div{border-radius:8px;padding:6px;text-align:center;font-size:.72rem;font-weight:700;background:var(--surface-2);color:var(--muted)}
+.phases div.on{background:var(--ink);color:var(--bg)}
+
+/* ricette */
+.recipe{display:flex;flex-direction:column;gap:8px}
+.rec-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.rec-min{font-size:.8rem;font-weight:700;color:var(--muted);white-space:nowrap}
+.ing{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:2px;font-size:.92rem}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:.93rem}
+.steps li::marker{font-family:var(--f-mono);font-weight:700;color:var(--court)}
+#recDays{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+#recDays button{padding:7px 2px;font-size:.78rem;line-height:1.2;min-width:0}
+#recDays button small{display:block;font-family:var(--f-mono);font-weight:500;opacity:.75}
+.rec-list{display:flex;flex-direction:column;gap:10px}
+.rec-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.rec-card summary{cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;list-style:none}
+.rec-card summary::-webkit-details-marker{display:none}
+.rec-card summary .chip{grid-column:1/-1;justify-self:start;margin:0}
+.rec-card summary b{font-size:1.02rem;min-width:0}
+.rec-card[open] summary{margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--line)}
+
+/* macronutrienti */
+.macro{display:flex;flex-direction:column;gap:8px;background:var(--surface-2);border-radius:12px;padding:10px 12px}
+.macro-k{display:flex;align-items:baseline;gap:6px}
+.macro-k b{font-size:1.35rem;line-height:1}
+.macro-k span{font-size:.8rem;color:var(--muted);font-weight:600}
+.macro-bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--line)}
+.macro-bar i{display:block;height:100%}
+.m-p{background:var(--accent)}
+.m-c{background:var(--ball)}
+.m-f{background:var(--court)}
+.m-fi{background:var(--muted)}
+.macro-g{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0}
+.macro-g div{min-width:0}
+.macro-g dt{font-size:.7rem;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.macro-g dt i{width:8px;height:8px;border-radius:2px;flex:none}
+.macro-g dd{margin:0;font-weight:700;font-size:.9rem}
+.macro{container-type:inline-size}
+@container (max-width:330px){.macro-g{grid-template-columns:repeat(2,1fr);row-gap:8px}}
+
+/* fabbisogno */
+fieldset.needs{border:1px solid var(--line);border-radius:12px;padding:12px;margin:0;display:flex;flex-direction:column;gap:12px;min-width:0}
+fieldset.needs legend{font-weight:700;font-size:.9rem;padding:0 6px}
+.needs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.needs-grid .field{min-width:0}
+.needs-grid .wide,.needs-grid .field:first-child{grid-column:1/-1}
+.needs-out{background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:.9rem;display:flex;flex-direction:column;gap:4px}
+.needs-out b{font-size:1.4rem}
+.needs-out span{color:var(--muted);font-size:.84rem}
+.needs-out .warn{color:var(--warn);font-weight:600}
+
+/* peso, diario, backup */
+.card-block{display:flex;flex-direction:column;gap:12px}
+.wform{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
+.wform .field{min-width:0}
+.wform input{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+@media (max-width:420px){.wform{grid-template-columns:1fr 1fr}.wform .btn{grid-column:1/-1}}
+.wsvg{width:100%;height:auto;display:block}
+.wgrid{stroke:var(--line);stroke-width:1}
+.wlab{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
+.wdot{fill:var(--accent);opacity:.55}
+.wline{fill:none;stroke:var(--court);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.lg-dot{background:var(--accent);border-radius:50%!important;opacity:.6}
+.lg-line{background:var(--court);height:3px!important;vertical-align:3px!important}
+.needs-out.good{border-left:4px solid var(--court)}
+.wlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.wlist li{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.wlist li:last-child{border-bottom:0}
+.iconbtn.sm{width:32px;height:32px;font-size:1.1rem;line-height:1}
+.journal{display:flex;flex-direction:column;gap:10px}
+.journal textarea{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;resize:vertical}
+.jdl{margin:0;display:flex;flex-direction:column;gap:4px}
+.jdl dt{font-size:.75rem;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-top:6px}
+.jdl dd{margin:0;white-space:pre-wrap;font-size:.93rem}
+.warn{color:var(--warn);font-weight:600}
+
+/* promemoria */
+.remgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px 12px;margin-top:10px}
+.remitem{display:flex;align-items:center;gap:8px;font-size:.92rem;font-weight:500;cursor:pointer}
+.remitem input{width:20px;height:20px;accent-color:var(--court);margin:0;flex:none}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.sel{user-select:all;word-break:break-all}
+
+/* esercizi spiegati */
+.exd{border-bottom:1px solid var(--line)}
+.exd:last-of-type{border-bottom:0}
+.exd>summary{list-style:none;cursor:pointer;border-bottom:0}
+.exd>summary::-webkit-details-marker{display:none}
+.exd>summary span:first-child{text-decoration:underline dotted;text-underline-offset:3px}
+.exhow{padding:4px 0 12px;display:flex;flex-direction:column;gap:6px}
+/* abitudini */
+.habits{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hab{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.hab-h{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:.9rem}
+.hab-h span{color:var(--muted);font-size:.78rem;white-space:nowrap}
+.drops{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+.drop{aspect-ratio:3/4;max-width:100%;border:2px solid var(--accent);border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:transparent;padding:0}
+.drop.on{background:var(--accent)}
+.hab .durs{gap:4px}
+.hab .durs button{padding:6px 8px;font-size:.78rem}
+@media (max-width:480px){.habits{grid-template-columns:1fr}}
+.goal-line{margin:8px 0 0;font-size:.88rem;opacity:.85;font-weight:600}
+.stats.rv{grid-template-columns:repeat(3,1fr)}
+.rv .stat b{font-size:1.25rem}
+.swap{margin-bottom:10px}
+.swap select{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;width:100%}
+
+#voiceCfg input[type=range]{width:100%;accent-color:var(--court)}
+.vc-hint{color:var(--muted);font-weight:600}
+#voiceCfg select{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+
+.hab-wide{grid-column:1/-1}
+.hab .btnrow .btn{padding:8px 14px;font-size:.9rem}
+
+.bigtime.target{font-size:clamp(2.4rem,12vw,3.6rem)}
+.wk-ex{border-left:3px solid transparent;padding-left:8px;margin-left:-11px}
+.wk-ex.cur{border-left-color:var(--ball)}
+.wk-ex.cur .ex span:first-child{font-weight:700}
+.wk-ex.done{opacity:.55}
+
+/* spesa */
+#settSeg button{flex:1 1 0;min-width:0}
+.pane{display:flex;flex-direction:column;gap:16px}
+.shop-sum{background:var(--surface);border:2px solid var(--ink);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px}
+.shop-sum-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.shop-sum-top b{font-size:1.6rem}
+.shop-sum-top span{color:var(--muted);font-weight:600;font-size:.9rem}
+.hide-toggle{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.88rem;color:var(--muted)}
+.hide-toggle input{width:18px;height:18px;accent-color:var(--court)}
+.shop-text{width:100%;min-height:140px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:var(--f-mono);font-size:.82rem}
+.shop-groups{display:flex;flex-direction:column;gap:12px}
+.shop-group{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.shop-group h3{font-size:1rem;font-weight:800;display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
+.shop-group h3 span{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);font-weight:700}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.item:last-child{border-bottom:0}
+.item input{width:22px;height:22px;accent-color:var(--court);margin:0}
+.item .nm{min-width:0}
+.item .nm small{display:block;color:var(--muted);font-size:.78rem}
+.item .q{font-family:var(--f-mono);font-weight:700;font-size:.82rem;white-space:nowrap;color:var(--muted)}
+.item.got .nm b{text-decoration:line-through;color:var(--muted);font-weight:500}
+.item .nm b{font-weight:600}
+
+/* meditate */
+.medlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.medcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:left;display:flex;flex-direction:column;gap:4px}
+.medcard[aria-pressed="true"]{border:2px solid var(--accent);background:var(--accent-soft)}
+.medcard b{font-size:.98rem}
+.medcard span{font-size:.82rem;color:var(--muted)}
+.durs{display:flex;flex-wrap:wrap;gap:8px}
+.durs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-family:var(--f-mono);font-weight:700}
+.durs button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.sos{background:var(--surface);border:2px dashed var(--accent);border-radius:var(--r);padding:16px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.sos p{margin:0;flex:1 1 220px}
+
+/* you */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.stat b{display:block;font-family:var(--f-mono);font-size:1.6rem;font-weight:700;line-height:1.2}
+.stat span{font-size:.82rem;color:var(--muted);font-weight:600}
+.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.heat div{aspect-ratio:1;max-width:100%;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;font-family:var(--f-mono);font-size:.72rem;color:var(--muted);border:1px solid transparent}
+.heat .h1{background:color-mix(in srgb,var(--court) 30%,var(--surface-2));color:var(--ink)}
+.heat .h2{background:color-mix(in srgb,var(--court) 60%,var(--surface-2));color:var(--ink)}
+.heat .h3{background:var(--court);color:var(--court-ink)}
+.heat .today{border-color:var(--ink);border-width:2px}
+.heat .future{opacity:.45}
+.legend{display:flex;gap:10px;align-items:center;font-size:.78rem;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+form.settings{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-weight:700;font-size:.9rem}
+.field small{color:var(--muted);font-size:.8rem}
+.field input,.field select,.field textarea{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+.field textarea{min-height:76px;resize:vertical}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1 1 90px;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px;font-weight:700;font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.note{font-size:.8rem;color:var(--muted);line-height:1.45}
+
+/* tab bar */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);z-index:20;
+  padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px));padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs nav{max-width:620px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.tabs button{background:none;border:0;padding:10px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.74rem;font-weight:700;color:var(--muted)}
+.tabs button[aria-selected="true"]{color:var(--ink)}
+.tabs button[aria-selected="true"] svg{color:var(--court)}
+
+/* overlay */
+.overlay{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.ov-in{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;gap:18px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 28px}
+.ov-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ov-title{font-size:1.6rem;font-weight:800}
+.bigtime{font-family:var(--f-mono);font-weight:700;font-size:clamp(3.4rem,18vw,5.5rem);text-align:center;line-height:1;letter-spacing:-.03em}
+.ov-msg{text-align:center;font-size:1.05rem;font-weight:500;min-height:3em}
+.breath{display:grid;place-items:center;height:min(68vw,300px)}
+.breath .orb{width:min(62vw,270px);height:min(62vw,270px);border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--ball),var(--court) 70%);
+  transform:scale(.55);transition-property:transform;transition-timing-function:ease-in-out;display:grid;place-items:center}
+.breath .orb span{font-family:var(--f-display);font-weight:800;color:var(--court-ink);font-size:1.3rem;text-align:center;transform:scale(1.4)}
+.progress{height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--accent)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--ink);color:var(--bg);
+  padding:12px 18px;border-radius:12px;font-weight:700;max-width:calc(100% - 32px);text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.footer-note{font-size:.78rem;color:var(--muted);line-height:1.45;border-top:1px solid var(--line);padding-top:12px}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (min-width:560px){.stats{grid-template-columns:repeat(4,1fr)}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B2A00" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M4.5 5.5c3.5 3 3.5 10 0 13M19.5 5.5c-3.5 3-3.5 10 0 13"/></svg>
+      </div>
+      <div><h1>Match Point Coach</h1><small id="hdr-sub">Giorno 1 · Fondamenta</small></div>
+    </div>
+    <div class="streak" title="Giorni vinti di fila (almeno 70% del piano)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-4-1-6 1-9.5z"/></svg>
+      <span>Serie</span> <b id="hdr-streak">0</b>
+    </div>
+  </header>
+
+  <!-- OGGI -->
+  <section class="view" id="v-oggi" role="tabpanel" aria-labelledby="t-oggi">
+    <div class="datenav">
+      <button class="iconbtn" id="prevDay" aria-label="Giorno precedente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="mid"><div class="eyebrow" id="dn-eyebrow">Oggi</div><h2 id="dn-title">Lunedì 19</h2><button class="todaylink" id="goToday" hidden>Torna a oggi</button></div>
+      <button class="iconbtn" id="nextDay" aria-label="Giorno successivo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+
+    <div class="banner" id="instBanner" hidden>
+      <p id="instText"></p>
+      <div class="btnrow"><button class="btn btn-go" id="instBannerBtn" hidden>Installa l'app</button><button class="btn btn-ghost" id="instBannerNo">Più tardi</button></div>
+    </div>
+    <div class="banner" id="remBanner" hidden>
+      <p>Vuoi che ti scriva all'ora di ogni attività, e di nuovo se non hai ancora iniziato?</p>
+      <div class="btnrow"><button class="btn btn-court" id="remBannerOn">Attiva i promemoria</button><button class="btn btn-ghost" id="remBannerNo">No, grazie</button></div>
+    </div>
+    <div class="banner" id="sunBanner" hidden>
+      <p>È domenica: 2 minuti per guardare com'è andata la settimana e scegliere l'obiettivo della prossima.</p>
+      <button class="btn btn-court" id="sunGo">Fai il resoconto</button>
+    </div>
+    <div class="banner" id="firstRun" hidden>
+      <p>Il piano è già pronto. Imposta sveglia, livello e il tuo «perché» per renderlo tuo.</p>
+      <button class="btn btn-court" id="goSetup">Personalizza</button>
+    </div>
+
+    <div class="coach">
+      <div class="ring" aria-hidden="true">
+        <svg width="76" height="76" viewBox="0 0 76 76"><circle cx="38" cy="38" r="32" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-width="8"/><circle id="ringArc" cx="38" cy="38" r="32" fill="none" stroke="var(--ball)" stroke-width="8" stroke-linecap="round" stroke-dasharray="201.06" stroke-dashoffset="201.06"/></svg>
+        <div class="pct" id="ringPct">0%</div>
+      </div>
+      <div><div class="eyebrow">Il coach dice</div><p id="coachLine">…</p><p class="goal-line" id="goalLine" hidden></p></div>
+    </div>
+
+    <div class="banner" id="rpeBanner" hidden>
+      <p>Com'è andato l'allenamento di oggi? Adatto i prossimi in base alla tua risposta.</p>
+      <div class="btnrow"><button class="btn btn-sec" data-rpe="1">Troppo facile</button><button class="btn btn-sec" data-rpe="0">Giusto</button><button class="btn btn-sec" data-rpe="-1">Troppo duro</button></div>
+    </div>
+    <div class="next" id="nextCard">
+      <div class="eyebrow" id="nextEyebrow">Prossima azione</div>
+      <h3 id="nextTitle">…</h3>
+      <div class="meta" id="nextMeta"></div>
+      <div class="btnrow">
+        <button class="btn btn-go" id="nextGo">Inizia ora</button>
+        <button class="btn btn-sec" id="nextMini">Solo 2 minuti</button>
+        <button class="btn btn-ghost" id="nextExcuse">Non ho voglia</button>
+      </div>
+      <div class="excuse" id="excuseBox" hidden></div>
+    </div>
+
+    <div class="habits" id="habits"></div>
+    <div class="section-h"><h2>Il programma del giorno</h2><span class="eyebrow" id="countLbl">0/9</span></div>
+    <ol class="timeline" id="timeline"></ol>
+
+    <p class="footer-note">Ispirato alle abitudini che Novak Djokovic ha descritto pubblicamente (dieta senza glutine e latticini, alimentazione in prevalenza vegetale, yoga e flessibilità, meditazione quotidiana). Non è un programma ufficiale né affiliato. Non sostituisce il parere di medico o nutrizionista: con patologie, gravidanza o dubbi, chiedi prima a loro.</p>
+  </section>
+
+  <!-- SETTIMANA -->
+  <section class="view" id="v-sett" role="tabpanel" aria-labelledby="t-sett" hidden>
+    <div class="seg" id="settSeg" role="group" aria-label="Vista settimana">
+      <button type="button" data-pane="plan" aria-pressed="true">Piano</button>
+      <button type="button" data-pane="rec" aria-pressed="false">Ricette</button>
+      <button type="button" data-pane="shop" aria-pressed="false">Spesa</button>
+    </div>
+    <div class="section-h"><h2 id="weekTitle">Questa settimana</h2>
+      <div style="display:flex;gap:6px">
+        <button class="iconbtn" id="prevWeek" aria-label="Settimana precedente"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button class="iconbtn" id="nextWeek" aria-label="Settimana successiva"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+    <div class="pane" id="sett-plan">
+    <div class="phase">
+      <div class="eyebrow" id="phaseEyebrow">Ciclo 1 · Settimana 1 di 4</div>
+      <h2 id="phaseTitle" style="font-size:1.35rem;font-weight:800;margin-top:4px">Fondamenta</h2>
+      <p id="phaseText"></p>
+      <div class="phases" id="phaseBar"></div>
+    </div>
+    <div class="weekgrid" id="weekGrid"></div>
+    <div class="phase">
+      <div class="eyebrow">Le regole della cucina</div>
+      <ul style="margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:.93rem">
+        <li>Niente glutine: riso, quinoa, grano saraceno, miglio, avena certificata.</li>
+        <li>Niente latticini: bevande vegetali di mandorla, cocco o riso.</li>
+        <li>Molti vegetali, legumi, frutta secca e semi. Pesce al massimo un paio di volte a settimana.</li>
+        <li>Zuccheri raffinati al minimo. Un cucchiaino di miele va bene.</li>
+        <li>Acqua a temperatura ambiente o tiepida durante tutto il giorno.</li>
+        <li>Mangia lentamente, mastica bene, niente telefono a tavola.</li>
+      </ul>
+    </div>
+    </div>
+    <div class="pane" id="sett-rec" hidden>
+      <div class="seg" id="recDays" role="group" aria-label="Giorno"></div>
+      <div class="shop-sum" id="recTotal"></div>
+      <div class="rec-list" id="recList"></div>
+    </div>
+    <div class="pane" id="sett-shop" hidden>
+      <div class="shop-sum">
+        <div class="shop-sum-top"><div><div class="eyebrow" id="shopFor">Per 1 persona · 7 giorni</div><b class="mono" id="shopCount">0/0</b> <span>nel carrello</span></div>
+          <label class="hide-toggle"><input type="checkbox" id="shopHide"> Nascondi già presi</label></div>
+        <div class="bar"><i id="shopBar" style="width:0"></i></div>
+        <div class="btnrow">
+          <button type="button" class="btn btn-court" id="shopCopy">Copia cosa manca</button>
+          <button type="button" class="btn btn-sec" id="shopReset">Azzera spunte</button>
+        </div>
+        <textarea id="shopText" class="shop-text" readonly hidden aria-label="Lista da copiare"></textarea>
+        <p class="note warn" id="shopSwap" style="margin:0" hidden></p>
+        <p class="note" style="margin:0">Consiglio del coach: fai la spesa nel weekend e cuoci in anticipo riso, quinoa e legumi. Cibo pronto in frigo vuol dire una scusa in meno.</p>
+      </div>
+      <div class="shop-groups" id="shopGroups"></div>
+    </div>
+  </section>
+
+  <!-- MEDITA -->
+  <section class="view" id="v-medita" role="tabpanel" aria-labelledby="t-medita" hidden>
+    <div class="sos">
+      <p><b>Bloccato? Reset da 60 secondi.</b><br><span style="color:var(--muted);font-size:.92rem">Un minuto di respiro lento per spezzare il ciclo della procrastinazione. Poi fai la prossima cosa.</span></p>
+      <button class="btn btn-court" id="sosBtn">Respira 1 minuto</button>
+    </div>
+    <div class="section-h"><h2>Scegli la pratica</h2><span class="eyebrow">Quella di oggi è già selezionata</span></div>
+    <div class="medlist" id="medList"></div>
+    <div class="section-h"><h2>Durata</h2><span class="eyebrow mono" id="durHint"></span></div>
+    <div class="durs" id="durs"></div>
+    <div class="phase" id="medPreview"></div>
+    <label class="remitem" for="voiceOn" id="voiceRow"><input type="checkbox" id="voiceOn"> Guida vocale: una voce legge le indicazioni (alza il volume)</label>
+    <div class="phase card-block" id="voiceCfg" hidden>
+      <div class="field"><label for="vc-voice">Voce</label><select id="vc-voice"></select></div>
+      <div class="field"><label for="vc-rate">Velocità <span class="mono vc-hint" id="vc-rate-v"></span></label><input id="vc-rate" type="range" min="0.7" max="1.1" step="0.05"></div>
+      <div class="field"><label for="vc-pitch">Tono <span class="vc-hint" id="vc-pitch-v"></span></label><input id="vc-pitch" type="range" min="0.8" max="1.2" step="0.05"></div>
+      <div class="btnrow"><button type="button" class="btn btn-court" id="vc-test">Ascolta</button><button type="button" class="btn btn-ghost" id="vc-reset">Valori consigliati</button></div>
+      <p class="note" id="vc-none" style="margin:0">Hai poche voci italiane. Su Android puoi installarne di più naturali: Impostazioni → Accessibilità → Sintesi vocale → Motore Google → Installa dati vocali → Italiano. Poi riapri questa pagina.</p>
+    </div>
+    <button class="btn btn-go" id="medStart">Inizia la meditazione</button>
+  </section>
+
+  <!-- TU -->
+  <section class="view" id="v-tu" role="tabpanel" aria-labelledby="t-tu" hidden>
+    <div class="stats" id="stats"></div>
+
+    <div class="phase card-block" id="reviewCard">
+      <div class="section-h" style="margin:0"><h2>Resoconto degli ultimi 7 giorni</h2></div>
+      <div class="stats rv" id="reviewTiles"></div>
+      <div class="needs-out"><span id="reviewTip" style="color:var(--ink)"></span></div>
+      <div class="field"><label for="wgoal">Il tuo obiettivo per la prossima settimana</label><input id="wgoal" maxlength="120" placeholder="Es. Meditare ogni mattina prima del telefono"><small>Una cosa sola, concreta. Te la ricordo ogni giorno in «Oggi».</small></div>
+      <p class="note" id="jollyNote" style="margin:0"></p>
+    </div>
+
+    <div class="phase card-block" id="appCard">
+      <div class="section-h" style="margin:0"><h2>App e promemoria</h2></div>
+      <p id="appStatus" style="margin:0"></p>
+      <div class="btnrow"><button type="button" class="btn btn-go" id="instBtn" hidden>Installa l'app</button></div>
+      <div class="needs-out"><span id="remState" style="color:var(--ink)"></span></div>
+      <div class="btnrow">
+        <button type="button" class="btn btn-court" id="remToggle">Attiva i promemoria</button>
+        <button type="button" class="btn btn-sec" id="remTest">Prova una notifica</button>
+      </div>
+      <details class="rec-card"><summary><b>Scegli quali attività ricordare</b></summary>
+        <div class="remgrid" id="remList"></div>
+        <label class="remitem" for="remNudge" style="margin-top:8px"><input type="checkbox" id="remNudge"> Spintarella dopo 20 minuti se non hai ancora iniziato</label>
+      </details>
+      <div class="needs-out">
+        <b style="font-size:1rem">Promemoria anche ad app chiusa</b>
+        <span>Il telefono può sospendere l'app quando la chiudi, e con lei le notifiche. Per avvisi sicuri al 100%, aggiungi il programma al calendario del telefono: un evento con avviso per ogni attività, ripetuto ogni settimana.</span>
+        <div class="btnrow"><button type="button" class="btn btn-sec" id="icsBtn">Aggiungi al calendario</button></div>
+        <span>Se cambi sveglia, orario di allenamento o porzioni, scarica di nuovo il calendario e cancella quello vecchio.</span>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="section-h" style="margin:0"><h2 id="heatTitle">Ciclo 1</h2><span class="eyebrow">28 giorni</span></div>
+      <div class="heat" id="heat" style="margin-top:12px"></div>
+      <div class="legend" style="margin-top:10px">
+        <span><i style="background:var(--surface-2)"></i>0%</span>
+        <span><i style="background:color-mix(in srgb,var(--court) 30%,var(--surface-2))"></i>fino al 40%</span>
+        <span><i style="background:color-mix(in srgb,var(--court) 60%,var(--surface-2))"></i>fino al 69%</span>
+        <span><i style="background:var(--court)"></i>giornata vinta</span>
+      </div>
+    </div>
+
+    <div class="phase card-block" id="weightCard">
+      <div class="section-h" style="margin:0"><h2>Diario del peso</h2><span class="eyebrow">media di 7 giorni</span></div>
+      <form class="wform" id="wForm" novalidate>
+        <div class="field"><label for="w-kg">Peso (kg)</label><input id="w-kg" type="text" inputmode="decimal" placeholder="74,5" autocomplete="off"></div>
+        <div class="field"><label for="w-date">Giorno</label><input id="w-date" type="date"></div>
+        <button type="submit" class="btn btn-court">Aggiungi</button>
+      </form>
+      <div id="wChart"></div>
+      <div id="wAdvice" class="needs-out" aria-live="polite"></div>
+      <ul class="wlist" id="wList"></ul>
+    </div>
+
+    <div class="phase card-block">
+      <div class="section-h" style="margin:0"><h2>Diario serale</h2><span class="eyebrow">ultime 2 settimane</span></div>
+      <div class="rec-list" id="jList"></div>
+    </div>
+
+    <div class="phase card-block">
+      <div class="section-h" style="margin:0"><h2>Backup dei tuoi dati</h2></div>
+      <p style="margin:0">I dati vivono solo in questo browser. Copia il backup e salvalo in una nota o in una mail a te stesso: se cambi telefono, lo incolli qui e ritrovi tutto.</p>
+      <p class="note" id="bkStatus" style="margin:0"></p>
+      <div class="btnrow">
+        <button type="button" class="btn btn-court" id="bkCopy">Copia backup</button>
+        <button type="button" class="btn btn-sec" id="bkOpen">Ripristina da backup</button>
+      </div>
+      <textarea id="bkOut" class="shop-text" readonly hidden aria-label="Testo del backup"></textarea>
+      <div id="bkImport" hidden class="journal">
+        <div class="field"><label for="bkIn">Incolla qui il testo del backup</label><textarea id="bkIn" class="shop-text" spellcheck="false"></textarea></div>
+        <div class="btnrow"><button type="button" class="btn btn-court" id="bkRestore">Ripristina</button></div>
+        <div id="bkMsg" class="journal"></div>
+      </div>
+    </div>
+
+    <form class="settings" id="settings" novalidate>
+      <h2 style="font-size:1.15rem;font-weight:800">Il tuo piano</h2>
+      <div class="field"><label for="f-name">Come ti chiamo?</label><input id="f-name" maxlength="30" placeholder="Il tuo nome" autocomplete="given-name"></div>
+      <div class="field"><label for="f-wake">Ora della sveglia</label><input id="f-wake" type="time" value="06:30"><small>Tutti gli orari della giornata si calcolano da qui. Punta a 7–8 ore di sonno.</small></div>
+      <div class="field"><label id="l-slot">Quando ti alleni?</label><div class="seg" id="f-slot" role="group" aria-labelledby="l-slot"></div></div>
+      <div class="field"><label id="l-level">Livello</label><div class="seg" id="f-level" role="group" aria-labelledby="l-level"></div><small>Cambia volume degli allenamenti e minuti di meditazione.</small></div>
+      <div class="field"><label for="f-why">Il tuo perché</label><textarea id="f-why" maxlength="200" placeholder="Es. Voglio sentirmi leggero, concentrato e fiero di me ogni sera."></textarea><small>Te lo ricorderò quando premi «Non ho voglia».</small></div>
+      <fieldset class="needs" id="needs">
+        <legend>Il tuo fabbisogno</legend>
+        <div class="seg" id="n-mode" role="group" aria-label="Come calcolare le porzioni"></div>
+        <div id="n-calc" class="needs-grid" hidden>
+          <div class="field"><label id="l-sex">Sesso</label><div class="seg" id="n-sex" role="group" aria-labelledby="l-sex"></div></div>
+          <div class="field"><label for="n-age">Età</label><input id="n-age" type="number" inputmode="numeric" min="16" max="90"></div>
+          <div class="field"><label for="n-weight">Peso (kg)</label><input id="n-weight" type="number" inputmode="decimal" min="35" max="250" step="0.5"></div>
+          <div class="field"><label for="n-height">Altezza (cm)</label><input id="n-height" type="number" inputmode="numeric" min="130" max="220"></div>
+          <div class="field wide"><label for="n-act">Attività</label><select id="n-act"></select><small id="n-acthint"></small></div>
+          <div class="field wide"><label id="l-goal">Obiettivo</label><div class="seg" id="n-goal" role="group" aria-labelledby="l-goal"></div></div>
+        </div>
+        <div id="n-manual" class="field" hidden><label for="n-kcal">Calorie al giorno</label><input id="n-kcal" type="number" inputmode="numeric" min="1200" max="5000" step="50"><small>Per esempio il valore che ti ha dato il nutrizionista.</small></div>
+        <label class="remitem" for="n-veg"><input type="checkbox" id="n-veg"> Vegetariano: sostituisci il pesce con tempeh e ceci</label>
+        <label class="remitem" for="n-fast"><input type="checkbox" id="n-fast"> Digiuno intermittente 16:8: tutti i pasti in 8 ore</label>
+        <div id="fastBox" class="needs-out" hidden>
+          <div class="field"><label for="n-fast-start">Primo pasto alle</label><input id="n-fast-start" type="time" value="11:00"><small id="fastInfo"></small></div>
+          <span class="warn">Non adatto con diabete o farmaci per la glicemia, in gravidanza o allattamento, con disturbi alimentari o sotto i 18 anni: in questi casi chiedi prima al medico.</span>
+          <span>Nelle ore di digiuno: acqua, tisane e caffè nero senza zucchero. Se ti senti debole o hai le vertigini, mangia e torna agli orari normali. Le prime 1–2 settimane la fame si fa sentire: è normale.</span>
+        </div>
+        <label class="remitem" for="n-coffee"><input type="checkbox" id="n-coffee"> Bevo caffè</label>
+        <div id="coffeeBox" class="needs-out" hidden>
+          <div class="needs-grid"><div class="field"><label for="n-cof-max">Al massimo al giorno</label><select id="n-cof-max"><option value="1">1 caffè</option><option value="2">2 caffè</option><option value="3">3 caffè</option><option value="4">4 caffè</option></select></div>
+          <div class="field"><label for="n-cof-cut">Ultimo caffè entro le</label><input id="n-cof-cut" type="time" value="14:00"></div></div>
+          <span>Per un adulto sano l'EFSA considera sicuri fino a circa 400 mg di caffeina al giorno (circa 4 espressi). La caffeina dura diverse ore: se la bevi tardi, il sonno ne risente.</span>
+        </div>
+        <label class="remitem" for="n-prot"><input type="checkbox" id="n-prot"> Più proteine: yogurt di soia allo spuntino ed edamame a cena (+18 g al giorno)</label>
+        <div class="needs-out" id="n-out" aria-live="polite"></div>
+      </fieldset>
+      <div class="field"><label for="f-start">Giorno 1 del programma</label><input id="f-start" type="date"></div>
+      <div class="btnrow" id="resetRow">
+        <button type="button" class="btn btn-sec" id="resetBtn">Azzera i progressi</button>
+      </div>
+      <p class="note">I dati restano solo in questo browser, su questo dispositivo. Azzerare i progressi non cancella peso e diario.</p>
+    </form>
+  </section>
+</div>
+
+<div class="tabs"><nav role="tablist" aria-label="Sezioni">
+  <button role="tab" id="t-oggi" aria-controls="v-oggi" aria-selected="true" data-v="oggi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Oggi</button>
+  <button role="tab" id="t-sett" aria-controls="v-sett" aria-selected="false" data-v="sett"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Settimana</button>
+  <button role="tab" id="t-medita" aria-controls="v-medita" aria-selected="false" data-v="medita"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2.5"/><path d="M12 8v5M5 20c2-4 4-6 7-7 3 1 5 3 7 7M4 14l8-1 8 1"/></svg>Medita</button>
+  <button role="tab" id="t-tu" aria-controls="v-tu" aria-selected="false" data-v="tu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Progressi</button>
+</nav></div>
+
+<div class="overlay" id="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="ovTitle">
+  <div class="ov-in">
+    <div class="ov-top">
+      <div><div class="eyebrow" id="ovEyebrow">In corso</div><h2 class="ov-title" id="ovTitle">…</h2></div>
+      <button class="iconbtn" id="ovClose" aria-label="Chiudi"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="breath" id="ovBreath" hidden><div class="orb" id="orb"><span id="orbTxt">Pronto</span></div></div>
+    <div class="bigtime" id="ovTime">02:00</div>
+    <div class="progress" id="ovProg"><i id="ovBar"></i></div>
+    <p class="ov-msg" id="ovMsg"></p>
+    <div class="btnrow">
+      <button class="btn btn-sec" id="ovPause" style="flex:1">Pausa</button>
+      <button class="btn btn-go" id="ovDone" style="flex:2">Fatto</button>
+    </div>
+    <button class="btn btn-ghost" id="ovVoice" hidden>Attiva la guida vocale e metti il telefono a faccia in giù</button>
+    <div id="ovList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- DATI DEL PROGRAMMA ---------- */
+const LEVELS=["Principiante","Intermedio","Avanzato"];
+const SLOTS=[["mattina","Mattina"],["pranzo","Pausa pranzo"],["sera","Sera"]];
+const WEEKS=[
+  {name:"Fondamenta",factor:1,text:"Impari i movimenti e costruisci l'abitudine. La regola è una: presentati ogni giorno."},
+  {name:"Costruzione",factor:1.15,text:"Un po' più di volume. Il corpo si adatta, la mente si abitua alla routine."},
+  {name:"Intensità",factor:1.3,text:"La settimana più dura del ciclo. Concentrati sulla qualità di ogni ripetizione."},
+  {name:"Recupero",factor:.85,text:"Si scarica per assorbire il lavoro. Più mobilità, più sonno, più respiro."}
+];
+const DAYNAMES=["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato","Domenica"];
+const MONTHS=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+
+// s = serie per livello, r = ripetizioni/durata per livello, u = unità
+const WORKOUTS=[
+  {name:"Mobilità e cardio leggero",dur:[30,40,50],tip:"Ritmo da conversazione: se non riesci a parlare, rallenta.",ex:[
+    {n:"Saluto al sole",s:[1,1,1],r:[3,5,6],u:"giri"},
+    {n:"Mobilità anche 90/90",s:[2,2,3],r:[6,8,10],u:"per lato"},
+    {n:"Gatto-mucca",s:[1,1,1],r:[10,10,12],u:"rip"},
+    {n:"Corsa o bici facile",s:[1,1,1],r:[15,25,35],u:"min",fixed:true},
+    {n:"Stretching finale",s:[1,1,1],r:[5,5,6],u:"min",fixed:true}]},
+  {name:"Forza funzionale",dur:[30,40,50],tip:"Tecnica prima del carico. Un minuto di recupero tra le serie.",ex:[
+    {n:"Squat a corpo libero",s:[3,3,4],r:[10,14,16],u:"rip"},
+    {n:"Piegamenti (anche sulle ginocchia)",s:[3,3,4],r:[6,10,14],u:"rip"},
+    {n:"Affondi alternati",s:[3,3,3],r:[8,12,14],u:"per gamba"},
+    {n:"Rematore con elastico",s:[3,3,4],r:[10,12,15],u:"rip"},
+    {n:"Plank",s:[3,3,3],r:[20,40,60],u:"sec"},
+    {n:"Dead bug",s:[2,3,3],r:[8,10,12],u:"per lato"}]},
+  {name:"Agilità e gioco di gambe",dur:[30,40,45],tip:"Leggero sulle punte, come in attesa della risposta al servizio.",ex:[
+    {n:"Riscaldamento: skip e calciata",s:[1,1,1],r:[4,5,5],u:"min",fixed:true},
+    {n:"Passi laterali veloci",s:[4,5,6],r:[15,20,25],u:"sec"},
+    {n:"Split step + scatto di 5 metri",s:[2,3,3],r:[5,6,8],u:"rip"},
+    {n:"Salti con la corda (anche simulati)",s:[3,4,5],r:[30,45,60],u:"sec"},
+    {n:"Equilibrio su una gamba",s:[2,3,3],r:[20,30,45],u:"sec per lato"},
+    {n:"Flusso yoga",s:[1,1,1],r:[8,10,12],u:"min",fixed:true}]},
+  {name:"Recupero attivo nella natura",dur:[40,50,60],tip:"Oggi non si spinge. Si recupera, ed è parte dell'allenamento.",ex:[
+    {n:"Camminata all'aperto",s:[1,1,1],r:[25,35,45],u:"min"},
+    {n:"Automassaggio o rullo",s:[1,1,1],r:[5,8,10],u:"min",fixed:true},
+    {n:"Stretching profondo (pose da 60 s)",s:[1,1,1],r:[10,12,15],u:"min",fixed:true}]},
+  {name:"Forza esplosiva",dur:[30,40,50],tip:"Ogni ripetizione veloce e pulita. Fermati prima di perdere la forma.",ex:[
+    {n:"Squat jump",s:[3,3,4],r:[6,8,10],u:"rip"},
+    {n:"Piegamenti veloci",s:[3,3,4],r:[5,8,10],u:"rip"},
+    {n:"Ponte glutei su una gamba",s:[3,3,3],r:[8,10,12],u:"per lato"},
+    {n:"Rotazioni del busto con elastico",s:[3,3,4],r:[10,12,14],u:"per lato"},
+    {n:"Mountain climber",s:[3,3,4],r:[20,30,40],u:"sec"},
+    {n:"Plank laterale",s:[2,3,3],r:[15,30,40],u:"sec per lato"}]},
+  {name:"Resistenza",dur:[40,55,70],tip:"Ritmo costante dall'inizio alla fine. Respira dal naso finché puoi.",ex:[
+    {n:"Bici, corsa o nuoto a ritmo costante",s:[1,1,1],r:[30,40,55],u:"min"},
+    {n:"Mobilità spalle con elastico",s:[2,2,2],r:[10,12,12],u:"rip"},
+    {n:"Flusso yoga",s:[1,1,1],r:[10,12,15],u:"min",fixed:true}]},
+  {name:"Yoga dolce e tempo all'aperto",dur:[35,45,55],tip:"Giorno di riposo. Muoviti piano e stai fuori, senza telefono.",ex:[
+    {n:"Yoga rigenerativo",s:[1,1,1],r:[15,20,25],u:"min",fixed:true},
+    {n:"Tempo all'aperto senza telefono",s:[1,1,1],r:[20,25,30],u:"min",fixed:true}]}
+];
+
+const MEALS={
+  colazione:[
+    "Power bowl: avena senza glutine, frutti di bosco, banana, semi di chia, noci, bevanda di mandorla e un cucchiaino di miele",
+    "Frullato verde (spinaci, banana, mela, burro di mandorle, latte di cocco, semi di lino) e 2 gallette di riso",
+    "Porridge di grano saraceno con mela cotta, cannella e noci",
+    "Budino di chia al cocco con mango e semi di zucca",
+    "Pane senza glutine tostato con avocado, sesamo e pomodorini",
+    "Bowl di quinoa soffiata, kiwi, mirtilli, mandorle e yogurt di cocco",
+    "Pancake di banana e avena senza glutine con frutti rossi"],
+  pranzo:[
+    "Pasta di riso integrale con pesto di basilico senza formaggio, zucchine e pinoli. Insalata verde",
+    "Quinoa con ceci, verdure grigliate, olio extravergine e limone",
+    "Riso integrale con curry di lenticchie rosse e spinaci",
+    "Pasta di grano saraceno con broccoli, aglio e peperoncino",
+    "Bowl di riso nero, edamame, avocado, carote, cavolo e salsa tahina",
+    "Pasta di legumi con pomodoro fresco e melanzane",
+    "Miglio con funghi trifolati, prezzemolo e insalata di finocchi"],
+  spuntino:[
+    "Una mela e una manciata di mandorle",
+    "Hummus con bastoncini di carota e sedano",
+    "Banana con un cucchiaio di burro di mandorle",
+    "Frutti di bosco e qualche noce",
+    "Gallette di riso con avocado",
+    "Una pera e 2–3 noci del Brasile",
+    "Due datteri e una manciata di nocciole"],
+  cena:[
+    "Salmone al forno con broccoli al vapore e patata dolce (versione vegetale: tempeh)",
+    "Zuppa di lenticchie e verdure, insalata di rucola",
+    "Tofu saltato con verdure e zenzero, piccola porzione di riso integrale",
+    "Branzino al cartoccio con verdure di stagione (versione vegetale: burger di ceci)",
+    "Burger di fagioli neri con insalata grande e avocado",
+    "Minestrone di verdure e ceci con olio extravergine a crudo",
+    "Insalata tiepida di quinoa, ceci, zucca e cavolo nero"]
+};
+
+// ricette per 1 persona, indice = giorno della settimana (0 = lunedì)
+const RECIPES={
+  colazione:[
+    {t:"Power bowl",min:5,ing:["50 g di fiocchi d'avena senza glutine","200 ml di bevanda di mandorla","½ banana","80 g di frutti di bosco","1 cucchiaio di semi di chia","4 gherigli di noce","1 cucchiaino di miele"],
+     steps:["Scalda la bevanda di mandorla in un pentolino, senza farla bollire.","Versala sull'avena insieme ai semi di chia, mescola e lascia riposare 3 minuti.","Taglia la banana a rondelle e spezzetta le noci con le mani.","Completa con banana, frutti di bosco, noci e il miele a filo."],
+     tip:"Se vai di fretta, prepara avena, chia e bevanda la sera prima in un barattolo e tienilo in frigo."},
+    {t:"Frullato verde",min:5,ing:["40 g di spinaci (una manciata)","1 banana","½ mela","1 cucchiaio di burro di mandorle","100 ml di latte di cocco e 100 ml d'acqua","1 cucchiaio di semi di lino","2 gallette di riso"],
+     steps:["Lava gli spinaci e sgocciolali.","Taglia banana e mela a pezzi, togliendo il torsolo della mela.","Metti tutto nel frullatore con latte di cocco, acqua, burro di mandorle e semi di lino.","Frulla 30–60 secondi, finché è liscio.","Bevilo a piccoli sorsi, insieme alle gallette."],
+     tip:"La banana congelata a pezzi rende il frullato più cremoso e fresco."},
+    {t:"Porridge di grano saraceno",min:20,ing:["50 g di grano saraceno in chicchi","200 ml di bevanda di mandorla e 100 ml d'acqua","1 mela","½ cucchiaino di cannella","4 gherigli di noce"],
+     steps:["Sciacqua il grano saraceno in un colino sotto l'acqua corrente.","Cuocilo con acqua e bevanda di mandorla a fuoco basso per 15 minuti, mescolando ogni tanto.","Intanto taglia la mela a cubetti e cuocila in padella con 2 cucchiai d'acqua e la cannella per 5–6 minuti.","Quando il porridge è cremoso, versalo nella ciotola.","Aggiungi la mela calda e le noci spezzettate."],
+     tip:"Metti il grano saraceno a bagno la sera prima: al mattino cuoce in 8 minuti."},
+    {t:"Budino di chia al cocco",min:5,ing:["3 cucchiai di semi di chia (30 g)","150 ml di latte di cocco e 50 ml d'acqua","½ mango","1 cucchiaio di semi di zucca"],
+     steps:["La sera prima mescola chia, latte di cocco e acqua in un barattolo.","Dopo 5 minuti rimescola bene per non formare grumi.","Chiudi il barattolo e mettilo in frigo per la notte.","Al mattino taglia il mango a cubetti.","Completa il budino con mango e semi di zucca."],
+     tip:"Va preparato la sera prima. Mettiti un promemoria dopo cena."},
+    {t:"Toast con avocado",min:7,ing:["2 fette di pane senza glutine","½ avocado","6 pomodorini","1 cucchiaino di semi di sesamo","Succo di ¼ di limone","Olio extravergine, sale e pepe"],
+     steps:["Tosta il pane in padella o nel tostapane.","Schiaccia l'avocado con una forchetta insieme al limone e a un pizzico di sale.","Taglia i pomodorini a metà.","Spalma l'avocado sul pane e aggiungi i pomodorini.","Finisci con sesamo, pepe e un filo d'olio."],
+     tip:"Conserva l'altra metà dell'avocado con il nocciolo e qualche goccia di limone: ti serve a pranzo."},
+    {t:"Bowl di yogurt di cocco e quinoa soffiata",min:5,ing:["125 g di yogurt di cocco","30 g di quinoa soffiata","1 kiwi","60 g di mirtilli","10 mandorle"],
+     steps:["Versa lo yogurt in una ciotola.","Sbuccia il kiwi e taglialo a rondelle.","Trita le mandorle grossolanamente con il coltello.","Aggiungi frutta e mandorle, e la quinoa soffiata per ultima, così resta croccante."]},
+    {t:"Pancake di banana e avena",min:15,ing:["1 banana matura","40 g di fiocchi d'avena senza glutine","60 ml di bevanda di mandorla","1 pizzico di cannella","1 cucchiaino d'olio per la padella","80 g di frutti di bosco"],
+     steps:["Frulla l'avena fino a ottenere una farina.","Schiaccia la banana e uniscila alla farina, alla bevanda e alla cannella. Lascia riposare 5 minuti.","Scalda una padella antiaderente unta con pochissimo olio, a fuoco medio-basso.","Versa un cucchiaio d'impasto per ogni pancake e cuoci 2–3 minuti per lato. Giralo quando i bordi si rapprendono.","Servi con i frutti di bosco, anche scaldati 2 minuti in padella come salsa."],
+     tip:"Sono senza uova, quindi delicati: falli piccoli e girali con calma."}
+  ],
+  pranzo:[
+    {t:"Pasta di riso al pesto senza formaggio",min:20,ing:["100 g di pasta di riso integrale","1 zucchina","20 g di foglie di basilico","1 cucchiaio di pinoli","½ spicchio d'aglio","2 cucchiai d'olio extravergine","Sale","Insalata verde"],
+     steps:["Metti a bollire l'acqua salata.","Frulla basilico, pinoli, aglio, olio, un pizzico di sale e 2 cucchiai d'acqua fredda fino a ottenere il pesto.","Taglia la zucchina a rondelle sottili e saltala in padella con un filo d'olio per 5 minuti.","Cuoci la pasta di riso per il tempo indicato sulla confezione, mescolando nei primi minuti perché non si attacchi.","Scolala tenendo da parte un po' d'acqua di cottura.","Condisci fuori dal fuoco con pesto, zucchine e un cucchiaio d'acqua di cottura. Insalata come contorno."]},
+    {t:"Quinoa con ceci e verdure grigliate",min:25,ing:["70 g di quinoa","120 g di ceci cotti (½ vasetto)","½ melanzana","½ peperone","Succo di ½ limone","2 cucchiai d'olio extravergine","Sale e prezzemolo"],
+     steps:["Sciacqua la quinoa in un colino: toglie il retrogusto amaro.","Cuocila coperta in doppio volume d'acqua salata per 12–15 minuti, finché assorbe tutto. Lasciala riposare 5 minuti.","Taglia la melanzana a fette e il peperone a falde, grigliali su una piastra calda 3–4 minuti per lato.","Taglia le verdure a pezzi e sciacqua i ceci.","Unisci tutto e condisci con olio, limone, sale e prezzemolo."],
+     tip:"Cuoci il doppio della quinoa: l'altra metà ti serve per la cena di domenica, o per un pranzo veloce."},
+    {t:"Curry di lenticchie rosse con riso",min:40,ing:["100 g di riso integrale (60 g per ora, 40 g per la cena)","70 g di lenticchie rosse","50 g di spinaci","1 spicchio d'aglio","1 cm di zenzero fresco","1 cucchiaino di curry","100 ml di latte di cocco","300 ml d'acqua","1 cucchiaio d'olio, sale"],
+     steps:["Cuoci il riso integrale in acqua salata per 35–40 minuti. Tienine da parte 40 g per la cena.","Sciacqua le lenticchie finché l'acqua è limpida.","In una pentola scalda l'olio con aglio tritato, zenzero grattugiato e curry per 1 minuto.","Aggiungi lenticchie e acqua e cuoci 15 minuti mescolando, finché si sfaldano.","Unisci latte di cocco e spinaci, cuoci altri 2 minuti e aggiusta di sale.","Servi il curry sul riso."]},
+    {t:"Pasta di grano saraceno con broccoli",min:20,ing:["100 g di pasta di grano saraceno","300 g di cimette di broccolo","1 spicchio d'aglio","Peperoncino a piacere","2 cucchiai d'olio extravergine","Sale"],
+     steps:["Porta a bollore l'acqua salata e cuoci le cimette per 5 minuti.","Butta la pasta nella stessa acqua e cuocila per il tempo indicato, mescolando con delicatezza perché è fragile.","Intanto scalda olio, aglio a fettine e peperoncino in padella a fuoco basso per 2 minuti, senza bruciare l'aglio.","Scola pasta e broccoli e passali in padella per 1 minuto con un mestolino d'acqua di cottura.","Schiaccia qualche cimetta con il cucchiaio: diventa una crema che lega la pasta."]},
+    {t:"Bowl di riso nero, edamame e tahina",min:15,ing:["60 g di riso nero (cotto in anticipo)","80 g di edamame","½ avocado","1 carota","1 manciata di cavolo cappuccio","1 cucchiaio di tahina","Succo di ½ limone","Sale e semi di sesamo"],
+     steps:["Cuoci il riso nero per il tempo della confezione, di solito 35–40 minuti. Meglio farlo il giorno prima.","Cuoci gli edamame in acqua bollente per 4 minuti e scolali.","Grattugia la carota, taglia il cavolo a strisce sottili e l'avocado a fette.","Per la salsa mescola tahina, limone, 2–3 cucchiai d'acqua e un pizzico di sale, fino a ottenere una crema.","Componi la bowl a spicchi e versa la salsa sopra."]},
+    {t:"Pasta di legumi con pomodoro e melanzane",min:25,ing:["80 g di pasta di legumi","½ melanzana","3 pomodori maturi","1 spicchio d'aglio","Qualche foglia di basilico","2 cucchiai d'olio extravergine, sale"],
+     steps:["Taglia la melanzana a cubetti e cuocila in padella con 1 cucchiaio d'olio, l'aglio e 2 cucchiai d'acqua, coperta per i primi 5 minuti, poi scoperta per altri 5.","Aggiungi i pomodori a cubetti e cuoci 10 minuti a fuoco medio. Aggiusta di sale.","Cuoci la pasta di legumi in acqua salata per il tempo della confezione: cuoce in fretta, non lasciarla scuocere.","Scolala e saltala nel sugo per 1 minuto.","Finisci con basilico e un filo d'olio a crudo."]},
+    {t:"Miglio con funghi e insalata di finocchi",min:25,ing:["70 g di miglio","250 g di funghi","1 spicchio d'aglio","Prezzemolo tritato","2 cucchiai d'olio extravergine","Sale e pepe","1 finocchio e succo di ½ limone"],
+     steps:["Sciacqua il miglio e tostalo in una pentola asciutta per 2 minuti.","Aggiungi 210 ml d'acqua bollente salata e cuoci coperto a fuoco basso per 15–18 minuti. Spegni e lascia riposare 5 minuti.","Pulisci i funghi con un panno umido, affettali e cuocili in padella calda con olio e aglio per 8 minuti a fuoco vivace.","Sala, pepa e aggiungi il prezzemolo.","Sgrana il miglio con una forchetta e uniscilo ai funghi.","Per l'insalata affetta sottile il finocchio e condiscilo con limone, olio e sale."]}
+  ],
+  spuntino:[
+    {t:"Mela e mandorle",min:2,ing:["1 mela","15 mandorle"],
+     steps:["Lava la mela e tagliala a spicchi.","Mangiala con le mandorle, lontano dalla scrivania e dallo schermo."]},
+    {t:"Hummus con verdure",min:5,ing:["3 cucchiai di hummus","1 carota","1 costa di sedano"],
+     steps:["Lava e pela la carota.","Taglia carota e sedano a bastoncini.","Intingili nell'hummus."],
+     tip:"Taglia i bastoncini per due giorni e conservali in un contenitore con un po' d'acqua in frigo."},
+    {t:"Banana e burro di mandorle",min:2,ing:["1 banana","1 cucchiaio di burro di mandorle","1 pizzico di cannella"],
+     steps:["Taglia la banana a rondelle.","Spalma o intingi nel burro di mandorle e completa con la cannella."]},
+    {t:"Frutti di bosco e noci",min:2,ing:["100 g di frutti di bosco","4 gherigli di noce"],
+     steps:["Se sono surgelati, mettili in frigo la mattina: a metà pomeriggio sono pronti.","Servili in una ciotola con le noci spezzettate."]},
+    {t:"Gallette con avocado",min:5,ing:["2 gallette di riso","½ avocado","Sale, pepe e qualche goccia di limone"],
+     steps:["Schiaccia l'avocado con limone, sale e pepe.","Spalmalo sulle gallette appena prima di mangiarle, così restano croccanti."]},
+    {t:"Pera e noci del Brasile",min:2,ing:["1 pera","2–3 noci del Brasile"],
+     steps:["Lava la pera e tagliala a spicchi.","Accompagnala con le noci del Brasile."],
+     tip:"Non superare 2–3 noci del Brasile al giorno: sono molto ricche di selenio."},
+    {t:"Datteri ripieni di nocciole",min:3,ing:["2 datteri","10 nocciole"],
+     steps:["Apri i datteri per il lungo e togli il nocciolo.","Metti dentro qualche nocciola e mangia le altre a parte."]}
+  ],
+  cena:[
+    {t:"Salmone al forno con patata dolce",min:30,ing:["150 g di filetto di salmone (oppure 150 g di tempeh)","1 patata dolce media (250 g)","200 g di cimette di broccolo","1 cucchiaio d'olio extravergine","Succo di ½ limone, sale"],
+     steps:["Accendi il forno a 200 °C.","Taglia la patata dolce a cubetti, condiscila con metà dell'olio e un pizzico di sale e mettila in teglia con carta da forno per 25 minuti.","Dopo 12 minuti aggiungi il salmone con la pelle in basso, condito con olio, sale e limone. Cuoci 12–15 minuti.","Nel frattempo cuoci i broccoli al vapore per 6–8 minuti.","Versione vegetale: taglia il tempeh a fette, lascialo 10 minuti in olio e limone e cuocilo in forno 15 minuti."]},
+    {t:"Zuppa di lenticchie e verdure",min:40,ing:["80 g di lenticchie","1 carota","1 costa di sedano","1 pomodoro","1 spicchio d'aglio","700 ml d'acqua","1 cucchiaio d'olio extravergine, sale","Rucola e limone per l'insalata"],
+     steps:["Trita carota, sedano e aglio e falli appassire 5 minuti in pentola con l'olio, a fuoco dolce.","Aggiungi le lenticchie sciacquate, il pomodoro a pezzi e l'acqua.","Cuoci 30–35 minuti a fuoco basso con il coperchio socchiuso, finché le lenticchie sono tenere.","Sala solo a fine cottura. Se la vuoi cremosa, frulla metà zuppa.","Servila con un filo d'olio a crudo e la rucola condita con limone."],
+     tip:"Raddoppia le dosi e congela una porzione: è la tua cena di emergenza."},
+    {t:"Tofu saltato con verdure e zenzero",min:20,ing:["150 g di tofu","300 g di verdure (peperone, carota, zucchina, cavolo)","1 cm di zenzero fresco","1 spicchio d'aglio","1 cucchiaio di tamari (salsa di soia senza glutine)","1 cucchiaio d'olio","Il riso integrale avanzato dal pranzo (40 g da crudo)"],
+     steps:["Tampona il tofu con carta da cucina e taglialo a cubetti.","Rosolalo in padella o nel wok ben caldo con l'olio per 6–8 minuti, finché è dorato su più lati. Mettilo da parte.","Taglia le verdure a listarelle e saltale a fuoco vivace per 5 minuti con aglio e zenzero grattugiato: devono restare croccanti.","Rimetti il tofu, aggiungi il tamari e salta ancora 1 minuto.","Servi con il riso avanzato dal pranzo, scaldato in padella."]},
+    {t:"Branzino al cartoccio con verdure",min:30,ing:["1 branzino pulito (circa 300 g) o 150 g di filetti","300 g di verdure (zucchine, pomodorini, finocchio)","½ limone a fette","Prezzemolo e 1 spicchio d'aglio","1 cucchiaio d'olio extravergine, sale"],
+     steps:["Accendi il forno a 190 °C.","Taglia le verdure sottili e disponile su un grande foglio di carta da forno.","Appoggia il pesce sopra e mettigli dentro limone, prezzemolo e aglio. Condisci con olio e sale.","Chiudi bene il cartoccio e cuoci 20–25 minuti (12–15 minuti per i filetti).","Versione vegetale: schiaccia ½ vasetto di ceci con 2 cucchiai d'avena e prezzemolo, forma 2 burger e cuocili in padella 4 minuti per lato."],
+     tip:"Chiedi al pescivendolo di pulire il branzino: una scusa in meno."},
+    {t:"Burger di fagioli neri",min:25,ing:["240 g di fagioli neri cotti (1 vasetto sgocciolato)","3 cucchiai di fiocchi d'avena senza glutine (30 g)","½ cucchiaino di curry","Prezzemolo tritato, sale","1 cucchiaio d'olio","Insalata grande, ½ avocado e qualche pomodorino"],
+     steps:["Sciacqua e asciuga bene i fagioli.","Schiacciali con una forchetta, lasciando qualche pezzo intero.","Aggiungi avena, curry, prezzemolo e sale e impasta. Se è troppo morbido, aggiungi altra avena. Lascia riposare 10 minuti.","Forma 2 burger e cuocili in padella antiaderente con poco olio, 4–5 minuti per lato a fuoco medio. Girali con delicatezza.","Servili con l'insalata, l'avocado a fette e i pomodorini."]},
+    {t:"Minestrone di verdure e ceci",min:45,ing:["400 g di verdure di stagione (carota, zucchina, sedano, cavolo)","120 g di ceci cotti (½ vasetto)","1 litro d'acqua","1 cucchiaio d'olio extravergine e un filo a crudo","Sale e prezzemolo"],
+     steps:["Lava le verdure e tagliale a cubetti piccoli, così cuociono in fretta e in modo uniforme.","In pentola fai insaporire carota e sedano con l'olio per 3 minuti.","Aggiungi le altre verdure, l'acqua e un pizzico di sale e cuoci 30 minuti a fuoco basso.","Negli ultimi 10 minuti aggiungi i ceci.","Servi con prezzemolo e olio a crudo."],
+     tip:"Fanne una pentola intera: si conserva 3 giorni in frigo e si congela bene."},
+    {t:"Insalata tiepida di quinoa e zucca",min:35,ing:["70 g di quinoa (o quella avanzata da martedì)","200 g di zucca","120 g di ceci cotti (½ vasetto)","3 foglie di cavolo nero","2 cucchiai d'olio extravergine","Sale e succo di ½ limone"],
+     steps:["Accendi il forno a 200 °C. Taglia la zucca a cubetti, condiscila con olio e sale e cuocila 25 minuti.","Negli ultimi 10 minuti aggiungi in teglia i ceci asciugati: diventano croccanti.","Sciacqua la quinoa e cuocila 12–15 minuti in doppio volume d'acqua salata.","Togli la costa centrale al cavolo nero, taglialo a striscioline e massaggialo 1 minuto con un pizzico di sale e un filo d'olio: si ammorbidisce.","Unisci tutto ancora tiepido e condisci con il limone."]}
+  ]
+};
+// valori stimati per porzione: k = kcal, p = proteine, c = carboidrati, f = grassi, fi = fibre (g)
+// calcolati dagli ingredienti con valori medi per 100 g delle tabelle nutrizionali (USDA)
+const NUTRI={"colazione":[{"k":510,"p":14,"c":56,"f":22,"fi":15},{"k":570,"p":11,"c":52,"f":36,"fi":11},{"k":410,"p":11,"c":50,"f":17,"fi":11},{"k":560,"p":12,"c":20,"f":46,"fi":13},{"k":370,"p":5,"c":36,"f":21,"fi":10},{"k":360,"p":8,"c":44,"f":16,"fi":8},{"k":350,"p":8,"c":54,"f":9,"fi":11}],"pranzo":[{"k":660,"p":13,"c":84,"f":30,"fi":7},{"k":700,"p":23,"c":74,"f":28,"fi":21},{"k":770,"p":25,"c":86,"f":35,"fi":11},{"k":620,"p":21,"c":79,"f":24,"fi":15},{"k":580,"p":21,"c":58,"f":26,"fi":17},{"k":550,"p":22,"c":53,"f":23,"fi":15},{"k":580,"p":19,"c":62,"f":24,"fi":16}],"spuntino":[{"k":180,"p":4,"c":19,"f":9,"fi":6},{"k":110,"p":5,"c":10,"f":5,"fi":6},{"k":210,"p":5,"c":26,"f":9,"fi":5},{"k":180,"p":4,"c":9,"f":13,"fi":5},{"k":180,"p":3,"c":16,"f":11,"fi":5},{"k":160,"p":2,"c":21,"f":7,"fi":6},{"k":200,"p":3,"c":28,"f":9,"fi":4}],"cena":[{"k":690,"p":40,"c":53,"f":31,"fi":13},{"k":490,"p":23,"c":53,"f":17,"fi":14},{"k":540,"p":34,"c":44,"f":25,"fi":12},{"k":330,"p":32,"c":12,"f":16,"fi":7},{"k":660,"p":29,"c":58,"f":24,"fi":31},{"k":430,"p":15,"c":39,"f":19,"fi":18},{"k":710,"p":24,"c":78,"f":29,"fi":17}]};
+Object.keys(NUTRI).forEach(m=>NUTRI[m].forEach((n,i)=>{RECIPES[m][i].n=n}));
+const MEAL_LABEL={colazione:"Colazione",pranzo:"Pranzo",spuntino:"Spuntino",cena:"Cena"};
+
+// lista della spesa per 1 persona e 7 giorni: [id, nome, quantità, a cosa serve]
+const SHOP=[
+  ["Frutta",[
+    ["banane","Banane","5","colazioni di lun, mar, dom · spuntino mer"],
+    ["mele","Mele","3","frullato mar, porridge mer, spuntino lun"],
+    ["bosco","Frutti di bosco (anche surgelati)","400 g","colazioni lun e dom · spuntino gio"],
+    ["mirtilli","Mirtilli","125 g","colazione sab"],
+    ["kiwi","Kiwi","2","colazione sab"],
+    ["mango","Mango","1","colazione gio"],
+    ["pera","Pera","1","spuntino sab"],
+    ["limoni","Limoni","3","acqua e limone, quinoa di mar"],
+    ["avocado","Avocado","2","colazione, pranzo, spuntino e cena di ven"],
+    ["datteri","Datteri","1 confezione","spuntino dom"]]],
+  ["Verdura ed erbe",[
+    ["spinaci","Spinaci","150 g","frullato mar, curry mer"],
+    ["zucchine","Zucchine","2","pranzo lun"],
+    ["broccoli","Broccoli","2","pranzo gio, cena lun"],
+    ["melanzane","Melanzane","1","pranzi mar e sab"],
+    ["peperoni","Peperoni","1","verdure grigliate mar"],
+    ["pomodorini","Pomodorini","250 g","colazione ven"],
+    ["pomodori","Pomodori maturi","4","pranzo sab"],
+    ["carote","Carote","6","bowl ven, hummus mar, minestrone"],
+    ["sedano","Sedano","1 cespo","spuntino mar, succo del mattino"],
+    ["cavolo","Cavolo cappuccio","¼","bowl ven"],
+    ["cavolonero","Cavolo nero","1 mazzo","cena dom"],
+    ["zucca","Zucca","400 g","cena dom"],
+    ["patata","Patata dolce","1","cena lun"],
+    ["funghi","Funghi","250 g","pranzo dom"],
+    ["finocchi","Finocchi","2","insalata dom"],
+    ["insalata","Insalata verde e rucola","2 buste","pranzo lun, cena mar"],
+    ["stagione","Verdure di stagione","1,5 kg","cartoccio gio, tofu mer, minestrone sab"],
+    ["erbe","Basilico, prezzemolo, zenzero","1 mazzo/pezzo","pesto, funghi, tofu"],
+    ["aglio","Aglio e peperoncino","q.b.","pranzo gio"]]],
+  ["Cereali senza glutine",[
+    ["avena","Fiocchi d'avena senza glutine (certificati)","250 g","colazioni lun e dom"],
+    ["saraceno","Grano saraceno in chicchi","100 g","porridge mer"],
+    ["quinoa","Quinoa","200 g","pranzo mar, cena dom"],
+    ["soffiata","Quinoa soffiata","1 confezione","colazione sab"],
+    ["riso","Riso integrale","250 g","pranzo e cena mer"],
+    ["risonero","Riso nero","80 g","bowl ven"],
+    ["miglio","Miglio","80 g","pranzo dom"],
+    ["pastariso","Pasta di riso integrale","100 g","pranzo lun"],
+    ["pastasar","Pasta di grano saraceno","100 g","pranzo gio"],
+    ["pastaleg","Pasta di legumi","80 g","pranzo sab"],
+    ["pane","Pane senza glutine","1 confezione","colazione ven"],
+    ["gallette","Gallette di riso","1 confezione","colazione mar, spuntino ven"]]],
+  ["Legumi, pesce e proteine",[
+    ["ceci","Ceci cotti","3 vasetti","pranzo mar, cene sab e dom"],
+    ["lenticrosse","Lenticchie rosse","100 g","curry mer"],
+    ["lenticchie","Lenticchie","100 g","zuppa mar"],
+    ["fagioli","Fagioli neri cotti","1 vasetto","burger ven"],
+    ["edamame","Edamame","100 g","bowl ven"],
+    ["tofu","Tofu","200 g","cena mer"],
+    ["hummus","Hummus","1 vaschetta","spuntino mar"],
+    ["salmone","Salmone (o tempeh)","1 filetto","cena lun"],
+    ["branzino","Branzino (o ceci in più)","1","cena gio"]]],
+  ["Frutta secca e semi",[
+    ["noci","Noci","100 g","colazioni, spuntini gio e sab"],
+    ["mandorle","Mandorle","100 g","colazione sab, spuntino lun"],
+    ["nocciole","Nocciole","50 g","spuntino dom"],
+    ["brasile","Noci del Brasile","3","spuntino sab"],
+    ["pinoli","Pinoli","30 g","pesto lun"],
+    ["chia","Semi di chia","60 g","colazioni lun e gio"],
+    ["lino","Semi di lino","30 g","frullato mar"],
+    ["zuccasemi","Semi di zucca","30 g","colazione gio"],
+    ["sesamo","Semi di sesamo","20 g","colazione ven"],
+    ["burromand","Burro di mandorle","1 vasetto","frullato mar, spuntino mer"],
+    ["tahina","Tahina","1 vasetto","bowl ven"]]],
+  ["Alternative vegetali",[
+    ["bevmand","Bevanda di mandorla","1 l","colazione lun, porridge"],
+    ["cocco","Latte di cocco","1 lattina","frullato mar, budino gio"],
+    ["yogurt","Yogurt di cocco","1 vasetto","colazione sab"]]],
+  ["Dispensa",[
+    ["olio","Olio extravergine d'oliva","se manca","tutti i giorni"],
+    ["miele","Miele","se manca","colazione lun"],
+    ["spezie","Cannella e curry","se mancano","porridge mer, curry mer, burger ven"],
+    ["tamari","Tamari (salsa di soia senza glutine)","1 bottiglietta","tofu mer"]]]
+];
+
+// p = schema respiratorio [inspira, trattieni, espira, pausa] in secondi
+const MEDS=[
+  {id:"box",name:"Respiro quadrato",sum:"Calma e lucidità in quattro tempi uguali.",p:[4,4,4,4],steps:[
+    "Siediti con la schiena dritta e le spalle morbide.","Inspira dal naso contando fino a 4.","Trattieni per 4, senza tensione.","Espira lentamente per 4.","Resta vuoto per 4, poi ricomincia.","Se la mente scappa, notalo e torna a contare."]},
+  {id:"vis",name:"Visualizzazione",sum:"Vedi la tua giornata riuscita prima di viverla.",p:[4,0,6,0],steps:[
+    "Chiudi gli occhi e rallenta il respiro.","Immagina la giornata di oggi dal mattino alla sera.","Vediti mentre fai l'allenamento con energia.","Vediti mentre scegli il cibo con calma.","Immagina un momento difficile e come lo affronti, sereno.","Senti come sarai stasera, dopo aver mantenuto la parola."]},
+  {id:"scan",name:"Body scan",sum:"Attraversa il corpo con l'attenzione, dai piedi alla testa.",p:[4,0,6,0],steps:[
+    "Porta l'attenzione ai piedi. Notali senza cambiare niente.","Sali a polpacci e ginocchia. Lascia andare la tensione.","Cosce e bacino: senti il peso che si appoggia.","Pancia e petto: segui il respiro che li muove.","Spalle, braccia, mani: ammorbidisci.","Collo, mascella, viso: rilassa la fronte."]},
+  {id:"walk",name:"Meditazione camminata",sum:"Passi lenti e attenzione ai sensi, meglio tra gli alberi.",p:[4,0,4,0],steps:[
+    "Cammina più lentamente del solito.","Senti il contatto di ogni piede con il terreno.","Ascolta i suoni intorno a te, senza nominarli.","Nota tre colori diversi nella natura.","Senti l'aria sulla pelle.","Se pensi a dopo, torna al passo che stai facendo."]},
+  {id:"coh",name:"Respiro di coerenza",sum:"Cinque secondi dentro, cinque fuori. Rilassa il sistema nervoso.",p:[5,0,5,0],steps:[
+    "Respira dal naso, lento e regolare.","Cinque secondi a inspirare.","Cinque secondi a espirare.","Lascia che il ritmo diventi automatico.","Senti il cuore che rallenta.","Resta qui, non c'è altro da fare."]},
+  {id:"love",name:"Amore e gentilezza",sum:"Coltiva pace verso te stesso e verso gli altri.",p:[4,0,6,0],steps:[
+    "Porta una mano sul cuore.","Ripeti dentro di te: che io sia sereno, che io sia in salute.","Pensa a una persona cara e auguralo anche a lei.","Pensa a una persona neutrale e fai lo stesso.","Pensa a qualcuno con cui hai un conflitto. Augura pace anche a lui.","Allarga il pensiero a tutti. Pace."]},
+  {id:"grat",name:"Silenzio e gratitudine",sum:"Pochi minuti di silenzio e tre cose per cui dire grazie.",p:[4,2,6,0],steps:[
+    "Stai in silenzio e ascolta il respiro.","Pensa a una cosa del tuo corpo per cui sei grato.","Pensa a una persona per cui sei grato.","Pensa a un momento di questa settimana per cui sei grato.","Lascia che la gratitudine riempia il petto.","Resta in silenzio fino al suono finale."]}
+];
+const SOS={id:"sos",name:"Reset anti-blocco",sum:"Un minuto per spezzare il ciclo.",p:[4,0,6,0],steps:["Non devi fare niente adesso, solo respirare.","Espira più a lungo di quanto inspiri.","Nota la resistenza, senza giudicarla.","Scegli la prossima azione più piccola possibile.","Quando suona, alzati e falla."]};
+
+const MED_MIN=[[8,10,12,10],[12,14,16,14],[15,18,20,18]]; // per livello e settimana del ciclo
+
+const EXCUSES=[
+  "Va bene non avere voglia. Non ti chiedo voglia, ti chiedo 2 minuti. Parti, poi decidi.",
+  "La motivazione arriva dopo l'azione, quasi mai prima. Fai il primo passo e lascia che arrivi.",
+  "Ogni campione ha giorni storti. La differenza è che si presenta lo stesso.",
+  "Non serve la versione perfetta. Serve la versione fatta.",
+  "Abbassa l'asticella, non fermarti. Fai la versione mini e la giornata resta tua.",
+  "Rimandare costa più che fare. Tra 10 minuti sarai contento di aver iniziato adesso.",
+  "Non decidere con la testa stanca. Metti le scarpe, apri il tappetino. Il resto viene da sé."
+];
+const GENERIC=[
+  "Una cosa alla volta. Guarda solo la prossima azione, non tutta la lista.",
+  "Disciplina vuol dire mantenere la promessa anche quando l'entusiasmo è finito.",
+  "Il corpo segue la mente. Respira, poi muoviti.",
+  "Oggi non devi essere perfetto. Devi essere presente.",
+  "Le partite lunghe si vincono punto per punto. Pensa al punto che stai giocando.",
+  "Quello che mangi oggi è l'energia che avrai domani.",
+  "La costanza batte l'intensità. Ogni giorno, anche poco."
+];
+
+// rituale del risveglio: [indicazione, secondi]
+const RITUAL=[
+  ["Bevi un grande bicchiere d'acqua tiepida. Se vuoi, succo di sedano o acqua e limone.",45],
+  ["Apri la finestra e fai 5 respiri lenti e profondi.",60],
+  ["Un minuto di gratitudine: una persona, una cosa del tuo corpo e una cosa di oggi per cui dire grazie.",60],
+  ["Metti il telefono a faccia in giù. Da qui è solo una guida: niente social, mail e notizie.",15]
+];
+
+/* ---------- STATO ---------- */
+const LS="nolecoach.v1"; // nome storico dell'archivio: non cambiarlo, o i dati salvati non si ritrovano
+function key(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function parseKey(k){const a=k.split("-").map(Number);return new Date(a[0],a[1]-1,a[2])}
+function addDays(d,n){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()+n);return x}
+function diffDays(a,b){return Math.round((parseKey(key(b))-parseKey(key(a)))/864e5)}
+function today(){return parseKey(key(new Date()))}
+
+function defaults(){return{profile:{name:"",wake:"06:30",slot:"mattina",level:0,why:"",start:key(today())},log:{},medMin:{},shop:{},weights:{},journal:{},rem:{on:false,nudge:true,ids:{},dismiss:false},swaps:{},rpe:{},water:{},sleep:{},coffee:{},weekGoal:null,reviewSeen:null,voice:false,lastBackup:null,setup:false,sound:true}}
+let S=(function(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&s.profile)return Object.assign(defaults(),s)}catch(e){}return defaults()})();
+function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+
+let sel=today(), weekSel=today(), view="oggi", openTask=null, excuseIdx=0, pane="plan";
+
+/* ---------- COSTRUZIONE GIORNATA ---------- */
+function toMin(hhmm){const p=(hhmm||"06:30").split(":").map(Number);return p[0]*60+(p[1]||0)}
+function fmt(m){m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
+function dayInfo(d){
+  const idx=diffDays(parseKey(S.profile.start),d);
+  const wd=(d.getDay()+6)%7;
+  const cycleDay=((idx%28)+28)%28;
+  const week=Math.floor(cycleDay/7);
+  const cycle=Math.floor(idx/28)+1;
+  return{idx,wd,week,cycle,cycleDay};
+}
+function dose(e,lvl,f){
+  const s=e.s[lvl], r=e.fixed?e.r[lvl]:Math.max(1,Math.round(e.r[lvl]*f*trainAdj()));
+  return (s>1?s+" × ":"")+r+" "+e.u;
+}
+function buildDay(d){
+  const P=S.profile, lvl=+P.level||0, I=dayInfo(d), W=toMin(P.wake), f=WEEKS[I.week].factor;
+  const wo=WORKOUTS[I.wd], med=MEDS[I.wd];
+  const medMin=MED_MIN[lvl][I.week];
+  let trainAt=P.slot==="pranzo"?W+345:P.slot==="sera"?W+720:W+120;
+  let lunchAt=P.slot==="pranzo"?W+420:W+390,colazAt=W+45,snackAt=W+600,cenaAt=W+810;
+  // digiuno 16:8: tutti i pasti in 8 ore; l'allenamento si sposta dentro la finestra, dopo il primo pasto
+  const FW=fastWindow();
+  if(FW){colazAt=FW;lunchAt=FW+180;snackAt=FW+330;cenaAt=FW+450;trainAt=P.slot==="sera"?FW+390:FW+90}
+  const woDur=Math.round(wo.dur[lvl]*(I.week===3?.85:1));
+  const R={colazione:recipeFor("colazione",I.wd),pranzo:recipeFor("pranzo",I.wd),spuntino:recipeFor("spuntino",I.wd),cena:recipeFor("cena",I.wd)};
+  const tasks=[
+    {id:"wake",t:W,kind:"rituale",title:"Risveglio da campione",dur:3,seq:RITUAL,
+      sum:"3 minuti guidati: acqua, respiri alla finestra, gratitudine. Poi telefono a faccia in giù: per 30 minuti niente social, mail e notizie.",
+      list:RITUAL.map(r=>r[0]+" ("+(r[1]>=60?r[1]/60+" min":r[1]+" s")+")").concat(["Avvia il rituale e lascia il telefono a faccia in giù: con la guida vocale ti basta ascoltare. Alla fine parte la meditazione."]),
+      micro:"Alzati e bevi un bicchiere d'acqua. Basta questo per iniziare."},
+    {id:"medam",t:W+15,kind:"mente",title:"Meditazione: "+med.name,dur:medMin,med:med,
+      sum:med.sum+" "+medMin+" minuti.",list:med.steps,
+      micro:"Siediti, chiudi gli occhi e fai 5 respiri lenti contando le espirazioni."},
+    {id:"colaz",t:colazAt,kind:"cibo",title:(FW?"Primo pasto: ":"Colazione: ")+R.colazione.t,dur:R.colazione.min,rec:R.colazione,sum:(FW?"Rompi il digiuno. ":"")+R.colazione.desc+" · circa "+R.colazione.n.k+" kcal",
+      eat:"Siediti a tavola, senza schermi, e mastica lentamente.",
+      micro:"Prepara solo gli ingredienti sul tavolo. Il resto viene facile."},
+    {id:"train",t:trainAt,kind:"corpo",title:wo.name,dur:woDur,ex:wo.ex,tip:wo.tip,
+      sum:woDur+" minuti · "+WEEKS[I.week].name+(trainAdj()!==1?" · volume "+(trainAdj()>1?"+":"")+Math.round((trainAdj()-1)*100)+"% su misura":""),
+      micro:"Metti le scarpe e fai solo il primo esercizio. Se dopo 2 minuti vuoi smettere, puoi."},
+    {id:"pranzo",t:lunchAt,kind:"cibo",title:"Pranzo: "+R.pranzo.t,dur:R.pranzo.min,rec:R.pranzo,sum:R.pranzo.desc+" · circa "+R.pranzo.n.k+" kcal",
+      eat:"Mangia lentamente: posate giù tra un boccone e l'altro.",
+      micro:"Scegli la ricetta e metti l'acqua sul fuoco. Fatto il primo passo."},
+    {id:"snack",t:snackAt,kind:"cibo",title:"Spuntino: "+R.spuntino.t,dur:R.spuntino.min,rec:R.spuntino,sum:R.spuntino.desc+" · circa "+R.spuntino.n.k+" kcal",
+      eat:"Accompagnalo con un bicchiere d'acqua.",
+      micro:"Prendi il frutto. Mangialo lontano dalla scrivania."},
+    {id:"cena",t:cenaAt,kind:"cibo",title:"Cena: "+R.cena.t,dur:R.cena.min,rec:R.cena,sum:R.cena.desc+" · circa "+R.cena.n.k+" kcal"+(FW?". Finisci entro le "+fmt(FW+480)+": da lì parte il digiuno":""),
+      eat:"Finisci di cenare almeno 2 ore prima di dormire.",
+      micro:"Lava e taglia le verdure. Il resto della cena parte da lì."},
+    {id:"medpm",t:W+930,kind:"mente",title:"Chiusura: diario e gratitudine",dur:5,med:MEDS[6],
+      sum:"Tre righe sul diario: cosa è andato bene, cosa migliorare, tre grazie.",
+      list:["Scrivi una cosa che hai fatto bene oggi.","Scrivi una cosa da migliorare domani, senza giudicarti.","Scrivi tre cose per cui sei grato.","Chiudi con 10 respiri lenti."],
+      micro:"Scrivi una sola riga: cosa è andato bene oggi."},
+    {id:"sleep",t:W+960,kind:"sonno",title:"Luci spente",dur:5,
+      sum:"Stessa ora ogni sera. Schermi spenti, stanza fresca e buia.",
+      list:["Schermi spenti 30 minuti prima.","Prepara i vestiti per l'allenamento di domani: domattina avrai una scusa in meno.","Metti un bicchiere d'acqua sul comodino: il primo gesto di domani è già pronto.","Stanza fresca, buia e silenziosa.","Punta a 7–8 ore di sonno."],
+      micro:"Metti il telefono in carica fuori dalla camera."}
+  ];
+  return{info:I,tasks,wo,med,medMin};
+}
+function dayLog(k){return S.log[k]||{}}
+function pctOf(d){const k=key(d),p=buildDay(d),l=dayLog(k);return p.tasks.filter(t=>l[t.id]).length/p.tasks.length}
+function won(d){return pctOf(d)>=.7}
+/* ---------- COME SI ESEGUE OGNI ESERCIZIO ---------- */
+// [passaggi, errore da evitare, versione più facile]
+const HOW={
+  "Saluto al sole":[["In piedi, inspira e porta le braccia in alto.","Espira e piegati in avanti. Inspira allungando la schiena, poi porta i piedi indietro in plank.","Scendi piano, apri il petto (cobra), spingi i fianchi in alto (cane a testa in giù) per 3 respiri e torna in piedi."],"Trattenere il respiro: ogni movimento segue un'inspirazione o un'espirazione.","Piega le ginocchia quando vai in avanti e appoggiale a terra nel plank."],
+  "Mobilità anche 90/90":[["Seduto a terra, una gamba davanti e una di lato, entrambe piegate a 90°.","Busto dritto, sporgiti piano sopra la gamba davanti per 2 respiri.","Ruota le ginocchia dall'altra parte, se ci riesci senza usare le mani."],"Incurvare la schiena per scendere di più.","Appoggia le mani dietro di te per sostenerti."],
+  "Gatto-mucca":[["A quattro zampe, mani sotto le spalle e ginocchia sotto le anche.","Inspira: pancia verso il basso, sguardo avanti.","Espira: schiena tonda verso l'alto, mento verso il petto."],"Muovere solo il collo: il movimento parte dal bacino.","Fai un movimento più piccolo, va bene lo stesso."],
+  "Corsa o bici facile":[["Parti piano per 5 minuti.","Tieni un ritmo in cui riesci a parlare con frasi intere.","Rallenta negli ultimi 3 minuti."],"Andare troppo forte: oggi si costruisce resistenza, non velocità.","Camminata veloce, anche in salita."],
+  "Stretching finale":[["Polpacci, cosce davanti e dietro, glutei, petto.","30 secondi per posizione, respirando lento.","Allunga fino a sentire tensione, mai dolore."],"Molleggiare: tieni la posizione ferma.","Fai solo le gambe."],
+  "Squat a corpo libero":[["Piedi alla larghezza delle spalle, punte leggermente in fuori.","Scendi spingendo il sedere indietro, come per sederti, petto alto.","Arriva con le cosce parallele al pavimento, poi spingi sui talloni e risali."],"Ginocchia che cadono verso l'interno: spingile in fuori, in linea con i piedi.","Siediti e alzati da una sedia."],
+  "Piegamenti (anche sulle ginocchia)":[["Mani poco più larghe delle spalle, corpo dritto dalla testa ai talloni (o alle ginocchia).","Scendi con i gomiti a circa 45° dal corpo, finché il petto è vicino al pavimento.","Spingi e torna su senza far cadere i fianchi."],"Bacino che si abbassa o sale: stringi pancia e glutei.","Mani appoggiate a un tavolo o al muro."],
+  "Affondi alternati":[["In piedi, fai un passo lungo in avanti.","Scendi finché le ginocchia sono a circa 90° e quello dietro sfiora terra.","Spingi sul piede davanti, torna in piedi e cambia gamba."],"Ginocchio davanti che va verso l'interno.","Affondi da fermo, tenendoti a una sedia."],
+  "Rematore con elastico":[["Seduto a gambe tese, elastico sotto i piedi (o fissato a una maniglia).","Tira i gomiti indietro vicino al corpo, stringendo le scapole.","Torna avanti lentamente, in 2 secondi."],"Alzare le spalle verso le orecchie.","Usa un elastico più leggero."],
+  "Plank":[["Avambracci a terra, gomiti sotto le spalle.","Corpo in linea retta, pancia e glutei contratti.","Respira normalmente e tieni la posizione."],"Fianchi troppo alti o troppo bassi.","Ginocchia a terra."],
+  "Dead bug":[["Sdraiato sulla schiena, braccia verso il soffitto, ginocchia piegate a 90° sopra le anche.","Abbassa insieme braccio destro e gamba sinistra, schiena bassa ben appoggiata.","Torna al centro e cambia lato."],"La schiena bassa si stacca da terra: fai un movimento più piccolo.","Muovi solo le gambe, una alla volta."],
+  "Riscaldamento: skip e calciata":[["Skip: corsa sul posto portando le ginocchia in alto.","Calciata: talloni verso i glutei.","Alterna 30 secondi di ognuno, le braccia accompagnano."],"Atterrare sui talloni: resta sull'avampiede.","Fai i movimenti camminando."],
+  "Passi laterali veloci":[["Gambe piegate e peso sugli avampiedi, come in risposta al servizio.","Spostati di lato con passi rapidi, senza incrociare i piedi.","Cambia direzione ogni 3–4 passi."],"Stare dritto: resta basso per tutto il tempo.","Passi più lenti e più corti."],
+  "Split step + scatto di 5 metri":[["Piccolo saltello a piedi divaricati, come quando l'avversario colpisce.","Appena atterri, scatta per 5 metri in una direzione.","Torna camminando e recupera prima della ripetizione successiva."],"Scattare già stanco: la qualità conta più del numero.","Al posto dello scatto, 3 passi veloci."],
+  "Salti con la corda (anche simulati)":[["Salti bassi sugli avampiedi, ginocchia morbide.","Gira la corda con i polsi, non con le braccia.","Senza corda: simula il movimento con le mani."],"Saltare troppo in alto: bastano pochi centimetri.","Alterna 20 secondi di salti e 20 di riposo."],
+  "Equilibrio su una gamba":[["In piedi su una gamba, ginocchio leggermente piegato.","Sguardo fisso su un punto davanti a te.","Per renderlo più difficile, chiudi gli occhi."],"Ginocchio bloccato e teso.","Tieni un dito appoggiato al muro."],
+  "Flusso yoga":[["Collega 3–4 posizioni: cane a testa in giù, guerriero, posizione del bambino.","Ogni passaggio segue il respiro.","Finisci con 1 minuto disteso, occhi chiusi."],"Andare di fretta: lento è meglio.","Ripeti più volte il saluto al sole."],
+  "Camminata all'aperto":[["Passo tranquillo, possibilmente nel verde.","Respira dal naso.","Telefono in tasca o a casa."],"Trasformarla in un allenamento: oggi si recupera.","Anche 15 minuti valgono."],
+  "Automassaggio o rullo":[["Rotola lentamente su polpacci, cosce e glutei.","Fermati 20–30 secondi sui punti più tesi.","Respira e lascia andare la tensione."],"Rullare sulle articolazioni o sulla schiena bassa.","Usa una pallina da tennis contro il muro."],
+  "Stretching profondo (pose da 60 s)":[["Scegli 6–8 pose: piegamento in avanti, piccione, farfalla, torsione da sdraiato.","Tieni ogni posa 60 secondi.","Espira e lascia che il corpo si allunghi da solo."],"Forzare: l'allungamento deve essere piacevole.","Tieni le pose 30 secondi."],
+  "Squat jump":[["Scendi in mezzo squat.","Salta in alto con decisione.","Atterra morbido sugli avampiedi e torna subito in squat."],"Atterrare rigido, a gambe tese.","Squat veloci senza salto, alzandoti sulle punte."],
+  "Piegamenti veloci":[["Come i piegamenti normali.","Scendi controllato, risali più veloce che puoi.","Fermati appena la tecnica peggiora."],"Perdere la linea del corpo per andare veloce.","Sulle ginocchia o con le mani su un rialzo."],
+  "Ponte glutei su una gamba":[["Sdraiato, ginocchia piegate, poi distendi una gamba in alto.","Spingi sul tallone a terra e solleva il bacino.","Stringi i glutei 1 secondo in alto e scendi piano."],"Spingere con la schiena invece che con i glutei.","Ponte con entrambi i piedi a terra."],
+  "Rotazioni del busto con elastico":[["Elastico fissato di lato, all'altezza del petto, braccia tese.","Ruota il busto allontanandoti dall'elastico, come un rovescio a due mani.","Torna lentamente: i fianchi ruotano insieme alle spalle."],"Tirare solo con le braccia.","Elastico più leggero, o il movimento senza elastico."],
+  "Mountain climber":[["Posizione di plank, mani sotto le spalle.","Porta alternando le ginocchia verso il petto.","Fianchi bassi e stabili."],"Bacino che va su e giù.","Movimento lento, un ginocchio alla volta."],
+  "Plank laterale":[["Su un fianco, avambraccio sotto la spalla.","Solleva il bacino: corpo in linea retta.","Tieni la posizione, poi cambia lato."],"Fianco che cede verso il basso.","Ginocchia piegate a terra."],
+  "Bici, corsa o nuoto a ritmo costante":[["Primi 5 minuti tranquilli.","Poi ritmo costante: fatica moderata, riesci ancora a dire qualche parola.","Ultimi 5 minuti più piano."],"Partire troppo forte e finire a fatica.","Riduci la durata, non il ritmo tranquillo."],
+  "Mobilità spalle con elastico":[["Elastico tra le mani, braccia tese davanti.","Portalo sopra la testa e dietro la schiena, lentamente.","Torna avanti. Allarga la presa se senti fastidio."],"Piegare i gomiti.","Usa un asciugamano al posto dell'elastico."],
+  "Yoga rigenerativo":[["Pose sdraiate o sedute, sostenute da cuscini.","Resta 2–3 minuti in ogni posa.","Respira lento e lascia andare il peso."],"Cercare l'allungamento massimo: qui ci si rilassa.","Anche 10 minuti bastano."],
+  "Tempo all'aperto senza telefono":[["Esci: parco, giardino, lungomare.","Niente telefono, niente cuffie.","Guarda, ascolta, respira."],"Riempire il tempo di impegni.","Anche 10 minuti sul balcone."]
+};
+function exHTML(e,lvl,f){
+  const h=HOW[e.n];
+  const head='<span>'+esc(e.n)+'</span><span class="dose">'+esc(dose(e,lvl,f))+"</span>";
+  if(!h)return '<div class="ex">'+head+"</div>";
+  return '<details class="exd"><summary class="ex">'+head+'</summary><div class="exhow"><ol class="steps">'+h[0].map(s=>"<li>"+esc(s)+"</li>").join("")+
+    '</ol><p class="tip"><b>Errore da evitare:</b> '+esc(h[1])+'</p><p class="tip"><b>Più facile:</b> '+esc(h[2])+"</p></div></details>";
+}
+
+/* ---------- MENÙ: SOSTITUZIONI, VEGETARIANO, PIÙ PROTEINE ---------- */
+const VEG_ALT={
+  0:{t:"Tempeh al forno con patata dolce",min:30,desc:"Tempeh al forno con broccoli al vapore e patata dolce",
+     ing:["150 g di tempeh","1 patata dolce media (250 g)","200 g di cimette di broccolo","1 cucchiaio e ½ d'olio extravergine","Succo di ½ limone","1 cucchiaio scarso di tamari"],
+     steps:["Accendi il forno a 200 °C.","Taglia la patata dolce a cubetti, condiscila con metà dell'olio e un pizzico di sale e infornala per 25 minuti.","Taglia il tempeh a fette e lascialo 10 minuti in olio, limone e tamari.","Dopo 10 minuti aggiungi il tempeh in teglia e cuoci altri 15 minuti, girandolo a metà.","Cuoci i broccoli al vapore per 6–8 minuti."],
+     n:{k:710,p:41,c:65,f:32,fi:13}},
+  3:{t:"Burger di ceci con verdure al cartoccio",min:30,desc:"Burger di ceci con verdure di stagione al cartoccio",
+     ing:["240 g di ceci cotti (1 vasetto)","2 cucchiai di fiocchi d'avena senza glutine (20 g)","Prezzemolo, sale","1 cucchiaio e ½ d'olio extravergine","300 g di verdure (zucchine, pomodorini, finocchio)","½ limone"],
+     steps:["Accendi il forno a 190 °C. Taglia le verdure sottili, condiscile con metà dell'olio, sale e limone e chiudile in un cartoccio: 20 minuti.","Schiaccia i ceci con una forchetta, unisci avena, prezzemolo e sale e lascia riposare 10 minuti.","Forma 2 burger e cuocili in padella con il resto dell'olio, 4 minuti per lato.","Servi i burger con le verdure."],
+     n:{k:680,p:28,c:71,f:23,fi:27}}
+};
+const BOOST={
+  spuntino:{ing:"+ 150 g di yogurt di soia bianco",n:{k:80,p:6,c:3,f:3,fi:1}},
+  cena:{ing:"+ 100 g di edamame (o tofu) in più",n:{k:120,p:12,c:4,f:5,fi:5}}
+};
+function mealIdx(m,wd){const v=S.swaps[wd+"-"+m];return v===undefined?wd:v}
+function rawRecipe(m,wd){
+  const idx=mealIdx(m,wd);
+  let r=RECIPES[m][idx];
+  r=Object.assign({},r,{desc:MEALS[m][idx]});
+  if(m==="cena"&&S.profile.veg&&VEG_ALT[idx])r=Object.assign({},VEG_ALT[idx]);
+  if(S.profile.protein&&BOOST[m]){const b=BOOST[m],n={};for(const x in r.n)n[x]=r.n[x]+b.n[x];r=Object.assign({},r,{ing:r.ing.concat([b.ing]),n,boost:true})}
+  return r;
+}
+function swapCount(){return Object.keys(S.swaps).filter(k=>S.swaps[k]!==+k.split("-")[0]).length}
+
+/* ---------- SERIE CON JOLLY ---------- */
+// un giorno non vinto a settimana non interrompe la serie, se il giorno prima era vinto
+function wkOf(d){return key(addDays(d,-((d.getDay()+6)%7)))}
+function streakInfo(){
+  const st=parseKey(S.profile.start),used={},jollies=[];let d=today(),n=0;
+  if(!won(d))d=addDays(d,-1);
+  while(diffDays(st,d)>=0){
+    if(won(d)){n++;d=addDays(d,-1);continue}
+    const wk=wkOf(d),prev=addDays(d,-1);
+    if(!used[wk]&&diffDays(st,prev)>=0&&won(prev)){used[wk]=1;jollies.push(key(d));d=prev;continue}
+    break;
+  }
+  return{n,jollies};
+}
+function streak(){return streakInfo().n}
+function bestStreak(){
+  let d=parseKey(S.profile.start),t=today(),b=0,c=0;const used={};
+  while(diffDays(d,t)>=0){
+    if(won(d)){c++;b=Math.max(b,c)}
+    else if(isToday(d)){}
+    else{const wk=wkOf(d);if(c>0&&!used[wk]&&won(addDays(d,1))){used[wk]=1}else c=0}
+    d=addDays(d,1);
+  }
+  return b;
+}
+
+/* ---------- ALLENAMENTO CHE SI ADATTA ---------- */
+function trainAdj(){
+  const ks=Object.keys(S.rpe).sort().slice(-6);
+  const s=ks.reduce((a,k)=>a+S.rpe[k],0);
+  return Math.min(1.3,Math.max(.75,1+.05*s));
+}
+function setRpe(v){
+  const k=key(today());S.rpe[k]=v;save();
+  const last=Object.keys(S.rpe).sort().slice(-3).map(x=>S.rpe[x]);
+  const lvl=+S.profile.level||0;
+  if(v===1&&last.length===3&&last.every(x=>x===1)&&lvl<2)toast("Tre allenamenti facili di fila: valuta di passare a «"+LEVELS[lvl+1]+"» in Progressi.");
+  else if(v===-1&&last.length===3&&last.every(x=>x===-1)&&lvl>0)toast("Tre allenamenti duri di fila: abbassare a «"+LEVELS[lvl-1]+"» non è una sconfitta.");
+  else toast(v===1?"Bene: dal prossimo allenamento un po' più di volume.":v===-1?"Ricevuto: alleggerisco un po' i prossimi.":"Perfetto, si continua così.");
+  render();
+}
+
+/* ---------- ACQUA E SONNO ---------- */
+function renderHabits(){
+  const box=$("habits");
+  if(diffDays(today(),sel)>0){box.hidden=true;return}
+  box.hidden=false;
+  const k=key(sel),w=S.water[k]||0,sl=S.sleep[k];
+  box.innerHTML='<div class="hab"><div class="hab-h"><b>Acqua</b><span class="mono">'+w+'/8 bicchieri</span></div><div class="drops">'+
+    Array.from({length:8},(_,i)=>'<button type="button" class="drop'+(i<w?" on":"")+'" data-water="'+(i+1)+'" aria-label="'+(i+1)+' bicchieri"></button>').join("")+'</div></div>'+
+    '<div class="hab"><div class="hab-h"><b>Sonno di stanotte</b><span class="mono">'+(sl?sl+" ore":"—")+'</span></div><div class="durs">'+
+    [5,6,7,8,9].map(h=>'<button type="button" data-sleep="'+h+'" aria-pressed="'+(sl===h)+'">'+(h===9?"9+":h)+" h</button>").join("")+"</div></div>"+coffeeHTML(k);
+}
+
+/* ---------- DIGIUNO 16:8 E CAFFÈ ---------- */
+// minuti del primo pasto, o null se il digiuno è spento; mai prima di un'ora dopo la sveglia
+function fastWindow(){
+  const P=S.profile;if(!P.fast)return null;
+  return Math.max(toMin(P.wake)+60,toMin(P.fastStart||"11:00"));
+}
+function coffeeCfg(){return Object.assign({on:false,max:2,cutoff:"14:00"},S.profile.coffee||{})}
+function coffeeHTML(k){
+  const c=coffeeCfg();if(!c.on)return"";
+  const cups=S.coffee[k]||[],late=cups.filter(m=>m>toMin(c.cutoff)).length,over=cups.length>c.max;
+  const now=nowMin(),past=isToday(sel)&&now>toMin(c.cutoff);
+  return '<div class="hab hab-wide"><div class="hab-h"><b>Caffè</b><span class="mono">'+cups.length+"/"+c.max+" · ultimo entro le "+c.cutoff+'</span></div>'+
+    '<div class="btnrow"><button type="button" class="btn btn-sec" data-coffee="1">+ 1 caffè</button>'+(cups.length?'<button type="button" class="btn btn-ghost" data-coffee="-1">Togli l\'ultimo</button>':"")+"</div>"+
+    (over?'<p class="note warn" style="margin:0">Hai superato il tuo limite di oggi.</p>':late?'<p class="note warn" style="margin:0">'+late+(late===1?" caffè dopo le ":" caffè dopo le ")+c.cutoff+": stasera il sonno potrebbe risentirne.</p>":
+     past?'<p class="note" style="margin:0">Dopo le '+c.cutoff+" meglio una tisana: liquirizia, menta o camomilla.</p>":"")+"</div>";
+}
+
+/* ---------- RESOCONTO SETTIMANALE ---------- */
+const WEAK_TIP={
+  rituale:"Il mattino decide la giornata: stasera metti il bicchiere d'acqua sul comodino e il telefono fuori dalla camera.",
+  mente:"Medita subito dopo il risveglio, prima di guardare il telefono: sempre alla stessa ora, anche solo 5 minuti.",
+  cibo:"Fai la spesa nel weekend e cucina in anticipo riso, quinoa e legumi: il cibo pronto toglie le scuse.",
+  corpo:"Prepara i vestiti dell'allenamento la sera prima. Se il piano è troppo, abbassa il livello: meglio poco ogni giorno che tanto ogni tanto.",
+  sonno:"Luci spente alla stessa ora per 7 sere di fila, schermi spenti 30 minuti prima."
+};
+function weekStats(){
+  const t=today(),st=parseKey(S.profile.start),days=[];
+  for(let i=6;i>=0;i--){const d=addDays(t,-i);if(diffDays(st,d)>=0)days.push(d)}
+  const by={},cnt={};let wins=0,wo=0,med=0,meals=0,mealsTot=0,wat=[],slp=[],woMiss=0,cof=0,cofLate=0;
+  days.forEach(d=>{
+    const k=key(d),l=dayLog(k),p=buildDay(d);
+    if(won(d))wins++;if(l.train)wo++;else if(!isToday(d))woMiss++;
+    med+=S.medMin[k]||0;
+    p.tasks.forEach(x=>{by[x.kind]=(by[x.kind]||0)+(l[x.id]?1:0);cnt[x.kind]=(cnt[x.kind]||0)+1;if(x.kind==="cibo"){mealsTot++;if(l[x.id])meals++}});
+    if(S.water[k])wat.push(S.water[k]);if(S.sleep[k])slp.push(S.sleep[k]);
+    const cc=S.coffee[k]||[];cof+=cc.length;cofLate+=cc.filter(m=>m>toMin(coffeeCfg().cutoff)).length;
+  });
+  let weak=null,wp=2;for(const kd in cnt){const p=by[kd]/cnt[kd];if(p<wp){wp=p;weak=kd}}
+  const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length*10)/10:null;
+  return{n:days.length,wins,wo,med,mealPct:mealsTot?Math.round(meals/mealsTot*100):0,water:avg(wat),sleep:avg(slp),weak,weakPct:Math.round(wp*100),woMiss,cof:Math.round(cof/Math.max(1,days.length)*10)/10,cofLate};
+}
+function renderReview(){
+  const w=weekStats();
+  const tiles=[[w.wins+"/"+w.n,"giornate vinte"],[w.wo,"allenamenti"],[w.med,"minuti con la meditazione guidata"],[w.mealPct+"%","pasti seguiti"],[w.water===null?"—":fmtNum(w.water),"bicchieri d'acqua al giorno"],[w.sleep===null?"—":fmtNum(w.sleep)+" h","di sonno a notte"]];
+  let tip=w.n<2?"Il resoconto diventa utile dopo qualche giorno. Intanto segui la prossima azione.":
+    (w.weakPct>=90?"Settimana quasi perfetta. Il prossimo passo è mantenerla, non aggiungere altro.":
+    "Il punto da migliorare è «"+labelKind(w.weak).toLowerCase()+"» ("+w.weakPct+"% fatto). "+WEAK_TIP[w.weak]);
+  if(w.woMiss>=3&&(+S.profile.level||0)>0)tip+=" Hai saltato "+w.woMiss+" allenamenti: prova un livello più basso per due settimane.";
+  if(w.sleep!==null&&w.sleep<7)tip+=" Dormi in media meno di 7 ore: il recupero è parte dell'allenamento."+(w.cofLate?" Hai bevuto "+w.cofLate+(w.cofLate===1?" caffè":" caffè")+" dopo le "+coffeeCfg().cutoff+": prova a spostarli prima.":"");
+  if(coffeeCfg().on)tiles.push([fmtNum(w.cof),"caffè al giorno"+(w.cofLate?" · "+w.cofLate+" tardi":"")]);
+  $("reviewTiles").innerHTML=tiles.map(x=>'<div class="stat"><b>'+x[0]+"</b><span>"+x[1]+"</span></div>").join("");
+  $("reviewTip").textContent=tip;
+  if(document.activeElement!==$("wgoal"))$("wgoal").value=S.weekGoal&&S.weekGoal.text||"";
+}
+function goalActive(){return S.weekGoal&&S.weekGoal.text&&diffDays(parseKey(S.weekGoal.date),today())<=8}
+
+/* ---------- GUIDA VOCALE ---------- */
+const VOICE_OK="speechSynthesis" in window&&"SpeechSynthesisUtterance" in window;
+// voci italiane, le più naturali per prime (i motori migliori lo dicono nel nome)
+function itVoices(){
+  if(!VOICE_OK)return[];
+  const score=v=>(/neural|natural|enhanced|premium|wavenet|online/i.test(v.name)?4:0)+(/google/i.test(v.name)?2:0)+(v.localService===false?1:0);
+  return speechSynthesis.getVoices().filter(v=>/^it/i.test(v.lang)).sort((a,b)=>score(b)-score(a));
+}
+function voiceCfg(){return Object.assign({name:"",rate:.9,pitch:.95},S.voiceCfg||{})}
+let sayToken=0;
+function utter(t,calm){
+  const c=voiceCfg(),vs=itVoices(),u=new SpeechSynthesisUtterance(t);
+  u.lang="it-IT";u.rate=calm?Math.max(.7,c.rate-.12):c.rate;u.pitch=calm?Math.max(.8,c.pitch-.03):c.pitch;
+  const v=vs.find(x=>x.name===c.name)||vs[0];if(v)u.voice=v;return u;
+}
+// in meditazione la voce va più piano e a frasi brevi, con pause dopo virgole e punti: suona molto meno meccanica
+function say(t,calm){
+  if(!VOICE_OK)return;
+  try{
+    if(!calm){speechSynthesis.speak(utter(t,false));return}
+    const tok=++sayToken,parts=t.split(/(?<=[.,:;!?])\s+/).filter(Boolean);
+    const next=i=>{if(tok!==sayToken||i>=parts.length)return;const u=utter(parts[i],true);
+      u.onend=()=>setTimeout(()=>next(i+1),/[.!?:]$/.test(parts[i])?800:350);speechSynthesis.speak(u)};
+    next(0);
+  }catch(e){}
+}
+function speak(t){if(S.voice)say(t,!!(OV&&(OV.med||OV.seq)))}
+function renderVoices(){
+  const box=$("voiceCfg");if(!VOICE_OK){box.hidden=true;return}
+  box.hidden=!S.voice;
+  const vs=itVoices(),c=voiceCfg(),sel=$("vc-voice");
+  if(document.activeElement!==sel){
+    sel.innerHTML=vs.length?vs.map((v,i)=>'<option value="'+esc(v.name)+'"'+((c.name?v.name===c.name:i===0)?" selected":"")+">"+esc(v.name.replace(/^(Microsoft|Google)\s+/,"$1 · "))+(i===0?" (consigliata)":"")+"</option>").join(""):'<option value="">Nessuna voce italiana installata</option>';
+  }
+  $("vc-none").hidden=vs.length>1;
+  $("vc-rate").value=c.rate;$("vc-rate-v").textContent=fmtNum(c.rate)+"×";
+  $("vc-pitch").value=c.pitch;$("vc-pitch-v").textContent=c.pitch<.97?"più grave":c.pitch>1.03?"più acuto":"naturale";
+}
+function setVoice(patch){S.voiceCfg=Object.assign(voiceCfg(),patch);save();renderVoices()}
+if(VOICE_OK&&"onvoiceschanged" in speechSynthesis)speechSynthesis.onvoiceschanged=()=>{if(view==="medita")renderVoices()};
+function hush(){sayToken++;try{if(VOICE_OK)speechSynthesis.cancel()}catch(e){}}
+
+/* ---------- ALLENAMENTO GUIDATO ---------- */
+const WK_UNIT={"rip":"ripetizioni","per lato":"ripetizioni per lato","per gamba":"ripetizioni per gamba","giri":"giri","sec":"secondi","sec per lato":"secondi per lato","min":"minuti"};
+const WK_SHORT={"rip":"rip","per lato":"per lato","per gamba":"per gamba","giri":"giri"};
+function wkSteps(x,lvl,f){
+  const st=[],REST=[60,45,40][lvl]||45,adj=trainAdj();
+  x.ex.forEach((e,ei)=>{
+    const sets=e.s[lvl],r=e.fixed?e.r[lvl]:Math.max(1,Math.round(e.r[lvl]*f*adj));
+    const side=e.u==="sec per lato",timed=/^sec/.test(e.u)||e.u==="min";
+    const secs=e.u==="min"?r*60:/^sec/.test(e.u)?(side?r*2+5:r):0;
+    for(let s=1;s<=sets;s++){
+      st.push({type:"work",ei,e,set:s,sets,r,secs,side,timed});
+      if(s<sets)st.push({type:"rest",secs:REST});
+    }
+    if(ei<x.ex.length-1)st.push({type:"rest",secs:e.u==="min"?20:60,newEx:true});
+  });
+  return st;
+}
+function openWorkout(x,plan){
+  const lvl=+S.profile.level||0,f=WEEKS[plan.info.week].factor;
+  openOverlay({title:x.title,eyebrow:"Allenamento guidato",noTimer:true,task:"train",day:sel,msg:""});
+  OV.wk={x,lvl,f,steps:wkSteps(x,lvl,f),i:0};
+  $("ovTime").hidden=$("ovProg").hidden=false;
+  $("ovVoice").hidden=!(VOICE_OK&&!S.voice);
+  lockScreen(true);
+  OV.tick=setInterval(wkTick,250);
+  wkShow(0);
+}
+function wkList(cur){
+  const w=OV.wk;
+  return '<div class="phase"><div class="eyebrow">Esercizi · tocca per la spiegazione</div>'+w.x.ex.map((e,j)=>'<div class="wk-ex'+(j===cur?" cur":j<cur?" done":"")+'">'+exHTML(e,w.lvl,w.f)+"</div>").join("")+"</div>";
+}
+function wkShow(i){
+  const w=OV.wk,s=w.steps[i];w.i=i;w.ann={};w.end=null;
+  $("ovBar").style.width=(i/w.steps.length*100).toFixed(1)+"%";
+  $("ovTime").classList.remove("target");
+  hush();
+  if(s.type==="work"){
+    const n=w.x.ex.length,h=HOW[s.e.n];
+    $("ovTitle").textContent=s.e.n;
+    $("ovEyebrow").textContent="Esercizio "+(s.ei+1)+" di "+n+(s.sets>1?" · serie "+s.set+" di "+s.sets:"");
+    $("ovMsg").textContent=s.set===1?(h?h[0][0]:""):"Serie "+s.set+": stessa tecnica, respira.";
+    $("ovDone").textContent=s.timed?"Salta · prossima":"Fatto · prossima";
+    $("ovPause").hidden=!s.timed;$("ovPause").textContent="Pausa";
+    if(s.timed){w.end=Date.now()+s.secs*1000;wkTime(s.secs)}
+    else{$("ovTime").textContent=s.r+" "+(WK_SHORT[s.e.u]||s.e.u);$("ovTime").classList.add("target")}
+    $("ovList").innerHTML=wkList(s.ei);
+    const amount=s.r+" "+WK_UNIT[s.e.u];
+    speak(s.set===1?"Esercizio "+(s.ei+1)+": "+s.e.n+". "+(s.sets>1?s.sets+" serie da "+amount:amount)+". "+(h?h[0][0]+" ":"")+(s.timed?"Via!":"Quando hai finito, tocca prossima."):
+      "Serie "+s.set+"."+(s.timed?" Via!":""));
+  }else{
+    const nx=w.steps[i+1];
+    $("ovTitle").textContent="Recupero";
+    $("ovEyebrow").textContent="Poi: "+nx.e.n+(nx.sets>1?" · serie "+nx.set+" di "+nx.sets:"");
+    $("ovMsg").textContent="Respira lento. Un sorso d'acqua.";
+    $("ovDone").textContent="Salta il recupero";
+    $("ovPause").hidden=false;$("ovPause").textContent="Pausa";
+    w.end=Date.now()+s.secs*1000;wkTime(s.secs);
+    $("ovList").innerHTML=wkList(nx.ei);
+    speak("Recupero, "+s.secs+" secondi."+(s.newEx?" Poi: "+nx.e.n+".":""));
+  }
+}
+function wkTime(left){const t=Math.ceil(left);$("ovTime").textContent=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0")}
+function wkTick(){
+  if(!OV||!OV.wk||OV.paused||OV.wk.done)return;
+  const w=OV.wk,s=w.steps[w.i];if(!w.end)return;
+  const left=Math.max(0,(w.end-Date.now())/1000);wkTime(left);
+  if(s.side&&!w.ann.side&&s.secs-left>=s.r){w.ann.side=1;bell(660);speak("Cambia lato.")}
+  if(s.secs>=25&&left<=10.5&&!w.ann.ten){w.ann.ten=1;speak(s.type==="rest"?"Pronti.":"Ancora dieci secondi.")}
+  if(left<=0){bell(s.type==="rest"?660:528);if(s.type==="work")speak("Stop.");wkNext()}
+}
+function wkNext(){
+  const w=OV.wk;
+  if(w.i+1<w.steps.length){wkShow(w.i+1);return}
+  w.done=true;OV.state="end";hush();
+  $("ovBar").style.width="100%";$("ovTitle").textContent="Allenamento completato";$("ovEyebrow").textContent=w.x.title;
+  $("ovTime").textContent="Fatto";$("ovTime").classList.add("target");$("ovPause").hidden=true;
+  $("ovMsg").textContent="Ottimo lavoro. Ora qualche minuto di stretching e un bicchiere d'acqua.";$("ovDone").textContent="Segna come fatto";
+  $("ovList").innerHTML=wkList(w.x.ex.length);
+  bell(396);speak("Allenamento completato. Ottimo lavoro.");
+}
+function wkPause(){
+  const w=OV.wk;
+  if(OV.paused){OV.paused=false;if(w.end)w.end=Date.now()+w.left*1000;$("ovPause").textContent="Pausa"}
+  else{OV.paused=true;if(w.end)w.left=Math.max(0,(w.end-Date.now())/1000);$("ovPause").textContent="Riprendi";hush()}
+}
+
+/* ---------- UTILITY UI ---------- */
+const $=id=>document.getElementById(id);
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+let toastT;
+function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+function nowMin(){const n=new Date();return n.getHours()*60+n.getMinutes()}
+function isToday(d){return key(d)===key(today())}
+function name(){return S.profile.name?S.profile.name:"campione"}
+
+function setDone(d,id,val){
+  const k=key(d);const wasWon=won(d);
+  S.log[k]=S.log[k]||{};
+  if(val)S.log[k][id]=true;else delete S.log[k][id];
+  save();
+  if(!wasWon&&won(d))setTimeout(()=>toast("Giornata vinta! La serie continua."),150);
+  render();
+}
+
+/* ---------- COACH ---------- */
+function coachLine(d,plan,pct){
+  const I=plan.info;
+  if(!isToday(d)){
+    if(diffDays(d,today())>0)return pct>=.7?"Giornata vinta. Questo è il tipo di giornata che costruisce un campione.":"Questa giornata è passata. Non serve rimpiangerla: conta quella di oggi.";
+    return "Anteprima: ecco cosa ti aspetta. Prepara stasera quello che ti serve, domani avrai meno scuse.";
+  }
+  const h=new Date().getHours(), n=name();
+  if(pct===1)return "Giornata completa, "+n+". È il lavoro che nessuno vede a fare la differenza.";
+  if(pct>=.7)return "Giornata già vinta. Chiudi in bellezza e vai a dormire fiero.";
+  if(I.idx===0&&pct===0)return "Giorno 1, "+n+". Non devi cambiare vita oggi. Devi solo fare la prossima cosa della lista.";
+  if(h<11&&pct===0)return "Buongiorno "+n+". La giornata si decide nei primi 30 minuti: avvia il rituale, poi telefono a faccia in giù e niente social.";
+  if(h>=18&&pct<.4)return "Non è troppo tardi. Scegli una cosa sola qui sotto e falla adesso. Una.";
+  if(I.wd===6)return "Domenica: si recupera. Riposare bene fa parte del piano, non è una pausa dal piano.";
+  return GENERIC[((I.idx%GENERIC.length)+GENERIC.length)%GENERIC.length];
+}
+
+/* ---------- RENDER OGGI ---------- */
+function render(){
+  const plan=buildDay(sel), k=key(sel), l=dayLog(k), I=plan.info;
+  const done=plan.tasks.filter(t=>l[t.id]).length, pct=done/plan.tasks.length;
+  const tI=dayInfo(today());
+  $("hdr-sub").textContent="Giorno "+Math.max(1,tI.idx+1)+" · "+WEEKS[tI.week].name;
+  const SI=streakInfo();$("hdr-streak").textContent=SI.n;
+  $("hdr-streak").parentNode.title="Giorni vinti di fila (almeno 70% del piano). Un giorno storto a settimana non azzera la serie"+(SI.jollies.length?": jolly usato il "+SI.jollies.map(j=>parseKey(j).getDate()).join(", "):"")+".";
+
+  // data
+  const t=isToday(sel), diff=diffDays(today(),sel);
+  $("dn-eyebrow").textContent=t?"Oggi":diff===-1?"Ieri":diff===1?"Domani":(I.idx>=0?"Giorno "+(I.idx+1):"Prima dell'inizio");
+  $("dn-title").textContent=DAYNAMES[I.wd]+" "+sel.getDate()+" "+MONTHS[sel.getMonth()].slice(0,3);
+  $("goToday").hidden=t;
+  $("firstRun").hidden=S.setup;
+
+  // ring
+  $("ringArc").setAttribute("stroke-dashoffset",(201.06*(1-pct)).toFixed(2));
+  $("ringPct").textContent=Math.round(pct*100)+"%";
+  $("coachLine").textContent=coachLine(sel,plan,pct);
+  $("countLbl").textContent=done+"/"+plan.tasks.length+" fatti";
+
+  // prossima azione
+  const nm=nowMin();
+  let next=null;
+  if(t)next=plan.tasks.find(x=>!l[x.id]&&x.t+(x.dur||10)>=nm-30)||plan.tasks.find(x=>!l[x.id]);
+  else next=plan.tasks.find(x=>!l[x.id]);
+  const nc=$("nextCard");
+  if(!next){
+    $("nextEyebrow").textContent="Tutto fatto";
+    $("nextTitle").textContent="Hai completato il programma.";
+    $("nextMeta").textContent="Riposa. Domani si riparte da qui.";
+    nc.querySelector(".btnrow").hidden=true;$("excuseBox").hidden=true;
+  }else{
+    nc.querySelector(".btnrow").hidden=false;
+    $("nextEyebrow").textContent=t?(next.t<=nm?"Adesso tocca a questo":"Prossima azione · alle "+fmt(next.t)):"Prima azione da fare";
+    $("nextTitle").textContent=next.title;
+    $("nextMeta").textContent=next.sum;
+    nc.dataset.id=next.id;
+    $("nextGo").textContent=next.med?"Inizia a meditare":next.id==="train"?"Inizia l'allenamento":next.rec?"Apri la ricetta":"Inizia ora";
+  }
+
+  // timeline
+  const nowIdx=t?plan.tasks.findIndex(x=>!l[x.id]&&x.t+(x.dur||10)>=nm-30):-1;
+  $("timeline").innerHTML=plan.tasks.map((x,i)=>{
+    const isDone=!!l[x.id], open=openTask===x.id;
+    let det="";
+    if(open){
+      if(x.ex){det='<div class="details"><p class="note" style="margin:0">Tocca un esercizio per vedere come si esegue.</p>'+x.ex.map(e=>exHTML(e,+S.profile.level||0,WEEKS[I.week].factor)).join("")+'<div class="tip">'+esc(x.tip)+'</div>'+startBtn(x)+'</div>'}
+      else if(x.id==="medpm")det='<div class="details">'+journalHTML(sel)+startBtn(x)+"</div>";
+      else if(x.rec)det='<div class="details">'+recipeHTML(x.rec,x.eat)+startBtn(x)+"</div>";
+      else det='<div class="details"><ul>'+x.list.map(s=>"<li>"+esc(s)+"</li>").join("")+"</ul>"+startBtn(x)+"</div>";
+    }
+    return '<li class="task'+(isDone?" done":"")+(i===nowIdx?" now":"")+'">'+
+      '<div class="time">'+fmt(x.t)+'</div><div class="body"><div class="card">'+
+      '<button class="expand" data-open="'+x.id+'" aria-expanded="'+open+'"><span class="chip k-'+x.kind+'">'+labelKind(x.kind)+'</span><h3>'+esc(x.title)+'</h3><div class="sum">'+esc(x.sum)+'</div></button>'+
+      '<button class="check" data-check="'+x.id+'" aria-pressed="'+isDone+'" aria-label="'+(isDone?"Segna come da fare: ":"Segna come fatto: ")+esc(x.title)+'">'+(isDone?'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg>':"")+'</button>'+
+      det+'</div></div></li>';
+  }).join("");
+
+  if(view==="sett")renderWeek();
+  if(view==="medita")renderMed();
+  if(view==="tu")renderYou();
+  const showInst=ENV.site&&!ENV.standalone&&!S.instDismiss&&isToday(sel);
+  $("instBanner").hidden=!showInst;
+  if(showInst){$("instText").innerHTML=installEvt?"Installa Match Point Coach: si apre come un'app, anche senza connessione, e ti manda i promemoria.":"<b>Installa Match Point Coach sul telefono.</b> "+installHelp();$("instBannerBtn").hidden=!installEvt}
+  $("remBanner").hidden=showInst||!(ENV.notif&&!S.rem.on&&!S.rem.dismiss&&isToday(sel));
+  const sk=key(today());
+  $("sunBanner").hidden=!(isToday(sel)&&today().getDay()===0&&S.reviewSeen!==sk);
+  $("rpeBanner").hidden=!(isToday(sel)&&dayLog(k).train&&S.rpe[k]===undefined);
+  $("goalLine").hidden=!goalActive();
+  if(goalActive())$("goalLine").textContent="Obiettivo della settimana: «"+S.weekGoal.text+"»";
+  renderHabits();
+  scheduleReminders();
+}
+function startBtn(x){return '<div class="btnrow"><button class="btn btn-court" data-start="'+x.id+'">'+(x.med?"Avvia meditazione guidata":x.rec?"Apri la ricetta a schermo intero":x.ex?"Avvia l'allenamento guidato":"Avvia timer · "+x.dur+" min")+'</button></div>'}
+function energy(n){const p=n.p*4,c=n.c*4,f=n.f*9,t=p+c+f||1;return{p:Math.round(p/t*100),c:Math.round(c/t*100),f:Math.round(f/t*100)}}
+function macroHTML(n,label){
+  if(!n)return "";
+  const e=energy(n);
+  return '<div class="macro"><div class="macro-k"><b class="mono">'+n.k+'</b><span>kcal'+(label?" · "+label:" per porzione")+'</span></div>'+
+    '<div class="macro-bar" role="img" aria-label="Energia: proteine '+e.p+'%, carboidrati '+e.c+'%, grassi '+e.f+'%"><i class="m-p" style="width:'+e.p+'%"></i><i class="m-c" style="width:'+e.c+'%"></i><i class="m-f" style="width:'+e.f+'%"></i></div>'+
+    '<dl class="macro-g"><div><dt><i class="m-p"></i>Proteine</dt><dd class="mono">'+n.p+' g</dd></div><div><dt><i class="m-c"></i>Carboidrati</dt><dd class="mono">'+n.c+' g</dd></div><div><dt><i class="m-f"></i>Grassi</dt><dd class="mono">'+n.f+' g</dd></div><div><dt><i class="m-fi"></i>Fibre</dt><dd class="mono">'+n.fi+' g</dd></div></dl></div>';
+}
+/* ---------- FABBISOGNO E PORZIONI ---------- */
+const ACTS=[[1.2,"Sedentario","lavoro seduto, poco movimento oltre al piano"],[1.375,"Leggero","il piano di Match Point Coach e poco altro"],[1.55,"Moderato","il piano più sport o un lavoro in piedi"],[1.725,"Intenso","allenamenti duri quasi ogni giorno"]];
+const GOALS=[[-.15,"Perdere peso"],[0,"Mantenere"],[.1,"Aumentare massa"]];
+function nutriCfg(){return Object.assign({mode:"base",sex:"m",age:35,weight:75,height:175,act:1,goal:1,kcal:2200},S.profile.nutri||{})}
+function baseDay(wd){const t={k:0,p:0,c:0,f:0,fi:0};["colazione","pranzo","spuntino","cena"].forEach(m=>{const n=rawRecipe(m,wd).n;for(const x in t)t[x]+=n[x]});return t}
+// Mifflin-St Jeor × attività × obiettivo
+function calcTarget(c){
+  const bmr=10*c.weight+6.25*c.height-5*c.age+(c.sex==="f"?-161:5);
+  return Math.round(bmr*ACTS[c.act][0]*(1+GOALS[c.goal][0])/10)*10;
+}
+function target(){
+  const c=nutriCfg();
+  if(c.mode==="calc"){const t=calcTarget(c);return isFinite(t)&&t>0?Math.max(1200,t):null}
+  if(c.mode==="manual")return +c.kcal>0?Math.max(1200,Math.min(5000,+c.kcal)):null;
+  return null;
+}
+function dayFactor(wd){const t=target();if(!t)return 1;return Math.min(2,Math.max(.6,t/baseDay(wd).k))}
+function weekFactor(){const t=target();if(!t)return 1;let b=0;for(let i=0;i<7;i++)b+=baseDay(i).k;return Math.min(2,Math.max(.6,t*7/b))}
+function fmtNum(x){return String(Math.round(x*100)/100).replace(".",",")}
+function fracStr(v){
+  const w=Math.floor(v+1e-9),r=Math.round((v-w)*4)/4,F={0.25:"¼",0.5:"½",0.75:"¾"};
+  if(r===1)return String(w+1);
+  return r?(w?w+" ":"")+F[r]:String(w);
+}
+// scala i numeri di una riga di ingredienti: grammi e ml a passi di 5, pezzi e cucchiai a ¼ o ½
+// singolare e plurale delle parole che seguono una quantità
+const NOUNS=[["patata dolce media","patate dolci medie"],["galletta","gallette"],["fetta","fette"],["dattero","datteri"],["gheriglio","gherigli"],["mandorla","mandorle"],["nocciola","nocciole"],
+  ["pomodorino","pomodorini"],["foglia","foglie"],["banana","banane"],["mela","mele"],["pera","pere"],["carota","carote"],["zucchina","zucchine"],["melanzana","melanzane"],
+  ["cucchiaio","cucchiai"],["cucchiaino","cucchiaini"],["spicchio","spicchi"],["costa","coste"],["peperone","peperoni"],["finocchio","finocchi"],["limone","limoni"],["pomodoro","pomodori"],["vasetto","vasetti"]];
+function nounFor(w,n){
+  const lw=w.toLowerCase(),e=NOUNS.find(x=>x[0]===lw||x[1]===lw);
+  return e?(n>1?e[1]:e[0]):w;
+}
+// scala i numeri di una riga di ingredienti: grammi e ml a passi di 5, pezzi interi dove non si dividono, il resto a ¼ o ½
+function scaleText(str,f){
+  if(f===1)return str;
+  return str.replace(/(\d+(?:,\d+)?|½|¼|¾)(\s*[–-]\s*(\d+(?:,\d+)?))?(\s*(g|ml)\b)?(\s+(patata dolce media|[a-zàèéìòù]+))?/gi,(all,a,rg,b,unit,_u,sp,word,off,whole)=>{
+    // le noci del Brasile restano 2–3 al giorno qualunque sia la porzione (selenio)
+    if(/^[^a-zàèéìòù]*noci del brasile/i.test(whole.slice(off)))return all;
+    const val=x=>x==="½"?.5:x==="¼"?.25:x==="¾"?.75:parseFloat(x.replace(",","."));
+    const pieces=!unit&&!!word&&/^(gallett|fett|datter|gheri|mandorl|noccio|pomodorin|foglie|foglia|spicch|cm)$|^(gallett|fett|datter|gheri|mandorl|noccio|pomodorin|foglie|foglia|spicch)/i.test(word);
+    let top=0;
+    const one=x=>{
+      const v=val(x)*f;let r;
+      if(unit)r=v>=20?Math.round(v/5)*5:Math.max(1,Math.round(v));
+      else if(pieces)r=Math.max(1,Math.round(v));
+      else r=v<1?Math.max(.25,Math.round(v*4)/4):Math.round(v*2)/2;
+      top=Math.max(top,r);
+      return unit?String(r):fracStr(r);
+    };
+    const num=one(a)+(rg?"–"+one(b):"");
+    return num+(unit||"")+(word?sp.replace(/\S+.*$/,"")+(unit?word:nounFor(word,top)):"");
+  });
+}
+function scaleNutri(n,f){return{k:Math.round(n.k*f/10)*10,p:Math.round(n.p*f),c:Math.round(n.c*f),f:Math.round(n.f*f),fi:Math.round(n.fi*f)}}
+function recipeFor(m,wd){
+  const r=rawRecipe(m,wd),f=dayFactor(wd);
+  if(f===1)return r;
+  return Object.assign({},r,{ing:r.ing.map(i=>scaleText(i,f)),n:scaleNutri(r.n,f),f});
+}
+function dayNutri(wd){const t={k:0,p:0,c:0,f:0,fi:0};["colazione","pranzo","spuntino","cena"].forEach(m=>{const n=recipeFor(m,wd).n;for(const x in t)t[x]+=n[x]});return t}
+function scaleShopQty(q,f){
+  if(f===1||/se manc|q\.b\./.test(q))return q;
+  const PL={confezione:"confezioni",vasetto:"vasetti",vaschetta:"vaschette",bottiglietta:"bottigliette",lattina:"lattine",busta:"buste",mazzo:"mazzi",cespo:"cespi"};
+  if(/confezion|vasett|vaschett|bottigliett|lattin|mazzo|cespo|bust/.test(q))
+    return q.replace(/^(\d+)\s+(\S+)/,(a,n,w)=>{const m=Math.max(1,Math.ceil(+n*f-.15));return m+" "+(m>1&&PL[w]?PL[w]:w)});
+  // frutta e verdura a pezzi: si comprano interi
+  if(/^\d+$/.test(q.trim()))return String(Math.max(1,Math.ceil(+q*f-.15)));
+  return scaleText(q,f);
+}
+function recipeHTML(r,eat){
+  return '<div class="recipe">'+macroHTML(r.n,r.f?"la tua porzione":"")+'<div class="rec-h"><span class="eyebrow">Ingredienti · '+(r.f?"dosi ×"+fmtNum(r.f):"1 persona")+'</span><span class="mono rec-min">'+r.min+' min</span></div>'+
+    '<ul class="ing">'+r.ing.map(i=>"<li>"+esc(i)+"</li>").join("")+'</ul>'+
+    '<div class="eyebrow">Preparazione</div><ol class="steps">'+r.steps.map(i=>"<li>"+esc(i)+"</li>").join("")+'</ol>'+
+    (r.f?'<p class="tip">Dosi adattate al tuo fabbisogno. Tempi e temperature non cambiano. Acqua e condimenti citati nei passaggi vanno moltiplicati per '+fmtNum(r.f)+".</p>":"")+
+    (r.tip?'<p class="tip">'+esc(r.tip)+'</p>':"")+(eat?'<p class="tip">'+esc(eat)+'</p>':"")+'</div>';
+}
+function labelKind(k){return{rituale:"Rituale",mente:"Mente",cibo:"Cibo",corpo:"Allenamento",sonno:"Sonno"}[k]}
+
+/* ---------- SETTIMANA ---------- */
+function renderWeek(){
+  const mon=addDays(weekSel,-((weekSel.getDay()+6)%7));
+  const I=dayInfo(weekSel);
+  $("phaseEyebrow").textContent=(I.idx>=0?"Ciclo "+I.cycle+" · ":"")+"Settimana "+(I.week+1)+" di 4";
+  $("phaseTitle").textContent=WEEKS[I.week].name;
+  $("phaseText").textContent=WEEKS[I.week].text;
+  $("phaseBar").innerHTML=WEEKS.map((w,i)=>'<div class="'+(i===I.week?"on":"")+'">'+w.name+"</div>").join("");
+  const tw=diffDays(addDays(today(),-((today().getDay()+6)%7)),mon)/7;
+  $("weekTitle").textContent=tw===0?"Questa settimana":tw===1?"Prossima settimana":tw===-1?"Settimana scorsa":"Settimana del "+mon.getDate()+" "+MONTHS[mon.getMonth()].slice(0,3);
+  let h="";
+  for(let i=0;i<7;i++){
+    const d=addDays(mon,i),p=buildDay(d),pc=pctOf(d);
+    h+='<button class="wday'+(isToday(d)?" is-today":"")+'" data-day="'+key(d)+'"><div class="dn">'+DAYNAMES[i].slice(0,3)+'<small>'+d.getDate()+" "+MONTHS[d.getMonth()].slice(0,3)+'</small></div><div class="lines">'+
+      '<span>Allenamento · <b>'+esc(p.wo.name)+'</b></span><span>Mente · <b>'+esc(p.med.name)+" "+p.medMin+"′</b></span><span>Pranzo · <b>"+esc(MEALS.pranzo[i].split(/[,.(]/)[0])+'</b></span>'+
+      '<div class="bar"><i style="width:'+Math.round(pc*100)+'%"></i></div></div></button>';
+  }
+  $("weekGrid").innerHTML=h;
+  ["plan","rec","shop"].forEach(n=>{$("sett-"+n).hidden=n!==pane});
+  $("settSeg").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.pane===pane));
+  if(pane==="shop")renderShop();
+  if(pane==="rec")renderRecipes();
+}
+
+/* ---------- RICETTARIO ---------- */
+let recDay=null;
+function renderRecipes(){
+  const mon=addDays(weekSel,-((weekSel.getDay()+6)%7));
+  if(recDay===null)recDay=(today().getDay()+6)%7;
+  $("recDays").innerHTML=DAYNAMES.map((n,i)=>'<button type="button" data-recday="'+i+'" aria-pressed="'+(i===recDay)+'">'+n.slice(0,3)+"<small>"+addDays(mon,i).getDate()+"</small></button>").join("");
+  const tot=dayNutri(recDay),tg=target(),f=dayFactor(recDay);
+  $("recTotal").innerHTML='<div class="eyebrow">Totale del '+DAYNAMES[recDay].toLowerCase()+'</div>'+macroHTML(tot,"giornata")+
+    (tg?'<p class="note" style="margin:0">Porzioni ×'+fmtNum(f)+' per arrivare al tuo obiettivo di '+tg+' kcal al giorno. Il fattore cambia da un giorno all\'altro perché i menù hanno calorie diverse.'+(f===2||f===.6?" Il fattore è al limite: per un obiettivo così, chiedi a un nutrizionista.":"")+'</p>':
+    '<p class="note" style="margin:0">Porzioni base, non adattate a te. Imposta il tuo fabbisogno e le dosi si adattano da sole.</p>')+
+    '<div class="btnrow"><button type="button" class="btn btn-sec" id="goNeeds">'+(tg?"Modifica il fabbisogno":"Imposta il fabbisogno")+'</button></div>';
+  $("recList").innerHTML=["colazione","pranzo","spuntino","cena"].map((m,j)=>{
+    const r=recipeFor(m,recDay);
+    const cur=mealIdx(m,recDay);
+    const opts=RECIPES[m].map((o,i)=>{const t=(m==="cena"&&S.profile.veg&&VEG_ALT[i])?VEG_ALT[i].t:o.t;return '<option value="'+i+'"'+(i===cur?" selected":"")+">"+esc(t)+(i===recDay?" (piatto del giorno)":" · "+DAYNAMES[i].slice(0,3))+"</option>"}).join("");
+    return '<details class="rec-card"'+(j===0?" open":"")+'><summary><span class="chip k-cibo">'+MEAL_LABEL[m]+'</span><b>'+esc(r.t)+'</b><span class="mono rec-min">'+r.n.k+" kcal · "+r.min+" min</span></summary>"+
+      '<div class="field swap"><label for="sw-'+m+'">Cambia piatto</label><select id="sw-'+m+'" data-swap="'+recDay+"-"+m+'">'+opts+"</select></div>"+recipeHTML(r)+"</details>";
+  }).join("");
+}
+
+/* ---------- LISTA DELLA SPESA ---------- */
+function weekKey(){return key(addDays(weekSel,-((weekSel.getDay()+6)%7)))}
+function shopLog(){return S.shop[weekKey()]||{}}
+function shopGroups(){
+  let g=SHOP.map(x=>[x[0],x[1].slice()]);
+  if(S.profile.veg){const lp=g.find(x=>x[0].startsWith("Legumi"));lp[1]=lp[1].filter(i=>i[0]!=="salmone"&&i[0]!=="branzino").concat([["tempeh","Tempeh","150 g","cena lun"],["ceci2","Ceci cotti in più","1 vasetto","burger di ceci gio"]])}
+  if(S.profile.protein)g.push(["Più proteine",[["yogsoia","Yogurt di soia bianco","7 vasetti da 150 g","spuntino ogni giorno"],["edam2","Edamame (o tofu)","700 g","cena ogni giorno"]]]);
+  return g;
+}
+function renderShop(){
+  const got=shopLog(), hide=$("shopHide").checked, wf=weekFactor(), SHOP=shopGroups();
+  const sc=swapCount();$("shopSwap").hidden=!sc;$("shopSwap").textContent="Hai cambiato "+sc+(sc===1?" piatto":" piatti")+": la lista segue il menù originale. Controlla gli ingredienti dei piatti nuovi nella scheda Ricette.";
+  $("shopFor").textContent=wf===1?"Per 1 persona · 7 giorni":"Dosi ×"+fmtNum(wf)+" sul tuo fabbisogno · 7 giorni";
+  let tot=0,n=0,h="";
+  SHOP.forEach(g=>{
+    const items=g[1], gGot=items.filter(i=>got[i[0]]).length;
+    tot+=items.length;n+=gGot;
+    const vis=items.filter(i=>!(hide&&got[i[0]]));
+    if(!vis.length)return;
+    h+='<div class="shop-group"><h3>'+esc(g[0])+"<span>"+gGot+"/"+items.length+"</span></h3>"+vis.map(i=>
+      '<label class="item'+(got[i[0]]?" got":"")+'" for="sh-'+i[0]+'"><input type="checkbox" id="sh-'+i[0]+'" data-shop="'+i[0]+'"'+(got[i[0]]?" checked":"")+'>'+
+      '<span class="nm"><b>'+esc(i[1])+"</b><small>"+esc(i[3])+'</small></span><span class="q">'+esc(scaleShopQty(i[2],wf))+"</span></label>").join("")+"</div>";
+  });
+  if(!h)h='<div class="shop-group"><h3>Spesa completata</h3><p class="note" style="margin:0">Hai tutto. Ora prepara in anticipo riso, quinoa e legumi per la settimana.</p></div>';
+  $("shopGroups").innerHTML=h;
+  $("shopCount").textContent=n+"/"+tot;
+  $("shopBar").style.width=Math.round(n/tot*100)+"%";
+}
+function shopMissing(){
+  const got=shopLog(),SHOP=shopGroups();
+  return "Lista della spesa · Match Point Coach\n"+SHOP.map(g=>{
+    const m=g[1].filter(i=>!got[i[0]]);
+    return m.length?"\n"+g[0].toUpperCase()+"\n"+m.map(i=>"- "+i[1]+" ("+scaleShopQty(i[2],weekFactor())+")").join("\n"):"";
+  }).join("")+"\n";
+}
+
+/* ---------- MEDITA ---------- */
+let medSel=null, durSel=null;
+function renderMed(){
+  $("voiceRow").hidden=!VOICE_OK;$("voiceOn").checked=!!S.voice;renderVoices();
+  const p=buildDay(today());
+  if(!medSel)medSel=p.med.id;
+  if(!durSel)durSel=p.medMin;
+  $("medList").innerHTML=MEDS.map(m=>'<button class="medcard" data-med="'+m.id+'" aria-pressed="'+(m.id===medSel)+'"><b>'+esc(m.name)+'</b><span>'+esc(m.sum)+"</span></button>").join("");
+  const opts=[3,5,10,15,20];if(opts.indexOf(p.medMin)<0)opts.push(p.medMin);opts.sort((a,b)=>a-b);
+  $("durs").innerHTML=opts.map(n=>'<button data-dur="'+n+'" aria-pressed="'+(n===durSel)+'">'+n+" min</button>").join("");
+  $("durHint").textContent="Il tuo piano oggi: "+p.medMin+" min";
+  const m=MEDS.find(x=>x.id===medSel);
+  $("medPreview").innerHTML='<div class="eyebrow">Ritmo del respiro</div><p style="color:var(--ink);font-weight:600;margin-top:4px">'+breathLabel(m.p)+"</p><ul style=\"margin:8px 0 0;padding-left:18px;font-size:.92rem;color:var(--muted)\">"+m.steps.slice(0,3).map(s=>"<li>"+esc(s)+"</li>").join("")+"</ul>";
+}
+function breathLabel(p){const a=["Inspira "+p[0]+" s"];if(p[1])a.push("trattieni "+p[1]+" s");a.push("espira "+p[2]+" s");if(p[3])a.push("pausa "+p[3]+" s");return a.join(" · ")}
+
+/* ---------- PROGRESSI ---------- */
+/* ---------- DIARIO DEL PESO ---------- */
+const GOAL_RANGE=[[-.75,-.25,-.5],[-.2,.2,0],[.1,.35,.25]]; // kg a settimana: minimo, massimo, ideale
+function weights(){return Object.keys(S.weights).sort().map(k=>({k,d:parseKey(k),w:S.weights[k]}))}
+function weightTrend(){
+  const t=today(),all=weights().filter(e=>diffDays(e.d,t)<=21&&diffDays(e.d,t)>=0);
+  if(all.length<4||diffDays(all[0].d,all[all.length-1].d)<14)return null;
+  const xs=all.map(e=>diffDays(all[0].d,e.d)),ys=all.map(e=>e.w),n=xs.length;
+  const mx=xs.reduce((a,b)=>a+b)/n,my=ys.reduce((a,b)=>a+b)/n;
+  let num=0,den=0;xs.forEach((x,i)=>{num+=(x-mx)*(ys[i]-my);den+=(x-mx)*(x-mx)});
+  return den?num/den*7:null;
+}
+function currentKcal(){const t=target();if(t)return t;let b=0;for(let i=0;i<7;i++)b+=baseDay(i).k;return Math.round(b/7/10)*10}
+function weightAdvice(){
+  const wk=weightTrend(),c=nutriCfg(),goal=c.mode==="base"?1:c.goal;
+  const ents=weights();
+  if(wk===null){
+    const left=ents.length<4?"Ancora "+(4-ents.length)+" pesate":"Serve qualche giorno in più";
+    return {txt:left+" (in almeno 14 giorni) e ti dico se le calorie sono giuste. Pesati sempre allo stesso modo: al mattino, dopo il bagno, prima di colazione."};
+  }
+  const r=GOAL_RANGE[goal],w=Math.round(wk*100)/100,trendTxt="Tendenza: "+(w>0?"+":"")+fmtNum(w)+" kg a settimana.";
+  if(wk>=r[0]&&wk<=r[1])return {txt:trendTxt+" È in linea con l'obiettivo «"+GOALS[goal][1].toLowerCase()+"». Continua così.",ok:true};
+  let delta=Math.round(Math.max(-250,Math.min(250,(r[2]-wk)*1100))/50)*50;
+  if(!delta)delta=wk>r[1]?-50:50;
+  const next=Math.max(1200,currentKcal()+delta);
+  return {txt:trendTxt+" Per l'obiettivo «"+GOALS[goal][1].toLowerCase()+"» "+(delta<0?"conviene scendere":"conviene salire")+" di "+Math.abs(delta)+" kcal al giorno."+(c.mode==="base"?" Non hai impostato un obiettivo, quindi considero il mantenimento.":""),apply:next};
+}
+function renderWeight(){
+  const ents=weights(),box=$("wChart");
+  if(document.activeElement!==$("w-date"))$("w-date").value=$("w-date").value||key(today());
+  if(!ents.length){box.innerHTML='<p class="note" style="margin:0">Nessuna pesata ancora. Aggiungi la prima qui sopra: il grafico parte da lì.</p>'}
+  else{
+    const last=ents.slice(-60),W=320,H=140,pl=34,pr=8,pt=10,pb=22;
+    const x0=last[0].d,span=Math.max(1,diffDays(x0,last[last.length-1].d));
+    let lo=Math.min(...last.map(e=>e.w)),hi=Math.max(...last.map(e=>e.w));
+    if(hi-lo<2){const m=(hi+lo)/2;lo=m-1;hi=m+1}
+    const X=d=>pl+diffDays(x0,d)/span*(W-pl-pr),Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb);
+    const avg=last.map((e,i)=>{const win=last.filter(o=>diffDays(o.d,e.d)>=0&&diffDays(o.d,e.d)<7);return{d:e.d,w:win.reduce((a,o)=>a+o.w,0)/win.length}});
+    const path=avg.map((a,i)=>(i?"L":"M")+X(a.d).toFixed(1)+" "+Y(a.w).toFixed(1)).join(" ");
+    const fmtD=d=>d.getDate()+" "+MONTHS[d.getMonth()].slice(0,3);
+    box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" class="wsvg" role="img" aria-label="Andamento del peso">'+
+      [hi,(hi+lo)/2,lo].map(v=>'<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(v).toFixed(1)+'" y2="'+Y(v).toFixed(1)+'" class="wgrid"/><text x="'+(pl-6)+'" y="'+(Y(v)+4).toFixed(1)+'" class="wlab" text-anchor="end">'+fmtNum(Math.round(v*10)/10)+'</text>').join("")+
+      last.map(e=>'<circle cx="'+X(e.d).toFixed(1)+'" cy="'+Y(e.w).toFixed(1)+'" r="3" class="wdot"/>').join("")+
+      (avg.length>1?'<path d="'+path+'" class="wline"/>':"")+
+      '<text x="'+pl+'" y="'+(H-6)+'" class="wlab">'+fmtD(last[0].d)+'</text><text x="'+(W-pr)+'" y="'+(H-6)+'" class="wlab" text-anchor="end">'+fmtD(last[last.length-1].d)+'</text></svg>'+
+      '<div class="legend"><span><i class="lg-dot"></i>pesata</span><span><i class="lg-line"></i>media di 7 giorni</span></div>';
+  }
+  const a=weightAdvice();
+  $("wAdvice").innerHTML='<p style="margin:0">'+esc(a.txt)+'</p>'+(a.apply?'<div class="btnrow"><button type="button" class="btn btn-court" id="wApply" data-apply="'+a.apply+'">Usa '+a.apply+' kcal al giorno</button></div>':"");
+  $("wAdvice").className="needs-out"+(a.ok?" good":"");
+  $("wList").innerHTML=ents.slice(-5).reverse().map(e=>'<li><span>'+DAYNAMES[(e.d.getDay()+6)%7].slice(0,3)+" "+e.d.getDate()+" "+MONTHS[e.d.getMonth()].slice(0,3)+'</span><b class="mono">'+fmtNum(e.w)+' kg</b><button type="button" class="iconbtn sm" data-wdel="'+e.k+'" aria-label="Elimina la pesata del '+e.k+'">×</button></li>').join("");
+}
+function addWeight(){
+  const v=parseFloat(String($("w-kg").value).replace(",",".")),d=$("w-date").value||key(today());
+  if(!(v>=30&&v<=300)){toast("Scrivi il peso in kg, per esempio 74,5");return}
+  if(diffDays(today(),parseKey(d))>0){toast("La data non può essere nel futuro");return}
+  S.weights[d]=Math.round(v*10)/10;
+  const lastK=Object.keys(S.weights).sort().pop();
+  if(S.profile.nutri&&nutriCfg().mode==="calc")S.profile.nutri.weight=S.weights[lastK];
+  save();$("w-kg").value="";renderWeight();renderNeeds();render();toast("Pesata salvata");
+}
+
+/* ---------- DIARIO SERALE ---------- */
+const JQ=[["good","Cosa è andato bene oggi?"],["improve","Cosa migliori domani?"],["grat","Tre cose per cui sei grato"]];
+function journalHTML(d){
+  const j=S.journal[key(d)]||{};
+  return '<div class="journal">'+JQ.map(q=>'<div class="field"><label for="j-'+q[0]+'">'+q[1]+'</label><textarea id="j-'+q[0]+'" data-j="'+q[0]+'" maxlength="500" rows="2">'+esc(j[q[0]]||"")+'</textarea></div>').join("")+
+    '<div class="btnrow"><button type="button" class="btn btn-go" data-jsave="1">Salva e segna come fatto</button></div><p class="note" style="margin:0">Si salva mentre scrivi. Rileggi tutto in Progressi.</p></div>';
+}
+function renderJournal(){
+  const ks=Object.keys(S.journal).filter(k=>JQ.some(q=>(S.journal[k][q[0]]||"").trim())).sort().reverse();
+  $("jList").innerHTML=ks.length?ks.slice(0,14).map((k,i)=>{const d=parseKey(k),j=S.journal[k];
+    return '<details class="rec-card"'+(i===0?" open":"")+'><summary><b>'+DAYNAMES[(d.getDay()+6)%7]+" "+d.getDate()+" "+MONTHS[d.getMonth()]+'</b></summary><dl class="jdl">'+
+      JQ.filter(q=>(j[q[0]]||"").trim()).map(q=>"<dt>"+q[1]+"</dt><dd>"+esc(j[q[0]])+"</dd>").join("")+"</dl></details>"}).join(""):
+    '<p class="note" style="margin:0">Il diario è vuoto. Stasera, nella voce «Chiusura: diario e gratitudine», scrivi le tue prime tre righe.</p>';
+}
+
+/* ---------- BACKUP ---------- */
+function backupText(){return JSON.stringify({app:"match-point-coach",v:1,date:key(today()),data:S})}
+function renderBackup(){
+  const lb=S.lastBackup,days=lb?diffDays(parseKey(lb),today()):null;
+  const hasData=Object.keys(S.log).length||Object.keys(S.weights).length||Object.keys(S.journal).length;
+  $("bkStatus").innerHTML=lb?"Ultimo backup: <b>"+parseKey(lb).getDate()+" "+MONTHS[parseKey(lb).getMonth()]+"</b>"+(days>14?' <span class="warn">· sono passati '+days+" giorni, fanne uno nuovo</span>":""):
+    (hasData?'<span class="warn">Non hai ancora fatto un backup.</span>':"Non hai ancora fatto un backup.");
+}
+function bindBackup(){
+  $("bkCopy").onclick=()=>{
+    const txt=backupText(),ta=$("bkOut");
+    const ok=()=>{S.lastBackup=key(today());save();renderBackup()};
+    const fallback=()=>{ta.value=txt;ta.hidden=false;ta.focus();ta.select();ok();toast("Seleziona e copia il testo, poi salvalo in una nota o in una mail")};
+    try{navigator.clipboard.writeText(txt).then(()=>{ta.hidden=true;ok();toast("Backup copiato: incollalo in una nota o in una mail a te stesso")},fallback)}catch(e){fallback()}
+  };
+  $("bkOpen").onclick=()=>{$("bkImport").hidden=!$("bkImport").hidden;if(!$("bkImport").hidden)$("bkIn").focus()};
+  $("bkRestore").onclick=()=>{
+    let obj;try{obj=JSON.parse($("bkIn").value.trim())}catch(e){obj=null}
+    if(!obj||!["match-point-coach","nole-coach"].includes(obj.app)||!obj.data||!obj.data.profile){$("bkMsg").innerHTML='<span class="warn">Questo testo non è un backup di Match Point Coach. Incolla tutto il testo copiato, dalla prima all\'ultima parentesi graffa.</span>';return}
+    const d=parseKey(obj.date||key(today()));
+    $("bkMsg").innerHTML='<span>Sostituisco tutti i dati attuali con il backup del '+d.getDate()+" "+MONTHS[d.getMonth()]+'?</span><div class="btnrow"><button type="button" class="btn btn-danger" id="bkYes">Sì, ripristina</button><button type="button" class="btn btn-sec" id="bkNo">Annulla</button></div>';
+    $("bkYes").onclick=()=>{S=Object.assign(defaults(),obj.data);save();$("bkIn").value="";$("bkMsg").innerHTML="";$("bkImport").hidden=true;sel=today();render();renderYou();toast("Dati ripristinati")};
+    $("bkNo").onclick=()=>{$("bkMsg").innerHTML=""};
+  };
+}
+
+/* ---------- APP INSTALLABILE E PROMEMORIA ---------- */
+const SITE_URL="https://tano14i.github.io/match-point-coach/";
+const REM=[["wake","Risveglio"],["medam","Meditazione del mattino"],["colaz","Colazione"],["train","Allenamento"],["pranzo","Pranzo"],["snack","Spuntino"],["cena","Cena"],["medpm","Diario serale"],["sleep","Luci spente"],["coffee","Ora dell'ultimo caffè (se lo bevi)"]];
+const ENV=(function(){
+  let framed=true;try{framed=window.self!==window.top}catch(e){}
+  const site=(location.protocol==="https:"||location.hostname==="localhost")&&!framed;
+  return{site,sw:site&&"serviceWorker" in navigator,notif:site&&"Notification" in window,
+    standalone:(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true,
+    ios:/iphone|ipad|ipod/i.test(navigator.userAgent)};
+})();
+let swReg=null,installEvt=null,remTimers=[];
+if(ENV.sw)navigator.serviceWorker.register("sw.js").then(r=>{swReg=r}).catch(()=>{});
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;render();if(view==="tu")renderApp()});
+window.addEventListener("appinstalled",()=>{installEvt=null;toast("App installata. La trovi tra le tue app.");if(view==="tu")renderApp()});
+
+// istruzioni di installazione per il browser in uso
+function installHelp(){
+  const ua=navigator.userAgent;
+  if(ENV.ios&&!/Safari/.test(ua)||/CriOS|FxiOS|EdgiOS/.test(ua))return "Su iPhone si installa solo da Safari: apri questo indirizzo in Safari, poi tocca <b>Condividi</b> → <b>Aggiungi alla schermata Home</b>.";
+  if(ENV.ios)return "Tocca <b>Condividi</b> (il quadrato con la freccia in basso) → scorri e scegli <b>Aggiungi alla schermata Home</b> → <b>Aggiungi</b>.";
+  if(/; wv\)|GitHub|FBAN|FBAV|Instagram|Line\//.test(ua))return "Sei dentro un'altra app, non nel browser. Tocca <b>⋮</b> e scegli <b>Apri in Chrome</b> (o «Apri nel browser»), poi installa da lì.";
+  if(/SamsungBrowser/.test(ua))return "Tocca <b>≡</b> in basso a destra → <b>Aggiungi pagina a</b> → <b>Schermata Home</b>.";
+  if(/Firefox/.test(ua))return "Tocca <b>⋮</b> → <b>Installa</b> (o «Aggiungi alla schermata Home»).";
+  return "Tocca <b>⋮</b> in alto a destra → <b>Aggiungi a schermata Home</b> (o «Installa app») → <b>Installa</b>.";
+}
+function remOn(id){return S.rem.on&&S.rem.ids[id]!==false}
+function notify(title,body,tag){
+  const opt={body,tag,icon:"icons/icon-192.png",badge:"icons/icon-192.png",renotify:true};
+  try{if(swReg&&swReg.showNotification)return swReg.showNotification(title,opt);new Notification(title,opt)}catch(e){}
+}
+// i timer funzionano finché l'app è aperta o in background; ad app chiusa vale il calendario
+function scheduleReminders(){
+  remTimers.forEach(clearTimeout);remTimers=[];
+  if(!ENV.notif||!S.rem.on||Notification.permission!=="granted")return;
+  const d=today(),k=key(d),now=Date.now(),plan=buildDay(d);
+  plan.tasks.forEach(x=>{
+    if(!remOn(x.id)||dayLog(k)[x.id])return;
+    const at=d.getTime()+x.t*60000;
+    if(at>now)remTimers.push(setTimeout(()=>{if(!dayLog(k)[x.id])notify(fmt(x.t)+" · "+x.title,x.sum.slice(0,140)+" Tocca per iniziare.","nc-"+k+"-"+x.id)},at-now));
+    const nudge=at+20*60000;
+    if(S.rem.nudge&&nudge>now)remTimers.push(setTimeout(()=>{if(!dayLog(k)[x.id])notify("Ancora da fare: "+x.title,"Non serve la voglia. Fai solo la versione da 2 minuti: "+x.micro,"nc-"+k+"-"+x.id+"-n")},nudge-now));
+  });
+  const cc=coffeeCfg(),cut=d.getTime()+toMin(cc.cutoff)*60000;
+  if(cc.on&&S.rem.ids.coffee!==false&&cut>now)remTimers.push(setTimeout(()=>notify("Ultimo caffè per oggi","Da ora meglio una tisana: il sonno di stanotte ringrazia.","nc-"+k+"-coffee"),cut-now));
+  // a mezzanotte e un minuto riprogramma il giorno nuovo
+  remTimers.push(setTimeout(scheduleReminders,addDays(d,1).getTime()+60000-now));
+}
+async function enableReminders(){
+  if(!ENV.notif){toast("Qui le notifiche non sono disponibili: apri l'app dal sito.");return}
+  let p=Notification.permission;
+  if(p==="default")p=await Notification.requestPermission();
+  if(p!=="granted"){S.rem.on=false;save();renderApp();toast("Notifiche bloccate: abilitale nelle impostazioni del browser per questo sito.");return}
+  S.rem.on=true;S.rem.dismiss=true;save();scheduleReminders();renderApp();render();
+  toast("Promemoria attivi. Ti scrivo all'ora di ogni attività.");
+}
+
+/* calendario .ics: promemoria affidabili anche ad app chiusa */
+function icsEsc(t){return String(t).replace(/\\/g,"\\\\").replace(/;/g,"\;").replace(/,/g,"\\,").replace(/\n/g,"\\n")}
+function icsFold(line){
+  const enc=new TextEncoder();let out="",cur="",len=0;
+  for(const ch of line){const b=enc.encode(ch).length;if(len+b>74){out+=cur+"\r\n ";cur="";len=1}cur+=ch;len+=b}
+  return out+cur;
+}
+function icsDate(d,min){const x=new Date(d.getTime()+min*60000),p=n=>String(n).padStart(2,"0");return x.getFullYear()+p(x.getMonth()+1)+p(x.getDate())+"T"+p(x.getHours())+p(x.getMinutes())+"00"}
+function buildICS(){
+  const BYDAY=["MO","TU","WE","TH","FR","SA","SU"],now=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Match Point Coach//IT","CALSCALE:GREGORIAN","X-WR-CALNAME:Match Point Coach"];
+  for(let i=0;i<7;i++){
+    const d=addDays(today(),i),wd=(d.getDay()+6)%7,plan=buildDay(d);
+    plan.tasks.forEach(x=>{
+      if(S.rem.ids[x.id]===false)return;
+      L.push("BEGIN:VEVENT","UID:mpcoach-"+x.id+"-"+BYDAY[wd]+"@matchpointcoach","DTSTAMP:"+now,"DTSTART:"+icsDate(d,x.t),"DURATION:PT"+Math.max(5,x.dur||5)+"M",
+        "RRULE:FREQ=WEEKLY;BYDAY="+BYDAY[wd],icsFold("SUMMARY:"+icsEsc("Match Point · "+x.title)),icsFold("DESCRIPTION:"+icsEsc(x.sum+"\n\nVersione da 2 minuti: "+x.micro)),
+        "BEGIN:VALARM","ACTION:DISPLAY",icsFold("DESCRIPTION:"+icsEsc(x.title)),"TRIGGER:PT0M","END:VALARM","END:VEVENT");
+    });
+  }
+  L.push("END:VCALENDAR");
+  return L.join("\r\n")+"\r\n";
+}
+function downloadICS(){
+  if(!ENV.site){toast("Il file calendario si scarica dall'app installata o dal sito.");return}
+  const url=URL.createObjectURL(new Blob([buildICS()],{type:"text/calendar"}));
+  const a=document.createElement("a");a.href=url;a.download="match-point-coach.ics";document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  toast("Calendario scaricato. Aprilo per aggiungere gli eventi.");
+}
+
+function renderApp(){
+  const st=$("appStatus"),ib=$("instBtn");
+  ib.hidden=!installEvt;
+  if(!ENV.site)st.innerHTML='Questa è l\'anteprima: qui il telefono non permette di installare l\'app né di inviare notifiche. Apri il sito <b class="mono sel">'+SITE_URL+'</b> dal telefono e installala da lì.';
+  else if(ENV.standalone)st.innerHTML="<b>App installata.</b> Funziona anche offline.";
+  else if(installEvt)st.textContent="Puoi installare Match Point Coach sul telefono: la apri come un'app, anche senza connessione.";
+  else st.innerHTML="Per installarla: "+installHelp()+(ENV.ios?" Le notifiche su iPhone funzionano solo dall'app installata (iOS 16.4 o successivo).":"");
+  const perm=ENV.notif?Notification.permission:"na";
+  $("remToggle").textContent=S.rem.on&&perm==="granted"?"Disattiva i promemoria":"Attiva i promemoria";
+  $("remToggle").disabled=!ENV.notif;$("remTest").disabled=!(ENV.notif&&perm==="granted");$("icsBtn").disabled=!ENV.site;
+  $("remState").innerHTML=!ENV.notif?"Non disponibili in questa anteprima.":perm==="denied"?'<span class="warn">Notifiche bloccate dal browser: riabilitale nelle impostazioni del sito.</span>':S.rem.on&&perm==="granted"?"<b>Attivi.</b> Ti avviso all'ora di ogni attività"+(S.rem.nudge?" e di nuovo dopo 20 minuti se non l'hai ancora spuntata.":"."):"Spenti.";
+  $("remList").innerHTML=REM.map(r=>'<label class="remitem" for="rm-'+r[0]+'"><input type="checkbox" id="rm-'+r[0]+'" data-rem="'+r[0]+'"'+(S.rem.ids[r[0]]!==false?" checked":"")+"> "+r[1]+"</label>").join("");
+  $("remNudge").checked=!!S.rem.nudge;
+}
+
+function renderYou(){
+  const st=parseKey(S.profile.start), t=today();
+  let wins=0,workouts=0,d=st;
+  while(diffDays(d,t)>=0){const l=dayLog(key(d));if(won(d))wins++;if(l.train)workouts++;d=addDays(d,1)}
+  const mins=Object.values(S.medMin).reduce((a,b)=>a+b,0);
+  $("stats").innerHTML=[[streak(),"Serie attuale"],[bestStreak(),"Serie migliore"],[wins,"Giornate vinte"],[workouts,"Allenamenti"]]
+    .map(s=>'<div class="stat"><b>'+s[0]+"</b><span>"+s[1]+"</span></div>").join("")+
+    '<div class="stat" style="grid-column:1/-1"><b>'+mins+'</b><span>Minuti di meditazione guidata completati</span></div>';
+  const I=dayInfo(t), cs=addDays(st,Math.max(0,I.idx-I.cycleDay));
+  $("heatTitle").textContent="Ciclo "+Math.max(1,I.cycle);
+  let h="";
+  for(let i=0;i<28;i++){
+    const d=addDays(cs,i),fut=diffDays(t,d)>0,pc=fut?0:pctOf(d);
+    const c=fut?"future":pc>=.7?"h3":pc>.4?"h2":pc>0?"h1":"";
+    h+='<div class="'+c+(isToday(d)?" today":"")+'" title="'+key(d)+" · "+Math.round(pc*100)+'%">'+d.getDate()+"</div>";
+  }
+  $("heat").innerHTML=h;
+  renderWeight();renderJournal();renderBackup();renderApp();renderReview();
+  const SI=streakInfo(),wk=wkOf(today());
+  $("jollyNote").textContent="Jolly della serie: un giorno storto a settimana non la azzera, se il giorno prima era vinto. "+(SI.jollies.some(j=>wkOf(parseKey(j))===wk)?"Questa settimana l'hai già usato.":"Questa settimana è ancora disponibile.");
+  // form
+  const P=S.profile;
+  if(document.activeElement!==$("f-name"))$("f-name").value=P.name;
+  $("f-wake").value=P.wake;
+  if(document.activeElement!==$("f-why"))$("f-why").value=P.why;
+  $("f-start").value=P.start;
+  renderNeeds();
+  $("f-slot").innerHTML=SLOTS.map(s=>'<button type="button" data-slot="'+s[0]+'" aria-pressed="'+(P.slot===s[0])+'">'+s[1]+"</button>").join("");
+  $("f-level").innerHTML=LEVELS.map((s,i)=>'<button type="button" data-level="'+i+'" aria-pressed="'+(+P.level===i)+'">'+s+"</button>").join("");
+}
+
+/* ---------- OVERLAY: TIMER E MEDITAZIONE ---------- */
+let OV=null;
+function bell(f){
+  if(!S.sound)return;
+  try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const ac=bell.ac||(bell.ac=new C());
+    const o=ac.createOscillator(),g=ac.createGain();o.type="sine";o.frequency.value=f||528;
+    g.gain.setValueAtTime(.0001,ac.currentTime);g.gain.exponentialRampToValueAtTime(.25,ac.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+2.4);
+    o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+2.5)}catch(e){}
+}
+let wakeLock=null;
+async function lockScreen(on){try{if(on&&navigator.wakeLock)wakeLock=await navigator.wakeLock.request("screen");else if(!on&&wakeLock){await wakeLock.release();wakeLock=null}}catch(e){}}
+
+function openOverlay(o){
+  // o: {title, eyebrow, secs, med?, task?, day?, mini?, list?}
+  closeOverlay(true);
+  OV=Object.assign({left:o.secs,paused:false,msgI:0},o);
+  $("overlay").hidden=false;document.body.style.overflow="hidden";
+  $("ovTitle").textContent=o.title;$("ovEyebrow").textContent=o.eyebrow;
+  $("ovBreath").hidden=!o.med;
+  $("ovPause").textContent="Pausa";
+  $("ovDone").textContent=o.mini?"Passo alla versione completa":"Fatto";
+  $("ovList").innerHTML=o.list||"";
+  $("ovMsg").textContent=o.med?o.med.steps[0]:(o.msg||"");
+  hush();if(o.med)speak(o.med.steps[0]);
+  if(o.seq){OV.seqI=0;$("ovMsg").textContent=o.seq[0][0];speak(o.seq[0][0]);$("ovDone").textContent=o.next?"Fatto · passa alla meditazione":"Fatto"}
+  $("ovVoice").hidden=!((o.seq||o.med)&&VOICE_OK&&!S.voice);
+  // ricette: niente conto alla rovescia, solo ingredienti e passaggi
+  $("ovTime").hidden=$("ovProg").hidden=$("ovPause").hidden=!!o.noTimer;
+  if(o.noTimer){$("ovDone").textContent=o.doneLabel||"Fatto";setTimeout(()=>$("ovDone").focus(),50);return}
+  OV.end=Date.now()+o.secs*1000;
+  OV.tick=setInterval(tick,250);
+  if(o.med)breathLoop(0);
+  tick();bell(528);lockScreen(true);
+  setTimeout(()=>$("ovDone").focus(),50);
+}
+function tick(){
+  if(!OV||OV.paused)return;
+  OV.left=Math.max(0,(OV.end-Date.now())/1000);
+  const s=Math.ceil(OV.left);
+  $("ovTime").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+  $("ovBar").style.width=((1-OV.left/OV.secs)*100).toFixed(1)+"%";
+  if(OV.med){
+    const el=OV.secs-OV.left, every=Math.max(15,OV.secs/OV.med.steps.length), i=Math.min(OV.med.steps.length-1,Math.floor(el/every));
+    if(i!==OV.msgI){OV.msgI=i;$("ovMsg").textContent=OV.med.steps[i];speak(OV.med.steps[i])}
+  }
+  if(OV.seq){
+    let el=OV.secs-OV.left,i=0;while(i<OV.seq.length-1&&el>=OV.seq[i][1]){el-=OV.seq[i][1];i++}
+    if(i!==OV.seqI){OV.seqI=i;$("ovMsg").textContent=OV.seq[i][0];bell(660);speak(OV.seq[i][0])}
+  }
+  if(OV.left<=0)finish();
+}
+function breathLoop(ph){
+  if(!OV||!OV.med)return;
+  const p=OV.med.p, names=["Inspira","Trattieni","Espira","Pausa"];
+  while(!p[ph])ph=(ph+1)%4;
+  const orb=$("orb"),secs=p[ph];
+  if(!OV.paused){
+    orb.style.transitionDuration=(ph===1||ph===3?0:secs)+"s";
+    orb.style.transform="scale("+(ph===0||ph===1?1:.55)+")";
+    $("orbTxt").textContent=names[ph];
+  }
+  OV.bt=setTimeout(()=>breathLoop((ph+1)%4),secs*1000);
+}
+function finish(){
+  const o=OV;clearInterval(o.tick);clearTimeout(o.bt);bell(396);
+  $("ovTime").textContent="00:00";$("ovBar").style.width="100%";
+  if(o.med&&o.day){const k=key(o.day);S.medMin[k]=(S.medMin[k]||0)+Math.round(o.secs/60);save()}
+  if(o.mini){
+    $("ovMsg").textContent="Due minuti fatti. Hai già battuto la procrastinazione. Vuoi continuare con la versione completa?";
+    $("ovDone").textContent="Continua";$("ovPause").textContent="Basta così";
+    o.state="miniEnd";
+  }else if(o.seq){
+    const t=o.next?"Rituale fatto. Ora la meditazione: telefono giù, ascolta e basta.":"Rituale fatto. Buona giornata.";
+    $("ovMsg").textContent=t;speak(t);$("ovDone").textContent=o.next?"Avvia la meditazione":"Fatto";o.state="end";
+  }else{
+    $("ovMsg").textContent=o.med?"Fine. Resta un attimo in silenzio prima di alzarti.":"Tempo finito. Segna come fatto e passa alla prossima.";
+    if(o.med){$("orbTxt").textContent="Fine";speak("Fine. Resta un attimo in silenzio prima di alzarti.")}
+    o.state="end";
+  }
+}
+function closeOverlay(silent){
+  if(!OV)return;clearInterval(OV.tick);clearTimeout(OV.bt);OV=null;hush();
+  $("overlay").hidden=true;document.body.style.overflow="";lockScreen(false);
+  if(!silent)render();
+}
+function startTask(id,mini){
+  const plan=buildDay(sel),x=plan.tasks.find(t=>t.id===id);if(!x)return;
+  if(mini){openOverlay({title:x.title,eyebrow:"Versione 2 minuti",secs:120,mini:true,task:id,day:sel,msg:x.micro});return}
+  if(x.med){openOverlay({title:x.med.name,eyebrow:breathLabel(x.med.p),secs:x.dur*60,med:x.med,task:id,day:sel});return}
+  if(x.ex){openWorkout(x,plan);return}
+  if(x.seq){
+    const nextId=!dayLog(key(sel)).medam&&isToday(sel)?"medam":null;
+    openOverlay({title:x.title,eyebrow:"Rituale del mattino · 3 minuti",secs:x.seq.reduce((a,r)=>a+r[1],0),seq:x.seq,task:id,day:sel,next:nextId,
+      list:'<div class="phase"><ol class="steps">'+x.seq.map(r=>"<li>"+esc(r[0])+' <span class="mono rec-min">'+(r[1]>=60?r[1]/60+" min":r[1]+" s")+"</span></li>").join("")+"</ol></div>"});
+    return;
+  }
+  let list="";
+  if(x.ex)list='<div class="phase"><div class="eyebrow">Esercizi · tocca per la spiegazione</div>'+x.ex.map(e=>exHTML(e,+S.profile.level||0,WEEKS[plan.info.week].factor)).join("")+'<p class="tip" style="margin-top:8px">'+esc(x.tip)+"</p></div>";
+  else if(x.rec){openOverlay({title:x.title,eyebrow:"In cucina · circa "+x.rec.min+" min",noTimer:true,doneLabel:x.id==="snack"?"Fatto":"Ho mangiato",task:id,day:sel,
+    list:'<div class="phase">'+recipeHTML(x.rec,x.eat)+"</div>",msg:"Prenditi il tempo che serve. Segui i passaggi qui sotto."});return}
+  else if(x.list)list='<div class="phase"><ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">'+x.list.map(s=>"<li>"+esc(s)+"</li>").join("")+"</ul></div>";
+  openOverlay({title:x.title,eyebrow:x.id==="train"?"Allenamento":x.rec?"In cucina":"In corso",secs:x.dur*60,task:id,day:sel,list,msg:x.id==="train"?"Inizia dal primo esercizio. Pensa solo a quello.":x.rec?"Segui i passaggi qui sotto, uno alla volta.":x.sum});
+}
+
+/* ---------- EVENTI ---------- */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.check){const k=key(sel);setDone(sel,b.dataset.check,!dayLog(k)[b.dataset.check]);return}
+  if(b.dataset.open){openTask=openTask===b.dataset.open?null:b.dataset.open;render();return}
+  if(b.dataset.start){startTask(b.dataset.start,false);return}
+  if(b.dataset.day){sel=parseKey(b.dataset.day);openTask=null;switchView("oggi");return}
+  if(b.dataset.med){medSel=b.dataset.med;renderMed();return}
+  if(b.dataset.dur){durSel=+b.dataset.dur;renderMed();return}
+  if(b.dataset.recday){recDay=+b.dataset.recday;renderRecipes();return}
+  if(b.dataset.pane){pane=b.dataset.pane;$("shopText").hidden=true;renderWeek();return}
+  if(b.dataset.slot){S.profile.slot=b.dataset.slot;S.setup=true;save();render();renderYou();toast("Orari aggiornati");return}
+  if(b.dataset.nmode){setNutri({mode:b.dataset.nmode});toast(b.dataset.nmode==="base"?"Porzioni base":"Porzioni adattate a te");return}
+  if(b.dataset.nsex){setNutri({sex:b.dataset.nsex});return}
+  if(b.dataset.ngoal!==undefined){setNutri({goal:+b.dataset.ngoal});return}
+  if(b.id==="goNeeds"){switchView("tu");setTimeout(()=>{$("needs").scrollIntoView({block:"start"});const c=nutriCfg();if(c.mode==="base")setNutri({mode:"calc"})},60);return}
+  if(b.dataset.jsave){setDone(sel,"medpm",true);toast("Diario salvato. Buonanotte.");return}
+  if(b.dataset.wdel){delete S.weights[b.dataset.wdel];save();renderWeight();return}
+  if(b.dataset.apply){setNutri({mode:"manual",kcal:+b.dataset.apply});renderWeight();toast("Obiettivo aggiornato: "+b.dataset.apply+" kcal");return}
+  if(b.id==="remToggle"){if(S.rem.on&&ENV.notif&&Notification.permission==="granted"){S.rem.on=false;save();scheduleReminders();renderApp();render();toast("Promemoria spenti")}else enableReminders();return}
+  if(b.id==="remBannerOn"){enableReminders();return}
+  if(b.id==="remBannerNo"){S.rem.dismiss=true;save();render();toast("Va bene. Li trovi in Progressi se cambi idea.");return}
+  if(b.id==="remTest"){notify("Match Point Coach","Così ti arriveranno i promemoria. Ora fai la prossima cosa della lista.","nc-test");return}
+  if(b.id==="icsBtn"){downloadICS();return}
+  if(b.id==="instBannerNo"){S.instDismiss=true;save();render();toast("Le istruzioni restano in Progressi → App e promemoria");return}
+  if(b.id==="instBannerBtn"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;render()})}return}
+  if(b.id==="instBtn"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;renderApp()})}return}
+  if(b.dataset.rpe!==undefined){setRpe(+b.dataset.rpe);return}
+  if(b.dataset.water){const k=key(sel),n=+b.dataset.water;S.water[k]=(S.water[k]===n?n-1:n);save();renderHabits();if(S.water[k]===8)toast("8 bicchieri: idratazione da campione.");return}
+  if(b.dataset.coffee){const k=key(sel),c=coffeeCfg();S.coffee[k]=S.coffee[k]||[];
+    if(b.dataset.coffee==="1"){const m=isToday(sel)?nowMin():toMin(c.cutoff)-60;S.coffee[k].push(m);
+      if(m>toMin(c.cutoff))toast("Caffè dopo le "+c.cutoff+": stasera fai caso a come dormi.");else if(S.coffee[k].length>c.max)toast("Oltre il tuo limite di "+c.max+" al giorno.")}
+    else S.coffee[k].pop();save();renderHabits();return}
+  if(b.dataset.sleep){const k=key(sel);S.sleep[k]=+b.dataset.sleep;save();renderHabits();if(+b.dataset.sleep<7)toast("Meno di 7 ore: stasera luci spente un po' prima.");return}
+  if(b.id==="sunGo"){S.reviewSeen=key(today());save();switchView("tu");setTimeout(()=>$("reviewCard").scrollIntoView({block:"start"}),60);return}
+  if(b.dataset.level){S.profile.level=+b.dataset.level;S.setup=true;save();render();renderYou();toast("Livello: "+LEVELS[+b.dataset.level]);return}
+  if(b.dataset.v){switchView(b.dataset.v);return}
+});
+function switchView(v){
+  view=v;
+  ["oggi","sett","medita","tu"].forEach(n=>{$("v-"+n).hidden=n!==v;$("t-"+n).setAttribute("aria-selected",n===v)});
+  if(v==="sett"){weekSel=sel;recDay=(sel.getDay()+6)%7}
+  render();window.scrollTo(0,0);
+}
+$("prevDay").onclick=()=>{sel=addDays(sel,-1);openTask=null;$("excuseBox").hidden=true;render()};
+$("nextDay").onclick=()=>{sel=addDays(sel,1);openTask=null;$("excuseBox").hidden=true;render()};
+$("goToday").onclick=()=>{sel=today();openTask=null;render()};
+document.addEventListener("change",e=>{
+  if(e.target.dataset&&e.target.dataset.swap){const sw=e.target.dataset.swap,wd=+sw.split("-")[0],v=+e.target.value;if(v===wd)delete S.swaps[sw];else S.swaps[sw]=v;save();renderRecipes();render();toast("Piatto cambiato");return}
+  if(e.target.id==="n-veg"){S.profile.veg=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Menù vegetariano: il pesce diventa tempeh e ceci":"Pesce di nuovo nel menù");return}
+  if(e.target.id==="n-fast"){S.profile.fast=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Digiuno 16:8: orari dei pasti aggiornati":"Orari dei pasti normali");return}
+  if(e.target.id==="n-fast-start"){if(e.target.value){S.profile.fastStart=e.target.value;save();renderNeeds();render();toast("Finestra dei pasti aggiornata")}return}
+  if(e.target.id==="n-coffee"){S.profile.coffee=Object.assign(coffeeCfg(),{on:e.target.checked});save();renderNeeds();render();return}
+  if(e.target.id==="n-cof-max"){S.profile.coffee=Object.assign(coffeeCfg(),{max:+e.target.value});save();render();return}
+  if(e.target.id==="n-cof-cut"){if(e.target.value){S.profile.coffee=Object.assign(coffeeCfg(),{cutoff:e.target.value});save();renderNeeds();render();scheduleReminders()}return}
+  if(e.target.id==="n-prot"){S.profile.protein=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Più proteine: +18 g al giorno":"Proteine come da ricetta");return}
+  if(e.target.id==="vc-voice"){setVoice({name:e.target.value});hush();say("Respira lentamente. Sei esattamente dove devi essere.");return}
+  if(e.target.id==="voiceOn"){S.voice=e.target.checked;save();renderVoices();if(S.voice)speak("Guida vocale attiva.");else hush();return}
+  if(e.target.dataset&&e.target.dataset.rem){S.rem.ids[e.target.dataset.rem]=e.target.checked;save();scheduleReminders();return}
+  if(e.target.id==="remNudge"){S.rem.nudge=e.target.checked;save();scheduleReminders();renderApp();return}
+  const id=e.target.dataset&&e.target.dataset.shop;if(!id)return;
+  const k=weekKey();S.shop[k]=S.shop[k]||{};
+  if(e.target.checked)S.shop[k][id]=true;else delete S.shop[k][id];
+  save();renderShop();
+  const left=shopGroups().reduce((a,g)=>a+g[1].filter(i=>!S.shop[k][i[0]]).length,0);
+  if(e.target.checked&&left===0)toast("Spesa fatta. La settimana parte già in vantaggio.");
+});
+$("shopHide").addEventListener("change",renderShop);
+$("shopCopy").onclick=()=>{
+  const txt=shopMissing(),ta=$("shopText");
+  const fallback=()=>{ta.value=txt;ta.hidden=false;ta.focus();ta.select();toast("Seleziona e copia il testo qui sotto")};
+  try{navigator.clipboard.writeText(txt).then(()=>{ta.hidden=true;toast("Lista copiata: incollala dove vuoi")},fallback)}catch(err){fallback()}
+};
+$("shopReset").onclick=()=>{delete S.shop[weekKey()];save();renderShop();toast("Spunte azzerate per questa settimana")};
+$("prevWeek").onclick=()=>{weekSel=addDays(weekSel,-7);renderWeek()};
+$("nextWeek").onclick=()=>{weekSel=addDays(weekSel,7);renderWeek()};
+$("goSetup").onclick=()=>{switchView("tu");setTimeout(()=>$("f-name").focus(),60)};
+$("nextGo").onclick=()=>startTask($("nextCard").dataset.id,false);
+$("nextMini").onclick=()=>startTask($("nextCard").dataset.id,true);
+$("nextExcuse").onclick=()=>{
+  const plan=buildDay(sel),x=plan.tasks.find(t=>t.id===$("nextCard").dataset.id);
+  let line=EXCUSES[excuseIdx%EXCUSES.length];excuseIdx++;
+  if(S.profile.why&&excuseIdx%3===1)line="Ricordati perché hai iniziato: «"+S.profile.why+"»";
+  $("excuseBox").innerHTML="<b>Coach:</b> "+esc(line)+(x?"<br><b>Versione mini:</b> "+esc(x.micro):"");
+  $("excuseBox").hidden=false;
+};
+$("sosBtn").onclick=()=>openOverlay({title:SOS.name,eyebrow:breathLabel(SOS.p),secs:60,med:SOS});
+$("medStart").onclick=()=>{const m=MEDS.find(x=>x.id===medSel);openOverlay({title:m.name,eyebrow:breathLabel(m.p),secs:durSel*60,med:m,task:"medam",day:today()})};
+$("ovClose").onclick=()=>closeOverlay();
+$("vc-rate").addEventListener("input",e=>setVoice({rate:+e.target.value}));
+$("vc-pitch").addEventListener("input",e=>setVoice({pitch:+e.target.value}));
+$("vc-test").onclick=()=>{hush();say("Inspira dal naso, lentamente. Espira, e lascia andare le spalle. Oggi fai solo la prossima cosa.",true)};
+$("vc-reset").onclick=()=>{setVoice({rate:.9,pitch:.95});hush();say("Così suona più calma.")};
+$("ovVoice").onclick=()=>{S.voice=true;save();$("ovVoice").hidden=true;speak($("ovMsg").textContent);toast("Guida vocale attiva. Puoi girare il telefono.")};
+$("ovPause").onclick=()=>{
+  if(!OV)return;
+  if(OV.wk&&!OV.wk.done){wkPause();return}
+  if(OV.state==="miniEnd"){closeOverlay(true);toast("Bene così. Due minuti valgono più di zero.");render();return}
+  if(OV.state==="end"){closeOverlay();return}
+  if(OV.paused){OV.paused=false;OV.end=Date.now()+OV.left*1000;$("ovPause").textContent="Pausa";if(OV.med){clearTimeout(OV.bt);breathLoop(0)}}
+  else{OV.paused=true;$("ovPause").textContent="Riprendi";if(OV.med){clearTimeout(OV.bt);$("orbTxt").textContent="In pausa"}}
+};
+$("ovDone").onclick=()=>{
+  if(!OV)return;
+  const o=OV;
+  if(o.wk&&!o.wk.done){if(o.paused)wkPause();wkNext();return}
+  if(o.mini&&o.state!=="end"){closeOverlay(true);startTask(o.task,false);return}
+  if(o.med&&o.day&&!o.state){const el=Math.round((o.secs-o.left)/60);if(el>0){const k=key(o.day);S.medMin[k]=(S.medMin[k]||0)+el;save()}}
+  const d=o.day,t=o.task;closeOverlay(true);
+  if(t&&d){if(!dayLog(key(d))[t])setDone(d,t,true);else render();
+    if(o.next&&!dayLog(key(d))[o.next]){startTask(o.next,false);return}
+    toast(o.mini?"Iniziato è già mezzo fatto.":"Fatto. Avanti il prossimo.")}
+  else{render();toast("Ben fatto. Ora la prossima azione.")}
+};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&OV)closeOverlay()});
+
+// impostazioni
+$("settings").addEventListener("submit",e=>e.preventDefault());
+$("f-name").addEventListener("input",e=>{S.profile.name=e.target.value.trim();S.setup=true;save();render()});
+$("f-why").addEventListener("input",e=>{S.profile.why=e.target.value.trim();S.setup=true;save()});
+$("f-wake").addEventListener("change",e=>{if(e.target.value){S.profile.wake=e.target.value;S.setup=true;save();render();toast("Sveglia alle "+e.target.value+". Orari ricalcolati.")}});
+function renderNeeds(){
+  const c=nutriCfg();
+  $("n-mode").innerHTML=[["base","Porzioni base"],["calc","Calcola"],["manual","Inserisco le kcal"]].map(x=>'<button type="button" data-nmode="'+x[0]+'" aria-pressed="'+(c.mode===x[0])+'">'+x[1]+"</button>").join("");
+  $("n-calc").hidden=c.mode!=="calc";$("n-manual").hidden=c.mode!=="manual";
+  $("n-sex").innerHTML=[["m","Uomo"],["f","Donna"]].map(x=>'<button type="button" data-nsex="'+x[0]+'" aria-pressed="'+(c.sex===x[0])+'">'+x[1]+"</button>").join("");
+  $("n-goal").innerHTML=GOALS.map((g,i)=>'<button type="button" data-ngoal="'+i+'" aria-pressed="'+(c.goal===i)+'">'+g[1]+"</button>").join("");
+  if(!$("n-act").options.length)$("n-act").innerHTML=ACTS.map((a,i)=>'<option value="'+i+'">'+a[1]+"</option>").join("");
+  $("n-act").value=c.act;$("n-acthint").textContent="Scegli questo se hai: "+ACTS[c.act][2]+".";
+  ["age","weight","height","kcal"].forEach(k=>{if(document.activeElement!==$("n-"+k))$("n-"+k).value=c[k]});
+  $("n-veg").checked=!!S.profile.veg;$("n-prot").checked=!!S.profile.protein;
+  $("n-fast").checked=!!S.profile.fast;$("fastBox").hidden=!S.profile.fast;
+  if(document.activeElement!==$("n-fast-start"))$("n-fast-start").value=S.profile.fastStart||"11:00";
+  const FW=fastWindow();$("fastInfo").textContent=FW?"Mangi dalle "+fmt(FW)+" alle "+fmt(FW+480)+". L'allenamento si sposta dentro la finestra, dopo il primo pasto.":"";
+  const cc=coffeeCfg();$("n-coffee").checked=cc.on;$("coffeeBox").hidden=!cc.on;$("n-cof-max").value=cc.max;
+  if(document.activeElement!==$("n-cof-cut"))$("n-cof-cut").value=cc.cutoff;
+  const t=target(),out=$("n-out");
+  let pAvg=0;for(let i=0;i<7;i++)pAvg+=dayNutri(i).p;pAvg=Math.round(pAvg/7);
+  const wl=Object.keys(S.weights).sort().pop(),kg=wl?S.weights[wl]:(c.mode==="calc"?c.weight:null);
+  const gk=kg?Math.round(pAvg/kg*10)/10:null;
+  const prot='<span>Proteine: circa <b class="mono" style="font-size:.95rem">'+pAvg+' g</b> al giorno'+(gk?" ("+fmtNum(gk)+" g per kg)":"")+'. A chi si allena regolarmente si consigliano in genere 1,2–1,6 g per kg.</span>'+
+    (gk&&gk<1.2?'<span class="warn">Sei sotto: '+(S.profile.protein?"aggiungi un legume in più a pranzo.":"attiva «Più proteine».")+"</span>":"");
+  if(!t){out.innerHTML=(c.mode==="base"?"Usi le porzioni base delle ricette: circa 1500–2040 kcal al giorno, a seconda del menù.":"Completa i dati per calcolare il fabbisogno.")+prot;return}
+  let lo=9,hi=0;for(let i=0;i<7;i++){const f=dayFactor(i);lo=Math.min(lo,f);hi=Math.max(hi,f)}
+  const raw=c.mode==="calc"?calcTarget(c):+c.kcal;
+  out.innerHTML='<b class="mono">'+t+'</b> kcal al giorno<span>Porzioni da ×'+fmtNum(lo)+" a ×"+fmtNum(hi)+", a seconda del giorno.</span>"+
+    (raw<1200?'<span class="warn">Ho alzato il valore a 1200 kcal: sotto questa soglia serve un professionista.</span>':t<1500?'<span class="warn">Un obiettivo così basso va concordato con medico o nutrizionista.</span>':"")+
+    (hi>=2||lo<=.6?'<span class="warn">Le porzioni sono al limite di quanto si può adattare: ti serve un piano su misura.</span>':"")+prot;
+}
+function setNutri(patch){S.profile.nutri=Object.assign(nutriCfg(),patch);S.setup=true;save();renderNeeds();render()}
+["age","weight","height","kcal"].forEach(k=>$("n-"+k).addEventListener("input",e=>{const v=parseFloat(e.target.value);if(v>0)setNutri({[k]:v})}));
+$("n-act").addEventListener("change",e=>setNutri({act:+e.target.value}));
+$("f-start").addEventListener("change",e=>{if(e.target.value){S.profile.start=e.target.value;S.setup=true;save();render()}});
+function bindReset(){$("resetBtn").onclick=()=>{
+  $("resetRow").innerHTML='<span style="font-weight:600;flex:1 1 100%">Cancello serie, spunte e minuti meditati? Il profilo resta.</span><button type="button" class="btn btn-danger" id="resetYes">Sì, azzera</button><button type="button" class="btn btn-sec" id="resetNo">Annulla</button>';
+  $("resetYes").onclick=()=>{S.log={};S.medMin={};S.profile.start=key(today());save();restoreReset();render();toast("Progressi azzerati. Oggi è il giorno 1.")};
+  $("resetNo").onclick=restoreReset;
+}}
+function restoreReset(){$("resetRow").innerHTML='<button type="button" class="btn btn-sec" id="resetBtn">Azzera i progressi</button>';bindReset()}
+bindReset();
+
+document.addEventListener("input",e=>{
+  const q=e.target.dataset&&e.target.dataset.j;if(!q)return;
+  const k=key(sel);S.journal[k]=S.journal[k]||{};S.journal[k][q]=e.target.value;save();
+});
+$("wgoal").addEventListener("input",e=>{S.weekGoal={text:e.target.value.trim(),date:key(today())};S.reviewSeen=key(today());save()});
+$("wgoal").addEventListener("change",()=>{render();if(S.weekGoal&&S.weekGoal.text)toast("Obiettivo salvato. Te lo ricordo ogni giorno.")});
+$("wForm").addEventListener("submit",e=>{e.preventDefault();addWeight()});
+bindBackup();
+
+// aggiorna "prossima azione" ogni minuto e al cambio di giorno
+let lastDay=key(today());
+setInterval(()=>{const k=key(today());if(k!==lastDay){if(key(sel)===lastDay)sel=today();lastDay=k}const typing=document.activeElement&&/TEXTAREA|INPUT|SELECT/.test(document.activeElement.tagName);if(!OV&&!typing)render()},60000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!OV)render();if(!document.hidden&&OV)lockScreen(true)});
+
+render();
+})();
+</script>
