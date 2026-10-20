@@ -32,7 +32,7 @@ Apri `index.html` in un browser (su telefono o computer). Non serve installare n
 
 L'app è una web app installabile: funziona offline e manda notifiche all'ora di ogni attività, più una «spintarella» dopo 20 minuti se non l'hai ancora iniziata.
 
-1. Pubblica il sito con GitHub Pages: **Settings → Pages → Build and deployment → Deploy from a branch**, scegli il branch con questi file e la cartella `/ (root)`, poi **Save**. Dopo un paio di minuti il sito è su `https://tano14i.github.io/Nole-/`.
+1. Pubblica il sito con GitHub Pages: **Settings → Pages → Build and deployment → Deploy from a branch**, scegli il branch con questi file e la cartella `/ (root)`, poi **Save**. Dopo un paio di minuti il sito è su `https://tano14i.github.io/match-point-coach/`.
    - GitHub Pages è gratuito per i repository pubblici. Per un repository privato serve GitHub Pro.
 2. Apri l'indirizzo dal telefono:
    - **Android (Chrome)**: tocca «Installa l'app» in Progressi, oppure menu ⋮ → «Installa app».
