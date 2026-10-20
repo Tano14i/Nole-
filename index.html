@@ -1268,11 +1268,23 @@ function ambientUrl(){
 }
 function ambient(on,title,vol){
   try{
-    if(!on){if(ambEl)ambEl.pause();return}
-    if(!ambEl){ambEl=new Audio();ambEl.loop=true;ambEl.src=ambientUrl()}
+    const ms="mediaSession" in navigator?navigator.mediaSession:null;
+    if(!on){if(ambEl)ambEl.pause();if(ms)ms.playbackState="none";return}
+    if(!ambEl){
+      // file vero del sito, inserito nella pagina: Chrome lo tratta come contenuto multimediale e chiede alle altre app di fermarsi
+      ambEl=document.createElement("audio");ambEl.loop=true;ambEl.preload="auto";ambEl.hidden=true;
+      ambEl.src=ENV.site?"audio/sottofondo.wav":ambientUrl();document.body.appendChild(ambEl);
+    }
     ambEl.volume=vol===undefined?ambCfg().vol:vol;ambEl.currentTime=0;
     const p=ambEl.play();if(p&&p.catch)p.catch(()=>{});
-    if("mediaSession" in navigator&&window.MediaMetadata)navigator.mediaSession.metadata=new MediaMetadata({title:title||"Match Point Coach",artist:"Match Point Coach",artwork:[{src:"icons/icon-512.png",sizes:"512x512",type:"image/png"}]});
+    if(ms){
+      if(window.MediaMetadata)ms.metadata=new MediaMetadata({title:title||"Match Point Coach",artist:"Match Point Coach",artwork:[{src:"icons/icon-512.png",sizes:"512x512",type:"image/png"}]});
+      ms.playbackState="playing";
+      // i comandi della notifica multimediale mettono in pausa e riprendono la sessione
+      const toggle=()=>{if(OV&&!OV.state)$("ovPause").click()};
+      try{ms.setActionHandler("pause",()=>{ambEl.pause();ms.playbackState="paused";toggle()});
+          ms.setActionHandler("play",()=>{ambEl.play();ms.playbackState="playing";toggle()})}catch(e){}
+    }
   }catch(e){}
 }
 
