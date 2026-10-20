@@ -1334,16 +1334,33 @@ function fracStr(v){
   return r?(w?w+" ":"")+F[r]:String(w);
 }
 // scala i numeri di una riga di ingredienti: grammi e ml a passi di 5, pezzi e cucchiai a ¼ o ½
+// singolare e plurale delle parole che seguono una quantità
+const NOUNS=[["patata dolce media","patate dolci medie"],["galletta","gallette"],["fetta","fette"],["dattero","datteri"],["gheriglio","gherigli"],["mandorla","mandorle"],["nocciola","nocciole"],
+  ["pomodorino","pomodorini"],["foglia","foglie"],["banana","banane"],["mela","mele"],["pera","pere"],["carota","carote"],["zucchina","zucchine"],["melanzana","melanzane"],
+  ["cucchiaio","cucchiai"],["cucchiaino","cucchiaini"],["spicchio","spicchi"],["costa","coste"],["peperone","peperoni"],["finocchio","finocchi"],["limone","limoni"],["pomodoro","pomodori"],["vasetto","vasetti"]];
+function nounFor(w,n){
+  const lw=w.toLowerCase(),e=NOUNS.find(x=>x[0]===lw||x[1]===lw);
+  return e?(n>1?e[1]:e[0]):w;
+}
+// scala i numeri di una riga di ingredienti: grammi e ml a passi di 5, pezzi interi dove non si dividono, il resto a ¼ o ½
 function scaleText(str,f){
   if(f===1)return str;
-  return str.replace(/(\d+(?:,\d+)?|½|¼|¾)(\s*[–-]\s*(\d+(?:,\d+)?))?(\s*(g|ml)\b)?/g,(all,a,rg,b,unit)=>{
+  return str.replace(/(\d+(?:,\d+)?|½|¼|¾)(\s*[–-]\s*(\d+(?:,\d+)?))?(\s*(g|ml)\b)?(\s+(patata dolce media|[a-zàèéìòù]+))?/gi,(all,a,rg,b,unit,_u,sp,word,off,whole)=>{
+    // le noci del Brasile restano 2–3 al giorno qualunque sia la porzione (selenio)
+    if(/^[^a-zàèéìòù]*noci del brasile/i.test(whole.slice(off)))return all;
     const val=x=>x==="½"?.5:x==="¼"?.25:x==="¾"?.75:parseFloat(x.replace(",","."));
+    const pieces=!unit&&!!word&&/^(gallett|fett|datter|gheri|mandorl|noccio|pomodorin|foglie|foglia|spicch|cm)$|^(gallett|fett|datter|gheri|mandorl|noccio|pomodorin|foglie|foglia|spicch)/i.test(word);
+    let top=0;
     const one=x=>{
-      const v=val(x)*f;
-      if(unit)return String(v>=20?Math.round(v/5)*5:Math.max(1,Math.round(v)));
-      return fracStr(v<1?Math.max(.25,Math.round(v*4)/4):Math.round(v*2)/2);
+      const v=val(x)*f;let r;
+      if(unit)r=v>=20?Math.round(v/5)*5:Math.max(1,Math.round(v));
+      else if(pieces)r=Math.max(1,Math.round(v));
+      else r=v<1?Math.max(.25,Math.round(v*4)/4):Math.round(v*2)/2;
+      top=Math.max(top,r);
+      return unit?String(r):fracStr(r);
     };
-    return one(a)+(rg?"–"+one(b):"")+(unit||"");
+    const num=one(a)+(rg?"–"+one(b):"");
+    return num+(unit||"")+(word?sp.replace(/\S+.*$/,"")+(unit?word:nounFor(word,top)):"");
   });
 }
 function scaleNutri(n,f){return{k:Math.round(n.k*f/10)*10,p:Math.round(n.p*f),c:Math.round(n.c*f),f:Math.round(n.f*f),fi:Math.round(n.fi*f)}}
