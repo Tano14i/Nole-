@@ -270,6 +270,14 @@ fieldset.needs legend{font-weight:700;font-size:.9rem;padding:0 6px}
 .altbox select,.altbox input{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%}
 .altbox .seg button{font-size:.82rem}
 
+.tlist{display:flex;flex-direction:column}
+.trow{display:grid;grid-template-columns:1fr auto 64px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.trow:last-child{border-bottom:0}
+.trow label{font-size:.9rem;font-weight:600;min-width:0}
+.trow input{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:7px 9px;font-family:var(--f-mono)}
+.trow.inline{border-bottom:1px dashed var(--line);padding:0 0 10px}
+#timesWarn span{display:block}
+
 /* spesa */
 #settSeg button{flex:1 1 0;min-width:0}
 .pane{display:flex;flex-direction:column;gap:16px}
@@ -620,6 +628,13 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
         </div>
         <label class="remitem" for="n-prot"><input type="checkbox" id="n-prot"> Più proteine: yogurt di soia allo spuntino ed edamame a cena (+18 g al giorno)</label>
         <div class="needs-out" id="n-out" aria-live="polite"></div>
+      </fieldset>
+      <fieldset class="needs" id="timesSet">
+        <legend>I tuoi orari</legend>
+        <p class="note" style="margin:0">Gli orari partono dalla sveglia e da quando ti alleni. Puoi cambiarli uno per uno: valgono ogni giorno. «Auto» torna all'orario calcolato.</p>
+        <div id="timesBox" class="tlist"></div>
+        <div class="needs-out" id="timesWarn" aria-live="polite"></div>
+        <div class="btnrow"><button type="button" class="btn btn-ghost" id="timesReset" hidden>Torna a tutti gli orari automatici</button></div>
       </fieldset>
       <div class="field"><label for="f-start">Giorno 1 del programma</label><input id="f-start" type="date"></div>
       <div class="btnrow" id="resetRow">
@@ -1040,6 +1055,12 @@ function buildDay(d){
       list:["Schermi spenti 30 minuti prima.","Prepara i vestiti per l'allenamento di domani: domattina avrai una scusa in meno.","Metti un bicchiere d'acqua sul comodino: il primo gesto di domani è già pronto.","Stanza fresca, buia e silenziosa.","Punta a 7–8 ore di sonno."],
       micro:"Metti il telefono in carica fuori dalla camera."}
   ];
+  // orari scelti dall'utente: valgono ogni giorno; un orario prima della sveglia è dopo mezzanotte
+  const OT=S.times||{};
+  tasks.forEach(x=>{if(OT[x.id]&&x.id!=="wake"){let m=toMin(OT[x.id]);if(m<W)m+=1440;x.t=m}});
+  const ce=tasks.find(x=>x.id==="cena");
+  if(ce.t<1020)ce.title=ce.title.replace(/^Cena:/,"Ultimo pasto:");
+  if(FW)ce.sum=ce.sum.replace(/Finisci entro le \d\d:\d\d/,"Finisci entro le "+fmt(ce.t+30));
   tasks.sort((a,b)=>a.t-b.t);   // la giornata sempre in ordine di orario
   return{info:I,tasks,wo,med,medMin};
 }
@@ -1461,6 +1482,35 @@ function dayEaten(d){
   return{eaten,planned,changed};
 }
 
+/* ---------- ORARI PERSONALIZZATI ---------- */
+const TIME_LABEL={medam:"Meditazione del mattino",colaz:"Colazione / primo pasto",train:"Allenamento",pranzo:"Pranzo",snack:"Spuntino",cena:"Cena / ultimo pasto",medpm:"Diario serale",sleep:"Luci spente"};
+function setTime(id,v){S.times=S.times||{};if(v)S.times[id]=v;else delete S.times[id];save();render();if(view==="tu")renderTimes()}
+// avvisi sugli orari: non bloccano, aiutano a scegliere
+function timeWarnings(plan){
+  const w=[],T=plan.tasks,f=x=>fmt(x.t),meals=T.filter(x=>x.rec),tr=T.find(x=>x.id==="train"),sl=T.find(x=>x.id==="sleep"),ce=T.find(x=>x.id==="cena");
+  for(let i=1;i<meals.length;i++){const g=meals[i].t-meals[i-1].t;if(g<120)w.push(MEAL_LABEL[MEAL_OF[meals[i-1].id]]+" ("+f(meals[i-1])+") e "+MEAL_LABEL[MEAL_OF[meals[i].id]].toLowerCase()+" ("+f(meals[i])+") sono a "+g+" minuti: meglio almeno 2 ore.")}
+  if(ce&&sl&&sl.t-ce.t<150)w.push("La cena ("+f(ce)+") è a meno di 2 ore e mezza dalle luci spente ("+f(sl)+"): la digestione disturba il sonno.");
+  if(tr){const end=tr.t+tr.dur;meals.forEach(m=>{
+    if(m.t>tr.t&&m.t<end)w.push(MEAL_LABEL[MEAL_OF[m.id]]+" ("+f(m)+") cade durante l'allenamento ("+f(tr)+"–"+fmt(end)+").");
+    else if(m.t<=tr.t&&tr.t-m.t<60)w.push("L'allenamento ("+f(tr)+") è a meno di un'ora da "+MEAL_LABEL[MEAL_OF[m.id]].toLowerCase()+" ("+f(m)+").")})}
+  if(tr&&meals.length&&tr.t<meals[0].t&&S.profile.fast)w.push("Ti alleni alle "+f(tr)+", prima del primo pasto ("+f(meals[0])+"): a digiuno va bene per sessioni leggere, ma nei giorni intensi meglio mangiare prima.");
+  if(S.profile.fast&&meals.length){const span=meals[meals.length-1].t+30-meals[0].t;if(span>480)w.push("La finestra dei pasti va dalle "+f(meals[0])+" alle "+fmt(meals[meals.length-1].t+30)+": "+fmtNum(Math.round(span/6)/10)+" ore, oltre le 8 del digiuno 16:8.")}
+  return w;
+}
+function renderTimes(){
+  const box=$("timesBox");if(!box)return;
+  const plan=buildDay(today()),S_=S.times||{};
+  box.innerHTML=plan.tasks.filter(x=>x.id!=="wake").map(x=>'<div class="trow"><label for="tm-'+x.id+'">'+TIME_LABEL[x.id]+(S_[x.id]?' <span class="chip k-mente">tuo</span>':"")+'</label><input type="time" id="tm-'+x.id+'" data-tid="'+x.id+'" value="'+fmt(x.t)+'">'+
+    (S_[x.id]?'<button type="button" class="vbtn" data-treset="'+x.id+'" aria-label="Orario automatico per '+TIME_LABEL[x.id]+'">Auto</button>':'<span></span>')+"</div>").join("");
+  const w=timeWarnings(plan);
+  $("timesWarn").innerHTML=w.length?w.map(t=>'<span class="warn">'+esc(t)+"</span>").join(""):"<span>Orari equilibrati: pasti distanziati, cena lontana dal sonno, allenamento lontano dai pasti.</span>";
+  $("timesReset").hidden=!Object.keys(S_).length;
+}
+function timeRowHTML(x){
+  if(x.id==="wake")return '<p class="note" style="margin:0">L\'orario del risveglio si cambia in Progressi → Ora della sveglia.</p>';
+  return '<div class="trow inline"><label for="tt-'+x.id+'">Orario</label><input type="time" id="tt-'+x.id+'" data-tid="'+x.id+'" value="'+fmt(x.t)+'">'+((S.times||{})[x.id]?'<button type="button" class="vbtn" data-treset="'+x.id+'">Auto</button>':"<span></span>")+"</div>";
+}
+
 /* ---------- UTILITY UI ---------- */
 const $=id=>document.getElementById(id);
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
@@ -1555,7 +1605,7 @@ function render(){
       '<div class="time">'+fmt(x.t)+'</div><div class="body"><div class="card">'+
       '<button class="expand" data-open="'+x.id+'" aria-expanded="'+open+'"><span class="chip k-'+x.kind+'">'+labelKind(x.kind)+'</span><h3>'+esc(al?x.title.split(":")[0]+": "+al.text:x.title)+(al?' <span class="chip k-cibo" style="vertical-align:2px">Modificato</span>':"")+'</h3><div class="sum">'+esc(al?"Al posto di: "+x.rec.t+" · porzione "+ALT_SIZE[al.size]+" · circa "+altKcal(x.id,al)+" kcal (stima)":x.sum)+'</div></button>'+
       '<button class="check" data-check="'+x.id+'" aria-pressed="'+isDone+'" aria-label="'+(isDone?"Segna come da fare: ":"Segna come fatto: ")+esc(x.title)+'">'+(isDone?'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg>':"")+'</button>'+
-      det+'</div></div></li>';
+      det.replace('<div class="details">','<div class="details">'+timeRowHTML(x))+'</div></div></li>';
   }).join("");
 
   if(view==="sett")renderWeek();
@@ -1988,7 +2038,7 @@ function renderYou(){
   $("f-wake").value=P.wake;
   if(document.activeElement!==$("f-why"))$("f-why").value=P.why;
   $("f-start").value=P.start;
-  renderNeeds();
+  renderNeeds();if(!document.activeElement||!document.activeElement.dataset||!document.activeElement.dataset.tid)renderTimes();
   $("f-slot").innerHTML=SLOTS.map(s=>'<button type="button" data-slot="'+s[0]+'" aria-pressed="'+(P.slot===s[0])+'">'+s[1]+"</button>").join("");
   $("f-level").innerHTML=LEVELS.map((s,i)=>'<button type="button" data-level="'+i+'" aria-pressed="'+(+P.level===i)+'">'+s+"</button>").join("");
 }
@@ -2134,6 +2184,8 @@ document.addEventListener("click",e=>{
   if(b.dataset.vrec!==undefined){if(recState&&recState.t!==b.dataset.vrec){stopRec();return}startRec(b.dataset.vrec,b);return}
   if(b.dataset.vplay!==undefined){hush();playClip(b.dataset.vplay);return}
   if(b.dataset.vdel!==undefined){delClip(b.dataset.vdel);toast("Registrazione eliminata");return}
+  if(b.dataset.treset){setTime(b.dataset.treset,null);toast("Orario automatico");return}
+  if(b.id==="timesReset"){S.times={};save();render();renderTimes();toast("Tutti gli orari sono di nuovo automatici");return}
   if(b.dataset.rpe!==undefined){setRpe(+b.dataset.rpe);return}
   if(b.dataset.water){const k=key(sel),n=+b.dataset.water;S.water[k]=(S.water[k]===n?n-1:n);save();renderHabits();if(S.water[k]===8)toast("8 bicchieri: idratazione da campione.");return}
   if(b.dataset.coffee){const k=key(sel),c=coffeeCfg();S.coffee[k]=S.coffee[k]||[];
@@ -2155,6 +2207,7 @@ $("prevDay").onclick=()=>{sel=addDays(sel,-1);openTask=null;$("excuseBox").hidde
 $("nextDay").onclick=()=>{sel=addDays(sel,1);openTask=null;$("excuseBox").hidden=true;render()};
 $("goToday").onclick=()=>{sel=today();openTask=null;render()};
 document.addEventListener("change",e=>{
+  if(e.target.dataset&&e.target.dataset.tid){if(e.target.value){setTime(e.target.dataset.tid,e.target.value);const w=timeWarnings(buildDay(today()));toast(w.length?"Orario salvato. Attenzione: "+w[0]:"Orario salvato")}return}
   if(e.target.dataset&&e.target.dataset.swap){const sw=e.target.dataset.swap,wd=+sw.split("-")[0],v=+e.target.value;if(v===wd)delete S.swaps[sw];else S.swaps[sw]=v;save();renderRecipes();render();toast("Piatto cambiato per ogni "+DAYNAMES[wd].toLowerCase());return}
   if(e.target.id==="n-veg"){S.profile.veg=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Menù vegetariano: il pesce diventa tempeh e ceci":"Pesce di nuovo nel menù");return}
   if(e.target.id==="n-fast"){S.profile.fast=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Digiuno 16:8: orari dei pasti aggiornati":"Orari dei pasti normali");return}
@@ -2241,7 +2294,7 @@ function renderNeeds(){
   $("n-veg").checked=!!S.profile.veg;$("n-prot").checked=!!S.profile.protein;
   $("n-fast").checked=!!S.profile.fast;$("fastBox").hidden=!S.profile.fast;
   if(document.activeElement!==$("n-fast-start"))$("n-fast-start").value=S.profile.fastStart||"11:00";
-  const FW=fastWindow();$("fastInfo").textContent=FW?"Mangi dalle "+fmt(FW)+" alle "+fmt(FW+480)+". L'allenamento si sposta dentro la finestra, dopo il primo pasto.":"";
+  const FW=fastWindow();$("fastInfo").textContent=FW?"Mangi dalle "+fmt(FW)+" alle "+fmt(FW+480)+". L'allenamento si sposta dentro la finestra, dopo il primo pasto. Gli orari che cambi a mano in «I tuoi orari» hanno la precedenza.":"";
   const cc=coffeeCfg();$("n-coffee").checked=cc.on;$("coffeeBox").hidden=!cc.on;$("n-cof-max").value=cc.max;
   if(document.activeElement!==$("n-cof-cut"))$("n-cof-cut").value=cc.cutoff;
   const t=target(),out=$("n-out");

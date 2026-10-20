@@ -26,6 +26,7 @@ Apri `index.html` in un browser (su telefono o computer). Non serve installare n
 - **Voce delle meditazioni**: parla più piano, a frasi brevi con pause. La musica di altre app (per esempio Spotify) non si ferma da sola: mettila in pausa prima di iniziare.
 - **Allenamento che si adatta**: dopo l'allenamento scegli «troppo facile», «giusto» o «troppo duro»; il volume dei successivi sale o scende (da −25% a +30%).
 - **Menù su misura**: in Ricette puoi cambiare ogni piatto con un altro della stessa categoria; nel fabbisogno puoi scegliere «Vegetariano» (il pesce diventa tempeh e ceci) e «Più proteine» (+18 g al giorno).
+- **I tuoi orari** (in Progressi, o aprendo un'attività in Oggi): ogni orario si può cambiare e vale ogni giorno; «Auto» torna all'orario calcolato. L'app avvisa se i pasti sono troppo vicini, se la cena è vicina al sonno, se ti alleni subito dopo mangiato o se la finestra del digiuno supera le 8 ore.
 - **Pasti cambiati**: aprendo un pasto in Oggi puoi «Cambiare piatto» (vale per quel giorno della settimana) oppure segnare «Ho mangiato altro» con una breve descrizione e la porzione; il pasto conta come fatto, le calorie sono stimate e il resoconto settimanale segnala i pasti che cambi spesso.
 - **Acqua e sonno**: in Oggi segni i bicchieri d'acqua e le ore di sonno.
 - **Digiuno intermittente 16:8** (facoltativo, nel fabbisogno): tutti i pasti in una finestra di 8 ore scelta da te; l'allenamento si sposta dentro la finestra. Con le avvertenze su chi non dovrebbe farlo.
