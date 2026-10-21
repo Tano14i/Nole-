@@ -1057,7 +1057,7 @@ function buildDay(d){
   ];
   // orari scelti dall'utente: valgono ogni giorno; un orario prima della sveglia è dopo mezzanotte
   const OT=S.times||{};
-  tasks.forEach(x=>{if(OT[x.id]&&x.id!=="wake"){let m=toMin(OT[x.id]);if(m<W)m+=1440;x.t=m}});
+  tasks.forEach(x=>{if(OT[x.id]&&x.id!=="wake"){const m=dayTime(x.id,OT[x.id],W);if(m!==null)x.t=m}});
   const ce=tasks.find(x=>x.id==="cena");
   if(ce.t<1020)ce.title=ce.title.replace(/^Cena:/,"Ultimo pasto:");
   if(FW)ce.sum=ce.sum.replace(/Finisci entro le \d\d:\d\d/,"Finisci entro le "+fmt(ce.t+30));
@@ -1483,12 +1483,31 @@ function dayEaten(d){
 }
 
 /* ---------- ORARI PERSONALIZZATI ---------- */
+// solo diario e luci spente possono andare dopo mezzanotte
+const NIGHT={medpm:1,sleep:1};
+// minuti della giornata per un orario scelto: prima della sveglia vale dopo mezzanotte solo per la sera;
+// per pasti e allenamento è quasi sempre un AM/PM sbagliato (00:00 al posto di 12:00), quindi si legge come pomeriggio
+function dayTime(id,v,W){
+  let m=toMin(v);
+  if(m>=W)return m;
+  if(NIGHT[id])return m+1440;
+  if(m+720>=W&&m+720<1440)return m+720;
+  return null;
+}
+// corregge gli orari salvati con l'AM/PM sbagliato e dice cosa ha cambiato
+function fixSavedTimes(){
+  const OT=S.times||{},W=toMin(S.profile.wake),fixed=[];
+  for(const id in OT){if(NIGHT[id]||id==="wake")continue;const m=toMin(OT[id]);if(m<W){const d=dayTime(id,OT[id],W);
+    if(d===null)delete OT[id];else{fixed.push(TIME_LABEL[id].split(" /")[0]+" "+OT[id]+" → "+fmt(d));OT[id]=fmt(d)}}}
+  if(fixed.length){save();setTimeout(()=>toast("Ho corretto "+fixed.join(", ")+": le 00:00 sono mezzanotte."),400)}
+}
 const TIME_LABEL={medam:"Meditazione del mattino",colaz:"Colazione / primo pasto",train:"Allenamento",pranzo:"Pranzo",snack:"Spuntino",cena:"Cena / ultimo pasto",medpm:"Diario serale",sleep:"Luci spente"};
 function setTime(id,v){S.times=S.times||{};if(v)S.times[id]=v;else delete S.times[id];save();render();if(view==="tu")renderTimes()}
 // avvisi sugli orari: non bloccano, aiutano a scegliere
 function timeWarnings(plan){
   const w=[],T=plan.tasks,f=x=>fmt(x.t),meals=T.filter(x=>x.rec),tr=T.find(x=>x.id==="train"),sl=T.find(x=>x.id==="sleep"),ce=T.find(x=>x.id==="cena");
   for(let i=1;i<meals.length;i++){const g=meals[i].t-meals[i-1].t;if(g<120)w.push(MEAL_LABEL[MEAL_OF[meals[i-1].id]]+" ("+f(meals[i-1])+") e "+MEAL_LABEL[MEAL_OF[meals[i].id]].toLowerCase()+" ("+f(meals[i])+") sono a "+g+" minuti: meglio almeno 2 ore.")}
+  meals.forEach(m=>{if(sl&&m.t>sl.t)w.push(MEAL_LABEL[MEAL_OF[m.id]]+" ("+f(m)+") è dopo le luci spente ("+f(sl)+").")});
   if(ce&&sl&&sl.t-ce.t<150)w.push("La cena ("+f(ce)+") è a meno di 2 ore e mezza dalle luci spente ("+f(sl)+"): la digestione disturba il sonno.");
   if(tr){const end=tr.t+tr.dur;meals.forEach(m=>{
     if(m.t>tr.t&&m.t<end)w.push(MEAL_LABEL[MEAL_OF[m.id]]+" ("+f(m)+") cade durante l'allenamento ("+f(tr)+"–"+fmt(end)+").");
@@ -2207,7 +2226,12 @@ $("prevDay").onclick=()=>{sel=addDays(sel,-1);openTask=null;$("excuseBox").hidde
 $("nextDay").onclick=()=>{sel=addDays(sel,1);openTask=null;$("excuseBox").hidden=true;render()};
 $("goToday").onclick=()=>{sel=today();openTask=null;render()};
 document.addEventListener("change",e=>{
-  if(e.target.dataset&&e.target.dataset.tid){if(e.target.value){setTime(e.target.dataset.tid,e.target.value);const w=timeWarnings(buildDay(today()));toast(w.length?"Orario salvato. Attenzione: "+w[0]:"Orario salvato")}return}
+  if(e.target.dataset&&e.target.dataset.tid){if(e.target.value){
+    const id=e.target.dataset.tid,W=toMin(S.profile.wake),m=toMin(e.target.value);
+    if(!NIGHT[id]&&m<W){const d=dayTime(id,e.target.value,W);
+      if(d===null){toast("Questo orario è prima della sveglia ("+S.profile.wake+"): scegline uno più tardi.");render();if(view==="tu")renderTimes();return}
+      setTime(id,fmt(d));toast("Le "+e.target.value+" sono prima della sveglia: ho messo le "+fmt(d)+". Se intendevi altro, cambialo.");return}
+    setTime(id,e.target.value);const w=timeWarnings(buildDay(today()));toast(w.length?"Orario salvato. Attenzione: "+w[0]:"Orario salvato")}return}
   if(e.target.dataset&&e.target.dataset.swap){const sw=e.target.dataset.swap,wd=+sw.split("-")[0],v=+e.target.value;if(v===wd)delete S.swaps[sw];else S.swaps[sw]=v;save();renderRecipes();render();toast("Piatto cambiato per ogni "+DAYNAMES[wd].toLowerCase());return}
   if(e.target.id==="n-veg"){S.profile.veg=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Menù vegetariano: il pesce diventa tempeh e ceci":"Pesce di nuovo nel menù");return}
   if(e.target.id==="n-fast"){S.profile.fast=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Digiuno 16:8: orari dei pasti aggiornati":"Orari dei pasti normali");return}
@@ -2281,7 +2305,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&OV)closeOverlay()})
 $("settings").addEventListener("submit",e=>e.preventDefault());
 $("f-name").addEventListener("input",e=>{S.profile.name=e.target.value.trim();S.setup=true;save();render()});
 $("f-why").addEventListener("input",e=>{S.profile.why=e.target.value.trim();S.setup=true;save()});
-$("f-wake").addEventListener("change",e=>{if(e.target.value){S.profile.wake=e.target.value;S.setup=true;save();render();toast("Sveglia alle "+e.target.value+". Orari ricalcolati.")}});
+$("f-wake").addEventListener("change",e=>{if(e.target.value){S.profile.wake=e.target.value;fixSavedTimes();S.setup=true;save();render();toast("Sveglia alle "+e.target.value+". Orari ricalcolati.")}});
 function renderNeeds(){
   const c=nutriCfg();
   $("n-mode").innerHTML=[["base","Porzioni base"],["calc","Calcola"],["manual","Inserisco le kcal"]].map(x=>'<button type="button" data-nmode="'+x[0]+'" aria-pressed="'+(c.mode===x[0])+'">'+x[1]+"</button>").join("");
@@ -2338,5 +2362,6 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!OV)rende
 
 render();
 loadClips();
+fixSavedTimes();render();
 })();
 </script>
