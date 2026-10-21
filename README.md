@@ -49,6 +49,18 @@ L'app è una web app installabile: funziona offline e manda notifiche all'ora di
 
 Le notifiche arrivano finché il telefono tiene l'app attiva o in background. Per avvisi garantiti anche ad app chiusa, usa **«Aggiungi al calendario»**: scarica un file `.ics` con un evento settimanale e un avviso per ogni attività.
 
+## Test automatici
+
+I test aprono l'app in un browser vero, a larghezza telefono, con dati di prova e un orologio fissato. Controllano, tra l'altro: che l'app si apra senza errori nei due temi, gli orari della giornata in 96 combinazioni, il digiuno 16:8, il menù a rotazione, le dosi scalate, la lista della spesa, rituale, allenamento guidato, pasti cambiati, backup e serie con jolly.
+
+```
+npm install
+npx playwright install chromium
+npm test
+```
+
+Su GitHub partono da soli a ogni pull request (`.github/workflows/test.yml`).
+
 ## Avvertenza
 
 Non è un programma ufficiale né affiliato a Novak Djokovic. Non sostituisce il parere di medico o nutrizionista.

@@ -2382,5 +2382,9 @@ loadClips();
 // i vecchi «cambia piatto» valevano per ogni settimana: con il menù a rotazione non hanno più senso
 Object.keys(S.swaps||{}).forEach(k=>{if(k.indexOf("|")<0)delete S.swaps[k]});
 fixSavedTimes();render();
+// solo per i test automatici (pagina aperta con ?test): espone i calcoli dell'app
+if(/[?&]test\b/.test(location.search))window.__mpc={get S(){return S},set S(v){S=v},setWeek(d){weekSel=d},save,render,
+  buildDay,timeWarnings,scaleText,defaultIdx,menuNum,rawRecipe,recipeFor,shopGroups,dayFactor,target,streakInfo,fastTimes,fixSavedTimes,
+  key,parseKey,addDays,today,fmt,toMin,RECIPES,ING,defaults};
 })();
 </script>
