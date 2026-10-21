@@ -850,86 +850,57 @@ const RECIPES={
 // calcolati dagli ingredienti con valori medi per 100 g delle tabelle nutrizionali (USDA)
 const NUTRI={"colazione":[{"k":510,"p":14,"c":56,"f":22,"fi":15},{"k":570,"p":11,"c":52,"f":36,"fi":11},{"k":410,"p":11,"c":50,"f":17,"fi":11},{"k":560,"p":12,"c":20,"f":46,"fi":13},{"k":370,"p":5,"c":36,"f":21,"fi":10},{"k":360,"p":8,"c":44,"f":16,"fi":8},{"k":350,"p":8,"c":54,"f":9,"fi":11}],"pranzo":[{"k":660,"p":13,"c":84,"f":30,"fi":7},{"k":700,"p":23,"c":74,"f":28,"fi":21},{"k":770,"p":25,"c":86,"f":35,"fi":11},{"k":620,"p":21,"c":79,"f":24,"fi":15},{"k":580,"p":21,"c":58,"f":26,"fi":17},{"k":550,"p":22,"c":53,"f":23,"fi":15},{"k":580,"p":19,"c":62,"f":24,"fi":16}],"spuntino":[{"k":180,"p":4,"c":19,"f":9,"fi":6},{"k":110,"p":5,"c":10,"f":5,"fi":6},{"k":210,"p":5,"c":26,"f":9,"fi":5},{"k":180,"p":4,"c":9,"f":13,"fi":5},{"k":180,"p":3,"c":16,"f":11,"fi":5},{"k":160,"p":2,"c":21,"f":7,"fi":6},{"k":200,"p":3,"c":28,"f":9,"fi":4}],"cena":[{"k":690,"p":40,"c":53,"f":31,"fi":13},{"k":490,"p":23,"c":53,"f":17,"fi":14},{"k":540,"p":34,"c":44,"f":25,"fi":12},{"k":330,"p":32,"c":12,"f":16,"fi":7},{"k":660,"p":29,"c":58,"f":24,"fi":31},{"k":430,"p":15,"c":39,"f":19,"fi":18},{"k":710,"p":24,"c":78,"f":29,"fi":17}]};
 Object.keys(NUTRI).forEach(m=>NUTRI[m].forEach((n,i)=>{RECIPES[m][i].n=n}));
+// ingredienti per la lista della spesa: [nome, reparto, come si compra, grammi per pezzo, singolare, plurale]
+// regole: pz = a pezzi, g = a peso, ml = liquidi, vas = vasetti di legumi cotti (240 g), lat = lattine (400 ml), dis = in dispensa, qb = erbe e spezie
+const SHOP_CATS=["Frutta","Verdura ed erbe","Cereali senza glutine","Legumi, pesce e proteine","Frutta secca e semi","Alternative vegetali","Dispensa"];
+const ING={
+ banana:["Banane","Frutta","pz",120,"banana","banane"],mela:["Mele","Frutta","pz",150,"mela","mele"],pera:["Pere","Frutta","pz",170,"pera","pere"],
+ kiwi:["Kiwi","Frutta","pz",70,"kiwi","kiwi"],mango:["Mango","Frutta","pz",200,"mango","manghi"],mirtilli:["Mirtilli","Frutta","g"],
+ bosco:["Frutti di bosco (anche surgelati)","Frutta","g"],avocado:["Avocado","Frutta","pz",140,"avocado","avocado"],
+ limone:["Limoni","Frutta","pz",40,"limone","limoni"],arancia:["Arance","Frutta","pz",200,"arancia","arance"],datteri:["Datteri","Frutta","pz",20,"dattero","datteri"],
+ spinaci:["Spinaci","Verdura ed erbe","g"],zucchina:["Zucchine","Verdura ed erbe","pz",200,"zucchina","zucchine"],broccoli:["Broccoli","Verdura ed erbe","g"],
+ melanzana:["Melanzane","Verdura ed erbe","pz",300,"melanzana","melanzane"],peperone:["Peperoni","Verdura ed erbe","pz",200,"peperone","peperoni"],
+ pomodoro:["Pomodori, pomodorini o pelati","Verdura ed erbe","g"],carota:["Carote","Verdura ed erbe","pz",80,"carota","carote"],sedano:["Sedano","Verdura ed erbe","g"],
+ cavolo:["Cavolo cappuccio","Verdura ed erbe","g"],cavolonero:["Cavolo nero","Verdura ed erbe","g"],zucca:["Zucca","Verdura ed erbe","g"],
+ patata:["Patate dolci","Verdura ed erbe","pz",250,"patata dolce","patate dolci"],patatina:["Patate","Verdura ed erbe","g"],funghi:["Funghi","Verdura ed erbe","g"],
+ finocchio:["Finocchi","Verdura ed erbe","pz",250,"finocchio","finocchi"],insalata:["Insalata verde","Verdura ed erbe","g"],rucola:["Rucola","Verdura ed erbe","g"],
+ verdure:["Verdure di stagione (zucchine, carote, peperoni, cavolo)","Verdura ed erbe","g"],cipolla:["Cipolle","Verdura ed erbe","pz",100,"cipolla","cipolle"],
+ piselli:["Piselli (anche surgelati)","Verdura ed erbe","g"],fagiolini:["Fagiolini","Verdura ed erbe","g"],aglio:["Aglio","Verdura ed erbe","pz",3,"spicchio","spicchi"],
+ basilico:["Basilico","Verdura ed erbe","qb"],prezzemolo:["Prezzemolo","Verdura ed erbe","qb"],rosmarino:["Rosmarino","Verdura ed erbe","qb"],zenzero:["Zenzero fresco","Verdura ed erbe","qb"],
+ avena:["Fiocchi d'avena senza glutine (certificati)","Cereali senza glutine","g"],saraceno:["Grano saraceno in chicchi","Cereali senza glutine","g"],
+ farsaraceno:["Farina di grano saraceno","Cereali senza glutine","g"],farinariso:["Farina di riso","Cereali senza glutine","g"],
+ farmais:["Farina di mais per polenta (senza glutine)","Cereali senza glutine","g"],quinoa:["Quinoa","Cereali senza glutine","g"],soffiata:["Quinoa soffiata","Cereali senza glutine","g"],
+ riso:["Riso integrale","Cereali senza glutine","g"],risobianco:["Riso Carnaroli o basmati","Cereali senza glutine","g"],risonero:["Riso nero","Cereali senza glutine","g"],
+ miglio:["Miglio","Cereali senza glutine","g"],pastariso:["Pasta di riso integrale","Cereali senza glutine","g"],pastasar:["Pasta di grano saraceno","Cereali senza glutine","g"],
+ pastaleg:["Pasta di legumi","Cereali senza glutine","g"],pastamais:["Pasta di mais","Cereali senza glutine","g"],spagriso:["Spaghetti di riso","Cereali senza glutine","g"],
+ pane:["Pane senza glutine","Cereali senza glutine","pz",35,"fetta","fette"],gallette:["Gallette di riso","Cereali senza glutine","pz",9,"galletta","gallette"],
+ ceci:["Ceci cotti","Legumi, pesce e proteine","vas"],cannellini:["Fagioli cannellini cotti","Legumi, pesce e proteine","vas"],fagioli:["Fagioli neri cotti","Legumi, pesce e proteine","vas"],
+ lenticrosse:["Lenticchie rosse","Legumi, pesce e proteine","g"],lenticchie:["Lenticchie","Legumi, pesce e proteine","g"],edamame:["Edamame (surgelati)","Legumi, pesce e proteine","g"],
+ tofu:["Tofu","Legumi, pesce e proteine","g"],tempeh:["Tempeh","Legumi, pesce e proteine","g"],hummus:["Hummus","Legumi, pesce e proteine","g"],
+ salmone:["Salmone","Legumi, pesce e proteine","g"],branzino:["Branzino (filetti o pesce intero pulito)","Legumi, pesce e proteine","g"],
+ merluzzo:["Merluzzo","Legumi, pesce e proteine","g"],gamberi:["Gamberi sgusciati","Legumi, pesce e proteine","g"],
+ noci:["Noci (gherigli)","Frutta secca e semi","g"],mandorle:["Mandorle","Frutta secca e semi","g"],nocciole:["Nocciole","Frutta secca e semi","g"],
+ brasile:["Noci del Brasile","Frutta secca e semi","pz",4,"noce","noci"],pinoli:["Pinoli","Frutta secca e semi","g"],chia:["Semi di chia","Frutta secca e semi","g"],
+ lino:["Semi di lino","Frutta secca e semi","g"],zuccasemi:["Semi di zucca","Frutta secca e semi","g"],sesamo:["Semi di sesamo","Frutta secca e semi","g"],
+ anacardi:["Anacardi","Frutta secca e semi","g"],burromand:["Burro di mandorle","Frutta secca e semi","dis"],tahina:["Tahina","Frutta secca e semi","dis"],
+ bevmand:["Bevanda di mandorla","Alternative vegetali","ml"],cocco:["Latte di cocco","Alternative vegetali","lat"],
+ yogurtcocco:["Yogurt di cocco","Alternative vegetali","pz",125,"vasetto da 125 g","vasetti da 125 g"],yogsoia:["Yogurt di soia bianco","Alternative vegetali","pz",150,"vasetto da 150 g","vasetti da 150 g"],
+ olio:["Olio extravergine d'oliva","Dispensa","dis"],miele:["Miele","Dispensa","dis"],tamari:["Tamari (salsa di soia senza glutine)","Dispensa","dis"],
+ cacao:["Cacao amaro","Dispensa","dis"],cioccolato:["Cioccolato fondente 85% (senza latte)","Dispensa","g"],olive:["Olive","Dispensa","g"],
+ cannella:["Cannella","Dispensa","qb"],curry:["Curry","Dispensa","qb"],paprika:["Paprika","Dispensa","qb"],peperoncino:["Peperoncino","Dispensa","qb"],zafferano:["Zafferano","Dispensa","qb"]
+};
+// secondo menù: 28 ricette che si alternano con le prime ogni settimana
+const RECIPES_B={"colazione":[{"t":"Overnight oats al cacao e frutti di bosco","min":5,"desc":"Overnight oats: avena senza glutine, cacao amaro, chia, frutti di bosco e un cucchiaino di miele","ing":["50 g di fiocchi d'avena senza glutine","180 ml di bevanda di mandorla","1 cucchiaio di cacao amaro (8 g)","1 cucchiaio di semi di chia","100 g di frutti di bosco","1 cucchiaino di miele"],"steps":["La sera prima mescola avena, bevanda di mandorla, cacao e semi di chia in un barattolo.","Chiudi e metti in frigo per la notte.","Al mattino mescola: se è troppo denso, aggiungi un goccio di bevanda.","Completa con i frutti di bosco e il miele."],"tip":"Si conserva in frigo 2 giorni: puoi preparare due barattoli insieme.","g":{"avena":50,"bevmand":180,"cacao":8,"chia":10,"bosco":100,"miele":7},"n":{"k":350,"p":12,"c":46,"f":10,"fi":16}},{"t":"Toast con hummus e pomodoro","min":7,"desc":"Pane senza glutine tostato con hummus, pomodoro e semi di zucca","ing":["2 fette di pane senza glutine","3 cucchiai di hummus","1 pomodoro","1 cucchiaio di semi di zucca","Olio extravergine, origano e un pizzico di sale"],"steps":["Tosta il pane.","Spalma l'hummus.","Taglia il pomodoro a fette sottili e appoggialo sopra.","Finisci con semi di zucca, origano, sale e un filo d'olio."],"g":{"pane":70,"hummus":45,"pomodoro":120,"zuccasemi":10,"olio":5},"n":{"k":370,"p":10,"c":39,"f":18,"fi":8}},{"t":"Crema di riso con pera e noci","min":10,"desc":"Crema di riso con pera, noci e cannella","ing":["40 g di farina di riso","250 ml di bevanda di mandorla","1 pera","4 gherigli di noce","½ cucchiaino di cannella","1 cucchiaino di miele"],"steps":["Stempera la farina di riso nella bevanda fredda, mescolando con una frusta per non fare grumi.","Porta a fuoco medio e cuoci 4–5 minuti mescolando, finché si addensa.","Taglia la pera a cubetti.","Versa la crema nella ciotola e completa con pera, noci spezzettate, cannella e miele."],"g":{"farinariso":40,"bevmand":250,"pera":150,"noci":20,"cannella":1,"miele":5},"n":{"k":420,"p":7,"c":56,"f":16,"fi":8}},{"t":"Frullato ai frutti di bosco","min":5,"desc":"Frullato di frutti di bosco, banana, burro di mandorle e semi di lino","ing":["150 g di frutti di bosco (anche surgelati)","1 banana","1 cucchiaio di burro di mandorle","200 ml di bevanda di mandorla","1 cucchiaio di semi di lino"],"steps":["Metti tutto nel frullatore.","Frulla 40–60 secondi, finché è liscio.","Bevilo a piccoli sorsi, seduto."],"tip":"Con i frutti di bosco surgelati viene denso e fresco, senza ghiaccio.","g":{"bosco":150,"banana":120,"burromand":16,"bevmand":200,"lino":10},"n":{"k":360,"p":9,"c":38,"f":16,"fi":14}},{"t":"Yogurt di cocco con granola fatta in casa","min":10,"desc":"Yogurt di cocco con granola di avena senza glutine, mandorle e mela","ing":["125 g di yogurt di cocco","30 g di fiocchi d'avena senza glutine","10 mandorle","1 cucchiaio di semi di zucca","1 cucchiaino di miele","1 mela"],"steps":["Trita grossolanamente le mandorle.","Tosta in padella asciutta avena, mandorle e semi di zucca per 3–4 minuti, mescolando.","Spegni, aggiungi il miele e mescola: diventa una granola croccante. Lasciala intiepidire.","Taglia la mela a cubetti e servi tutto sullo yogurt."],"tip":"Raddoppia la granola e conservala in un barattolo chiuso per 5 giorni.","g":{"yogurtcocco":125,"avena":30,"mandorle":12,"zuccasemi":10,"miele":7,"mela":150},"n":{"k":440,"p":11,"c":49,"f":21,"fi":9}},{"t":"Pancake di grano saraceno con mirtilli","min":15,"desc":"Pancake di grano saraceno con mirtilli e miele","ing":["50 g di farina di grano saraceno","80 ml di bevanda di mandorla","1 cucchiaino d'olio per la padella","80 g di mirtilli","1 cucchiaino di miele"],"steps":["Mescola farina e bevanda fino a ottenere una pastella densa ma fluida. Lascia riposare 5 minuti.","Scalda una padella antiaderente unta con pochissimo olio, a fuoco medio-basso.","Versa un cucchiaio di pastella per pancake e cuoci 2 minuti per lato.","Servi con mirtilli e miele."],"g":{"farsaraceno":50,"bevmand":80,"olio":5,"mirtilli":80,"miele":7},"n":{"k":290,"p":7,"c":46,"f":8,"fi":7}},{"t":"Budino di chia al cacao con banana","min":5,"desc":"Budino di chia al cacao con banana e nocciole","ing":["3 cucchiai di semi di chia (30 g)","180 ml di bevanda di mandorla","1 cucchiaino di cacao amaro (5 g)","1 banana","10 nocciole"],"steps":["La sera prima mescola chia, bevanda e cacao in un barattolo.","Dopo 5 minuti rimescola bene, chiudi e metti in frigo.","Al mattino aggiungi la banana a rondelle e le nocciole spezzettate."],"tip":"Va preparato la sera prima. Mettiti un promemoria dopo cena.","g":{"chia":30,"bevmand":180,"cacao":5,"banana":120,"nocciole":15},"n":{"k":390,"p":10,"c":29,"f":21,"fi":17}}],"pranzo":[{"t":"Risotto allo zafferano con piselli","min":25,"desc":"Risotto allo zafferano con piselli","ing":["80 g di riso Carnaroli","100 g di piselli (anche surgelati)","¼ di cipolla","1 bustina di zafferano","500 ml di brodo vegetale caldo","1 cucchiaio e ½ d'olio extravergine","Sale"],"steps":["Trita la cipolla e falla appassire 3 minuti in pentola con l'olio.","Aggiungi il riso e tostalo 2 minuti, mescolando.","Versa un mestolo di brodo alla volta, aspettando che venga assorbito prima del successivo.","Dopo 8 minuti aggiungi i piselli.","Dopo 16–18 minuti in tutto, sciogli lo zafferano in un goccio di brodo e mescolalo al risotto. Aggiusta di sale e lascia riposare 1 minuto."],"tip":"Controlla che il dado o il brodo pronto siano senza glutine.","g":{"risobianco":80,"piselli":100,"cipolla":30,"zafferano":0.1,"olio":15},"n":{"k":510,"p":11,"c":74,"f":16,"fi":7}},{"t":"Pasta di mais con pomodorini e olive","min":15,"desc":"Pasta di mais con pomodorini, olive e basilico","ing":["100 g di pasta di mais","200 g di pomodorini","10 olive (20 g)","Qualche foglia di basilico","1 spicchio d'aglio","1 cucchiaio e ½ d'olio extravergine, sale"],"steps":["Metti a bollire l'acqua salata.","Taglia i pomodorini a metà e saltali in padella con olio e aglio per 5 minuti.","Aggiungi le olive tagliate a rondelle.","Cuoci la pasta di mais per il tempo della confezione, assaggiandola: passa in fretta da cruda a scotta.","Scolala e saltala nel sugo con il basilico."],"g":{"pastamais":100,"pomodoro":200,"olive":20,"basilico":5,"aglio":3,"olio":15},"n":{"k":560,"p":9,"c":82,"f":20,"fi":6}},{"t":"Bowl di quinoa con tofu marinato","min":25,"desc":"Bowl di quinoa con tofu marinato, carota, cavolo e sesamo","ing":["70 g di quinoa","120 g di tofu","1 carota","1 manciata di cavolo cappuccio","1 cucchiaio di tamari","1 cucchiaino di semi di sesamo","1 cucchiaio d'olio"],"steps":["Sciacqua la quinoa e cuocila 12–15 minuti in doppio volume d'acqua salata.","Taglia il tofu a cubetti e lascialo 10 minuti nel tamari.","Rosolalo in padella con l'olio per 6–8 minuti, finché è dorato.","Grattugia la carota e taglia il cavolo a strisce sottili.","Componi la bowl e completa con il sesamo."],"g":{"quinoa":70,"tofu":120,"carota":80,"cavolo":80,"tamari":15,"sesamo":5,"olio":10},"n":{"k":610,"p":35,"c":50,"f":27,"fi":13}},{"t":"Patate al forno con cannellini e rosmarino","min":40,"desc":"Patate al forno con fagioli cannellini, rosmarino e insalata","ing":["300 g di patate","200 g di fagioli cannellini cotti","1 rametto di rosmarino","1 spicchio d'aglio","1 cucchiaio e ½ d'olio extravergine, sale","Insalata verde"],"steps":["Accendi il forno a 200 °C.","Taglia le patate a spicchi, condiscile con metà dell'olio, rosmarino e sale e infornale per 30 minuti.","Scalda i cannellini in padella con il resto dell'olio e l'aglio per 5 minuti.","Servi patate e fagioli insieme, con l'insalata."],"g":{"patatina":300,"cannellini":200,"rosmarino":1,"aglio":3,"olio":15,"insalata":80},"n":{"k":660,"p":27,"c":86,"f":16,"fi":20}},{"t":"Spaghetti di riso con verdure e anacardi","min":15,"desc":"Spaghetti di riso saltati con verdure, zenzero e anacardi","ing":["90 g di spaghetti di riso","250 g di verdure (carote, zucchine, peperoni, cavolo)","1 manciata di anacardi (20 g)","1 cucchiaio di tamari","1 cm di zenzero fresco","Succo di ¼ di limone","1 cucchiaio d'olio"],"steps":["Metti gli spaghetti di riso in acqua bollente a fuoco spento per il tempo della confezione, poi scolali.","Taglia le verdure a listarelle e saltale 4–5 minuti a fuoco vivace con olio e zenzero grattugiato.","Aggiungi gli spaghetti e il tamari e salta 1 minuto.","Finisci con gli anacardi tostati e il limone."],"g":{"spagriso":90,"verdure":250,"anacardi":20,"tamari":15,"zenzero":3,"limone":10,"olio":10},"n":{"k":600,"p":14,"c":89,"f":20,"fi":8}},{"t":"Zuppa di ceci e zucca con crostini","min":30,"desc":"Zuppa di ceci e zucca con crostini di pane senza glutine","ing":["200 g di ceci cotti","250 g di zucca","1 carota","1 rametto di rosmarino","600 ml d'acqua","1 fetta di pane senza glutine","1 cucchiaio e ½ d'olio extravergine, sale"],"steps":["Taglia zucca e carota a cubetti e falle insaporire in pentola con metà dell'olio per 3 minuti.","Aggiungi ceci, rosmarino, acqua e un pizzico di sale e cuoci 20 minuti.","Frulla metà zuppa e rimescolala al resto.","Tosta il pane a cubetti in padella e servilo sopra, con un filo d'olio."],"g":{"ceci":200,"zucca":250,"carota":80,"rosmarino":1,"pane":35,"olio":15},"n":{"k":650,"p":22,"c":76,"f":22,"fi":20}},{"t":"Insalata di lenticchie con verdure grigliate","min":30,"desc":"Insalata di lenticchie con verdure grigliate, rucola e salsa tahina","ing":["70 g di lenticchie secche","1 zucchina","½ peperone","1 cucchiaio di tahina","Succo di ½ limone","1 cucchiaio d'olio extravergine","1 manciata di rucola"],"steps":["Cuoci le lenticchie in acqua non salata per 20–25 minuti, finché sono tenere. Sala a fine cottura e scolale.","Griglia zucchina e peperone a fette, 3–4 minuti per lato.","Mescola tahina, limone, olio e 2 cucchiai d'acqua per la salsa.","Unisci lenticchie, verdure a pezzi e rucola, e condisci."],"g":{"lenticchie":70,"zucchina":200,"peperone":100,"tahina":15,"limone":20,"olio":10,"rucola":40},"n":{"k":500,"p":24,"c":49,"f":20,"fi":14}}],"spuntino":[{"t":"Kiwi e noci","min":2,"desc":"Due kiwi e qualche noce","ing":["2 kiwi","4 gherigli di noce"],"steps":["Taglia i kiwi a metà e mangiali con il cucchiaino.","Accompagnali con le noci."],"g":{"kiwi":140,"noci":20},"n":{"k":220,"p":5,"c":18,"f":14,"fi":6}},{"t":"Edamame al sale","min":6,"desc":"Edamame al vapore con un pizzico di sale","ing":["100 g di edamame (surgelati)","Un pizzico di sale"],"steps":["Cuoci gli edamame 4–5 minuti in acqua bollente.","Scolali e salali leggermente."],"tip":"Ricchi di proteine: ottimi dopo l'allenamento.","g":{"edamame":100},"n":{"k":120,"p":12,"c":4,"f":5,"fi":5}},{"t":"Yogurt di cocco e frutti di bosco","min":2,"desc":"Yogurt di cocco con frutti di bosco","ing":["125 g di yogurt di cocco","80 g di frutti di bosco"],"steps":["Versa lo yogurt in una ciotola e aggiungi i frutti di bosco."],"g":{"yogurtcocco":125,"bosco":80},"n":{"k":140,"p":1,"c":14,"f":8,"fi":4}},{"t":"Arancia e mandorle","min":3,"desc":"Un'arancia e una manciata di mandorle","ing":["1 arancia","15 mandorle"],"steps":["Sbuccia l'arancia e dividila a spicchi.","Mangiala con le mandorle."],"g":{"arancia":200,"mandorle":18},"n":{"k":200,"p":6,"c":21,"f":9,"fi":7}},{"t":"Ceci croccanti al forno","min":25,"desc":"Ceci croccanti al forno con paprika","ing":["120 g di ceci cotti","1 cucchiaino d'olio","Paprika e sale"],"steps":["Accendi il forno a 200 °C.","Sciacqua i ceci e asciugali bene con un canovaccio.","Condiscili con olio, paprika e sale e cuocili in teglia 20–25 minuti, scuotendo a metà.","Lasciali raffreddare: diventano croccanti."],"tip":"Fanne il doppio: si conservano 3 giorni in un barattolo.","g":{"ceci":120,"olio":5,"paprika":1},"n":{"k":240,"p":11,"c":24,"f":8,"fi":9}},{"t":"Frullato verde leggero","min":5,"desc":"Frullato di spinaci, mela e banana","ing":["1 manciata di spinaci (30 g)","1 mela","½ banana","150 ml d'acqua fredda"],"steps":["Frulla tutto per 40 secondi.","Bevilo subito."],"g":{"spinaci":30,"mela":150,"banana":60},"n":{"k":140,"p":2,"c":30,"f":1,"fi":6}},{"t":"Cioccolato fondente e noci","min":1,"desc":"Due quadratini di cioccolato fondente 85% e qualche noce","ing":["2 quadratini di cioccolato fondente 85% (15 g)","2 gherigli di noce"],"steps":["Mangia il cioccolato lentamente, lasciandolo sciogliere in bocca.","Accompagnalo con le noci."],"tip":"Controlla in etichetta che il cioccolato sia senza latte.","g":{"cioccolato":15,"noci":10},"n":{"k":160,"p":3,"c":4,"f":14,"fi":2}}],"cena":[{"t":"Curry di ceci e spinaci con riso basmati","min":30,"desc":"Curry di ceci e spinaci al latte di cocco con riso basmati","ing":["50 g di riso basmati","200 g di ceci cotti","100 g di spinaci","¼ di cipolla","80 ml di latte di cocco","1 cucchiaino di curry","1 cucchiaio d'olio, sale"],"steps":["Cuoci il riso basmati in acqua salata per 10–12 minuti.","Trita la cipolla e falla appassire con l'olio per 3 minuti, poi aggiungi il curry per 1 minuto.","Aggiungi i ceci e il latte di cocco e cuoci 8 minuti.","Unisci gli spinaci e cuoci finché appassiscono, 2 minuti. Aggiusta di sale.","Servi con il riso."],"g":{"risobianco":50,"ceci":200,"spinaci":100,"cipolla":40,"cocco":80,"curry":2,"olio":10},"n":{"k":790,"p":26,"c":86,"f":33,"fi":19}},{"t":"Merluzzo al forno con patate e fagiolini","min":35,"desc":"Merluzzo al forno con patate e fagiolini (versione vegetale: tofu)","ing":["180 g di filetto di merluzzo (oppure 150 g di tofu)","200 g di patate","150 g di fagiolini","1 cucchiaio e ½ d'olio extravergine","Succo di ¼ di limone, prezzemolo, sale"],"steps":["Accendi il forno a 200 °C. Taglia le patate a cubetti, condiscile con metà dell'olio e infornale per 15 minuti.","Aggiungi il merluzzo in teglia con limone, prezzemolo, sale e il resto dell'olio. Cuoci altri 12–15 minuti.","Nel frattempo cuoci i fagiolini in acqua bollente salata per 8 minuti.","Servi tutto insieme."],"g":{"merluzzo":180,"patatina":200,"fagiolini":150,"olio":15,"limone":10,"prezzemolo":2},"n":{"k":480,"p":39,"c":38,"f":17,"fi":8}},{"t":"Chili di fagioli e verdure","min":30,"desc":"Chili di fagioli neri e verdure con riso integrale","ing":["240 g di fagioli neri cotti (1 vasetto)","200 g di pomodori pelati","½ peperone","¼ di cipolla","½ cucchiaino di paprika e di curry","1 cucchiaio d'olio","40 g di riso integrale"],"steps":["Cuoci il riso integrale, oppure usa quello avanzato.","Trita cipolla e peperone e falli appassire con l'olio per 5 minuti.","Aggiungi spezie, pomodori e fagioli e cuoci 15 minuti a fuoco basso.","Servi il chili con il riso."],"g":{"fagioli":240,"pomodoro":200,"peperone":100,"cipolla":40,"paprika":1,"curry":1,"olio":10,"riso":40},"n":{"k":640,"p":28,"c":78,"f":13,"fi":27}},{"t":"Polenta con funghi e spinaci","min":25,"desc":"Polenta con funghi trifolati e spinaci","ing":["70 g di farina di mais per polenta istantanea","300 ml d'acqua","200 g di funghi","100 g di spinaci","1 spicchio d'aglio","1 cucchiaio e ½ d'olio extravergine, sale"],"steps":["Porta a bollore l'acqua salata, versa la farina a pioggia mescolando con la frusta e cuoci per il tempo della confezione, di solito 5–8 minuti.","Intanto trifola i funghi in padella con olio e aglio per 8 minuti.","Aggiungi gli spinaci e cuoci finché appassiscono.","Servi la polenta con le verdure sopra."],"tip":"Controlla che la farina di mais sia certificata senza glutine.","g":{"farmais":70,"funghi":200,"spinaci":100,"aglio":3,"olio":15},"n":{"k":460,"p":15,"c":56,"f":19,"fi":9}},{"t":"Gamberi saltati con zucchine e riso nero","min":25,"desc":"Gamberi saltati con zucchine e riso nero (versione vegetale: tempeh)","ing":["150 g di gamberi sgusciati (oppure 150 g di tempeh)","2 zucchine","50 g di riso nero (cotto in anticipo)","1 spicchio d'aglio","Succo di ¼ di limone","1 cucchiaio d'olio, prezzemolo"],"steps":["Cuoci il riso nero per il tempo della confezione, di solito 35–40 minuti: meglio farlo in anticipo.","Taglia le zucchine a rondelle e saltale con olio e aglio per 5 minuti.","Aggiungi i gamberi e cuoci 3 minuti, finché diventano rosati.","Unisci il riso, il limone e il prezzemolo e salta 1 minuto."],"g":{"gamberi":150,"zucchina":300,"risonero":50,"aglio":3,"limone":10,"olio":10,"prezzemolo":2},"n":{"k":450,"p":38,"c":44,"f":13,"fi":5}},{"t":"Vellutata di zucca e lenticchie rosse","min":30,"desc":"Vellutata di zucca, lenticchie rosse e latte di cocco","ing":["300 g di zucca","60 g di lenticchie rosse","1 carota","50 ml di latte di cocco","700 ml d'acqua","1 cucchiaio d'olio, sale"],"steps":["Taglia zucca e carota a cubetti.","Mettile in pentola con le lenticchie sciacquate, l'acqua e un pizzico di sale e cuoci 20 minuti.","Frulla fino a ottenere una crema liscia.","Aggiungi il latte di cocco e l'olio e scalda 2 minuti."],"g":{"zucca":300,"lenticrosse":60,"carota":80,"cocco":50,"olio":10},"n":{"k":510,"p":19,"c":56,"f":22,"fi":10}},{"t":"Bowl di miglio, verdure arrosto e hummus","min":35,"desc":"Bowl di miglio con verdure arrosto, hummus e semi di zucca","ing":["60 g di miglio","300 g di verdure (zucchine, peperoni, melanzane, cipolla)","4 cucchiai di hummus (60 g)","1 cucchiaio di semi di zucca","1 cucchiaio d'olio, sale"],"steps":["Accendi il forno a 200 °C. Taglia le verdure a pezzi, condiscile con olio e sale e arrostiscile 25 minuti.","Sciacqua il miglio, tostalo 2 minuti e cuocilo coperto con 180 ml d'acqua salata per 15 minuti a fuoco basso.","Componi la bowl con miglio, verdure, hummus e semi di zucca."],"g":{"miglio":60,"verdure":300,"hummus":60,"zuccasemi":10,"olio":10},"n":{"k":550,"p":18,"c":55,"f":24,"fi":16}}]};
+// grammature delle ricette del primo menù (le stesse usate per calorie e macronutrienti), per la spesa
+const REC_G_A={"colazione":[{"avena":50,"bevmand":200,"banana":60,"bosco":80,"chia":10,"noci":20,"miele":7},{"spinaci":40,"banana":120,"mela":75,"burromand":16,"cocco":100,"lino":10,"gallette":18},{"saraceno":50,"bevmand":200,"mela":150,"noci":20,"cannella":1},{"chia":30,"cocco":150,"mango":100,"zuccasemi":10},{"pane":70,"avocado":70,"pomodoro":90,"sesamo":4,"limone":8,"olio":5},{"yogurtcocco":125,"soffiata":30,"kiwi":70,"mirtilli":60,"mandorle":12},{"banana":120,"avena":40,"bevmand":60,"olio":5,"bosco":80,"cannella":1}],"pranzo":[{"pastariso":100,"zucchina":200,"basilico":20,"pinoli":10,"aglio":2,"olio":20,"insalata":80},{"quinoa":70,"ceci":120,"melanzana":150,"peperone":100,"limone":20,"olio":20,"prezzemolo":2},{"riso":60,"lenticrosse":70,"spinaci":50,"aglio":3,"cocco":100,"olio":10,"zenzero":3,"curry":2},{"pastasar":100,"broccoli":300,"olio":20,"aglio":3,"peperoncino":1},{"risonero":60,"edamame":80,"avocado":70,"carota":80,"cavolo":50,"tahina":15,"limone":20,"sesamo":3},{"pastaleg":80,"melanzana":150,"pomodoro":300,"olio":20,"aglio":3,"basilico":5},{"miglio":70,"funghi":250,"olio":20,"finocchio":250,"limone":20,"prezzemolo":3,"aglio":3}],"spuntino":[{"mela":150,"mandorle":18},{"hummus":45,"carota":80,"sedano":40},{"banana":120,"burromand":16,"cannella":1},{"bosco":100,"noci":20},{"gallette":18,"avocado":70,"limone":5},{"pera":170,"brasile":10},{"datteri":40,"nocciole":15}],"cena":[{"salmone":150,"patata":250,"broccoli":200,"olio":10,"limone":15},{"lenticchie":80,"carota":80,"sedano":40,"pomodoro":100,"olio":15,"rucola":50,"limone":10,"aglio":3},{"tofu":150,"verdure":300,"olio":10,"tamari":15,"riso":40,"aglio":3,"zenzero":3},{"branzino":150,"verdure":300,"limone":15,"olio":10,"prezzemolo":2,"aglio":3},{"fagioli":240,"avena":30,"olio":10,"insalata":100,"avocado":70,"pomodoro":60,"curry":1,"prezzemolo":2},{"verdure":400,"ceci":120,"olio":15,"prezzemolo":2},{"quinoa":70,"zucca":200,"ceci":120,"cavolonero":60,"olio":20,"limone":20}]};
+
+// unisce i due menù: indici 0–6 primo menù, 7–13 secondo
+["colazione","pranzo","spuntino","cena"].forEach(m=>{
+  RECIPES[m].forEach((r,i)=>{r.desc=MEALS[m][i];r.g=REC_G_A[m][i]});
+  RECIPES_B[m].forEach(r=>RECIPES[m].push(r));
+});
 const MEAL_LABEL={colazione:"Colazione",pranzo:"Pranzo",spuntino:"Spuntino",cena:"Cena"};
 
-// lista della spesa per 1 persona e 7 giorni: [id, nome, quantità, a cosa serve]
-const SHOP=[
-  ["Frutta",[
-    ["banane","Banane","5","colazioni di lun, mar, dom · spuntino mer"],
-    ["mele","Mele","3","frullato mar, porridge mer, spuntino lun"],
-    ["bosco","Frutti di bosco (anche surgelati)","400 g","colazioni lun e dom · spuntino gio"],
-    ["mirtilli","Mirtilli","125 g","colazione sab"],
-    ["kiwi","Kiwi","2","colazione sab"],
-    ["mango","Mango","1","colazione gio"],
-    ["pera","Pera","1","spuntino sab"],
-    ["limoni","Limoni","3","acqua e limone, quinoa di mar"],
-    ["avocado","Avocado","2","colazione, pranzo, spuntino e cena di ven"],
-    ["datteri","Datteri","1 confezione","spuntino dom"]]],
-  ["Verdura ed erbe",[
-    ["spinaci","Spinaci","150 g","frullato mar, curry mer"],
-    ["zucchine","Zucchine","2","pranzo lun"],
-    ["broccoli","Broccoli","2","pranzo gio, cena lun"],
-    ["melanzane","Melanzane","1","pranzi mar e sab"],
-    ["peperoni","Peperoni","1","verdure grigliate mar"],
-    ["pomodorini","Pomodorini","250 g","colazione ven"],
-    ["pomodori","Pomodori maturi","4","pranzo sab"],
-    ["carote","Carote","6","bowl ven, hummus mar, minestrone"],
-    ["sedano","Sedano","1 cespo","spuntino mar, succo del mattino"],
-    ["cavolo","Cavolo cappuccio","¼","bowl ven"],
-    ["cavolonero","Cavolo nero","1 mazzo","cena dom"],
-    ["zucca","Zucca","400 g","cena dom"],
-    ["patata","Patata dolce","1","cena lun"],
-    ["funghi","Funghi","250 g","pranzo dom"],
-    ["finocchi","Finocchi","2","insalata dom"],
-    ["insalata","Insalata verde e rucola","2 buste","pranzo lun, cena mar"],
-    ["stagione","Verdure di stagione","1,5 kg","cartoccio gio, tofu mer, minestrone sab"],
-    ["erbe","Basilico, prezzemolo, zenzero","1 mazzo/pezzo","pesto, funghi, tofu"],
-    ["aglio","Aglio e peperoncino","q.b.","pranzo gio"]]],
-  ["Cereali senza glutine",[
-    ["avena","Fiocchi d'avena senza glutine (certificati)","250 g","colazioni lun e dom"],
-    ["saraceno","Grano saraceno in chicchi","100 g","porridge mer"],
-    ["quinoa","Quinoa","200 g","pranzo mar, cena dom"],
-    ["soffiata","Quinoa soffiata","1 confezione","colazione sab"],
-    ["riso","Riso integrale","250 g","pranzo e cena mer"],
-    ["risonero","Riso nero","80 g","bowl ven"],
-    ["miglio","Miglio","80 g","pranzo dom"],
-    ["pastariso","Pasta di riso integrale","100 g","pranzo lun"],
-    ["pastasar","Pasta di grano saraceno","100 g","pranzo gio"],
-    ["pastaleg","Pasta di legumi","80 g","pranzo sab"],
-    ["pane","Pane senza glutine","1 confezione","colazione ven"],
-    ["gallette","Gallette di riso","1 confezione","colazione mar, spuntino ven"]]],
-  ["Legumi, pesce e proteine",[
-    ["ceci","Ceci cotti","3 vasetti","pranzo mar, cene sab e dom"],
-    ["lenticrosse","Lenticchie rosse","100 g","curry mer"],
-    ["lenticchie","Lenticchie","100 g","zuppa mar"],
-    ["fagioli","Fagioli neri cotti","1 vasetto","burger ven"],
-    ["edamame","Edamame","100 g","bowl ven"],
-    ["tofu","Tofu","200 g","cena mer"],
-    ["hummus","Hummus","1 vaschetta","spuntino mar"],
-    ["salmone","Salmone (o tempeh)","1 filetto","cena lun"],
-    ["branzino","Branzino (o ceci in più)","1","cena gio"]]],
-  ["Frutta secca e semi",[
-    ["noci","Noci","100 g","colazioni, spuntini gio e sab"],
-    ["mandorle","Mandorle","100 g","colazione sab, spuntino lun"],
-    ["nocciole","Nocciole","50 g","spuntino dom"],
-    ["brasile","Noci del Brasile","3","spuntino sab"],
-    ["pinoli","Pinoli","30 g","pesto lun"],
-    ["chia","Semi di chia","60 g","colazioni lun e gio"],
-    ["lino","Semi di lino","30 g","frullato mar"],
-    ["zuccasemi","Semi di zucca","30 g","colazione gio"],
-    ["sesamo","Semi di sesamo","20 g","colazione ven"],
-    ["burromand","Burro di mandorle","1 vasetto","frullato mar, spuntino mer"],
-    ["tahina","Tahina","1 vasetto","bowl ven"]]],
-  ["Alternative vegetali",[
-    ["bevmand","Bevanda di mandorla","1 l","colazione lun, porridge"],
-    ["cocco","Latte di cocco","1 lattina","frullato mar, budino gio"],
-    ["yogurt","Yogurt di cocco","1 vasetto","colazione sab"]]],
-  ["Dispensa",[
-    ["olio","Olio extravergine d'oliva","se manca","tutti i giorni"],
-    ["miele","Miele","se manca","colazione lun"],
-    ["spezie","Cannella e curry","se mancano","porridge mer, curry mer, burger ven"],
-    ["tamari","Tamari (salsa di soia senza glutine)","1 bottiglietta","tofu mer"]]]
-];
 
 // p = schema respiratorio [inspira, trattieni, espira, pausa] in secondi
 const MEDS=[
@@ -1023,7 +994,7 @@ function buildDay(d){
   if(FW){colazAt=FW;lunchAt=FW+180;snackAt=FW+330;cenaAt=FW+450;trainAt=FW+90;
     if(P.slot==="sera"){snackAt=FW+300;trainAt=FW+360}}   // la sera: spuntino e allenamento prima, la cena resta libera
   const woDur=Math.round(wo.dur[lvl]*(I.week===3?.85:1));
-  const R={colazione:recipeFor("colazione",I.wd),pranzo:recipeFor("pranzo",I.wd),spuntino:recipeFor("spuntino",I.wd),cena:recipeFor("cena",I.wd)};
+  const R={colazione:recipeFor("colazione",d),pranzo:recipeFor("pranzo",d),spuntino:recipeFor("spuntino",d),cena:recipeFor("cena",d)};
   const tasks=[
     {id:"wake",t:W,kind:"rituale",title:"Risveglio da campione",dur:3,seq:RITUAL,
       sum:"3 minuti guidati: acqua, respiri alla finestra, gratitudine. Poi telefono a faccia in giù: per 30 minuti niente social, mail e notizie.",
@@ -1121,20 +1092,29 @@ const VEG_ALT={
      steps:["Accendi il forno a 190 °C. Taglia le verdure sottili, condiscile con metà dell'olio, sale e limone e chiudile in un cartoccio: 20 minuti.","Schiaccia i ceci con una forchetta, unisci avena, prezzemolo e sale e lascia riposare 10 minuti.","Forma 2 burger e cuocili in padella con il resto dell'olio, 4 minuti per lato.","Servi i burger con le verdure."],
      n:{k:680,p:28,c:71,f:23,fi:27}}
 };
+Object.assign(VEG_ALT,{"8":{"t":"Tofu al forno con patate e fagiolini","min":35,"desc":"Tofu al forno con patate e fagiolini","ing":["150 g di tofu","200 g di patate","150 g di fagiolini","1 cucchiaio e ½ d'olio extravergine","1 cucchiaio di tamari","Succo di ¼ di limone"],"steps":["Accendi il forno a 200 °C. Taglia le patate a cubetti, condiscile con metà dell'olio e infornale per 15 minuti.","Taglia il tofu a cubetti, condiscilo con tamari e il resto dell'olio e aggiungilo in teglia per altri 15 minuti.","Cuoci i fagiolini in acqua bollente salata per 8 minuti.","Servi con un filo di limone."],"g":{"tofu":150,"patatina":200,"fagiolini":150,"olio":15,"tamari":15,"limone":10},"n":{"k":560,"p":34,"c":40,"f":29,"fi":12}},"11":{"t":"Tempeh saltato con zucchine e riso nero","min":25,"desc":"Tempeh saltato con zucchine e riso nero","ing":["150 g di tempeh","2 zucchine","50 g di riso nero (cotto in anticipo)","1 spicchio d'aglio","1 cucchiaio di tamari","1 cucchiaio d'olio"],"steps":["Cuoci il riso nero per il tempo della confezione, meglio in anticipo.","Taglia il tempeh a cubetti e rosolalo con l'olio per 6 minuti.","Aggiungi le zucchine a rondelle e l'aglio e salta 5 minuti.","Unisci riso e tamari e salta 1 minuto."],"g":{"tempeh":150,"zucchina":300,"risonero":50,"aglio":3,"tamari":15,"olio":10},"n":{"k":620,"p":40,"c":55,"f":29,"fi":5}}});
+VEG_ALT[0].g={"tempeh":150,"patata":250,"broccoli":200,"olio":15,"limone":15,"tamari":10};VEG_ALT[3].g={"ceci":240,"avena":20,"olio":15,"verdure":300,"limone":15,"prezzemolo":2};
+VEG_ALT[0].desc="Tempeh al forno con broccoli al vapore e patata dolce";VEG_ALT[3].desc="Burger di ceci con verdure di stagione al cartoccio";
 const BOOST={
-  spuntino:{ing:"+ 150 g di yogurt di soia bianco",n:{k:80,p:6,c:3,f:3,fi:1}},
-  cena:{ing:"+ 100 g di edamame (o tofu) in più",n:{k:120,p:12,c:4,f:5,fi:5}}
+  spuntino:{ing:"+ 150 g di yogurt di soia bianco",n:{k:80,p:6,c:3,f:3,fi:1},g:{yogsoia:150}},
+  cena:{ing:"+ 100 g di edamame (o tofu) in più",n:{k:120,p:12,c:4,f:5,fi:5},g:{edamame:100}}
 };
-function mealIdx(m,wd){const v=S.swaps[wd+"-"+m];return v===undefined?wd:v}
-function rawRecipe(m,wd){
-  const idx=mealIdx(m,wd);
-  let r=RECIPES[m][idx];
-  r=Object.assign({},r,{desc:MEALS[m][idx]});
-  if(m==="cena"&&S.profile.veg&&VEG_ALT[idx])r=Object.assign({},VEG_ALT[idx]);
-  if(S.profile.protein&&BOOST[m]){const b=BOOST[m],n={};for(const x in r.n)n[x]=r.n[x]+b.n[x];r=Object.assign({},r,{ing:r.ing.concat([b.ing]),n,boost:true})}
+// il menù cambia ogni lunedì e gira su 4 settimane: primo menù, secondo menù, poi gli stessi con i piatti in giorni diversi
+function monOf(d){return addDays(d,-((d.getDay()+6)%7))}
+function menuWeek(d){return Math.floor(diffDays(monOf(parseKey(S.profile.start)),monOf(d))/7)}
+function menuNum(d){return((menuWeek(d)%4)+4)%4}
+function defaultIdx(m,d){const n=menuNum(d),wd=(d.getDay()+6)%7;return(n%2)*7+(wd+(n>=2?3:0))%7}
+// piatto cambiato: vale solo per quel giorno
+function mealIdx(m,d){const v=S.swaps[key(d)+"|"+m];return v===undefined?defaultIdx(m,d):v}
+function rawRecipe(m,d){
+  const idx=mealIdx(m,d);
+  let r=Object.assign({},RECIPES[m][idx],{idx});
+  if(m==="cena"&&S.profile.veg&&VEG_ALT[idx])r=Object.assign({},VEG_ALT[idx],{idx});
+  if(S.profile.protein&&BOOST[m]){const b=BOOST[m],n={},g=Object.assign({},r.g);for(const x in r.n)n[x]=r.n[x]+b.n[x];for(const k in b.g)g[k]=(g[k]||0)+b.g[k];
+    r=Object.assign({},r,{ing:r.ing.concat([b.ing]),n,g,boost:true})}
   return r;
 }
-function swapCount(){return Object.keys(S.swaps).filter(k=>S.swaps[k]!==+k.split("-")[0]).length}
+function recipeName(m,i){return(m==="cena"&&S.profile.veg&&VEG_ALT[i])?VEG_ALT[i].t:RECIPES[m][i].t}
 
 /* ---------- SERIE CON JOLLY ---------- */
 // un giorno non vinto a settimana non interrompe la serie, se il giorno prima era vinto
@@ -1470,15 +1450,15 @@ let altOpen=null,altSize=1;
 function altOf(k,id){return S.alt[k]&&S.alt[k][id]}
 function altKcal(id,a){return ALT_KCAL[MEAL_OF[id]][a.size]}
 function mealSwitchHTML(x){
-  const m=MEAL_OF[x.id],wd=(sel.getDay()+6)%7,cur=mealIdx(m,wd),k=key(sel),a=altOf(k,x.id);
+  const m=MEAL_OF[x.id],wd=(sel.getDay()+6)%7,cur=mealIdx(m,sel),def=defaultIdx(m,sel),k=key(sel),a=altOf(k,x.id);
   if(a)return '<div class="altbox done"><div><span class="chip k-cibo">Modificato</span><p style="margin:4px 0 0"><b>'+esc(a.text)+"</b> · porzione "+ALT_SIZE[a.size]+" · circa "+altKcal(x.id,a)+' kcal (stima)</p></div><div class="btnrow"><button type="button" class="btn btn-ghost" data-altundo="'+x.id+'">Annulla la modifica</button></div></div>';
   if(altOpen===x.id)return '<div class="altbox"><div class="field"><label for="alt-text">Cosa hai mangiato?</label><input id="alt-text" maxlength="80" placeholder="Es. pizza margherita, insalata con pollo" autocomplete="off"></div>'+
     '<div class="field"><label id="l-alts">Porzione</label><div class="seg" role="group" aria-labelledby="l-alts">'+ALT_SIZE.map((s,i)=>'<button type="button" data-altsize="'+i+'" aria-pressed="'+(altSize===i)+'">'+s[0].toUpperCase()+s.slice(1)+" · ~"+ALT_KCAL[m][i]+" kcal</button>").join("")+"</div></div>"+
     '<div class="btnrow"><button type="button" class="btn btn-court" data-altsave="'+x.id+'">Salva e segna come fatto</button><button type="button" class="btn btn-ghost" data-altcancel="1">Annulla</button></div>'+
     '<p class="note" style="margin:0">Non conta come pasto saltato: la serie resta. Le calorie sono una stima per tenere realistico il totale della giornata.</p></div>';
-  const opts=RECIPES[m].map((o,i)=>{const t=(m==="cena"&&S.profile.veg&&VEG_ALT[i])?VEG_ALT[i].t:o.t;return '<option value="'+i+'"'+(i===cur?" selected":"")+">"+esc(t)+(i===wd?" (piatto del giorno)":"")+"</option>"}).join("");
-  return '<div class="altbox"><div class="field"><label for="tsw-'+m+'">Cambia piatto <small style="font-weight:500;color:var(--muted)">· vale per ogni '+DAYNAMES[wd].toLowerCase()+"</small></label>"+
-    '<select id="tsw-'+m+'" data-swap="'+wd+"-"+m+'">'+opts+"</select></div>"+
+  const opts=RECIPES[m].map((o,i)=>'<option value="'+i+'"'+(i===cur?" selected":"")+">"+esc(recipeName(m,i))+(i===def?" (in menù)":"")+"</option>").join("");
+  return '<div class="altbox"><div class="field"><label for="tsw-'+m+'">Cambia piatto <small style="font-weight:500;color:var(--muted)">· solo per oggi</small></label>'+
+    '<select id="tsw-'+m+'" data-swap="'+key(sel)+"|"+m+'">'+opts+"</select></div>"+
     '<div class="btnrow"><button type="button" class="btn btn-sec" data-altopen="'+x.id+'">Ho mangiato altro</button></div></div>';
 }
 // calorie dei pasti già fatti oggi: ricetta se seguita, stima se cambiata
@@ -1670,7 +1650,7 @@ function macroHTML(n,label){
 const ACTS=[[1.2,"Sedentario","lavoro seduto, poco movimento oltre al piano"],[1.375,"Leggero","il piano di Match Point Coach e poco altro"],[1.55,"Moderato","il piano più sport o un lavoro in piedi"],[1.725,"Intenso","allenamenti duri quasi ogni giorno"]];
 const GOALS=[[-.15,"Perdere peso"],[0,"Mantenere"],[.1,"Aumentare massa"]];
 function nutriCfg(){return Object.assign({mode:"base",sex:"m",age:35,weight:75,height:175,act:1,goal:1,kcal:2200},S.profile.nutri||{})}
-function baseDay(wd){const t={k:0,p:0,c:0,f:0,fi:0};["colazione","pranzo","spuntino","cena"].forEach(m=>{const n=rawRecipe(m,wd).n;for(const x in t)t[x]+=n[x]});return t}
+function baseDay(d){const t={k:0,p:0,c:0,f:0,fi:0};["colazione","pranzo","spuntino","cena"].forEach(m=>{const n=rawRecipe(m,d).n;for(const x in t)t[x]+=n[x]});return t}
 // Mifflin-St Jeor × attività × obiettivo
 function calcTarget(c){
   const bmr=10*c.weight+6.25*c.height-5*c.age+(c.sex==="f"?-161:5);
@@ -1682,8 +1662,8 @@ function target(){
   if(c.mode==="manual")return +c.kcal>0?Math.max(1200,Math.min(5000,+c.kcal)):null;
   return null;
 }
-function dayFactor(wd){const t=target();if(!t)return 1;return Math.min(2,Math.max(.6,t/baseDay(wd).k))}
-function weekFactor(){const t=target();if(!t)return 1;let b=0;for(let i=0;i<7;i++)b+=baseDay(i).k;return Math.min(2,Math.max(.6,t*7/b))}
+function dayFactor(d){const t=target();if(!t)return 1;return Math.min(2,Math.max(.6,t/baseDay(d).k))}
+function thisWeek(){const m=monOf(today());return[0,1,2,3,4,5,6].map(i=>addDays(m,i))}
 function fmtNum(x){return String(Math.round(x*100)/100).replace(".",",")}
 function fracStr(v){
   const w=Math.floor(v+1e-9),r=Math.round((v-w)*4)/4,F={0.25:"¼",0.5:"½",0.75:"¾"};
@@ -1721,21 +1701,12 @@ function scaleText(str,f){
   });
 }
 function scaleNutri(n,f){return{k:Math.round(n.k*f/10)*10,p:Math.round(n.p*f),c:Math.round(n.c*f),f:Math.round(n.f*f),fi:Math.round(n.fi*f)}}
-function recipeFor(m,wd){
-  const r=rawRecipe(m,wd),f=dayFactor(wd);
+function recipeFor(m,d){
+  const r=rawRecipe(m,d),f=dayFactor(d);
   if(f===1)return r;
   return Object.assign({},r,{ing:r.ing.map(i=>scaleText(i,f)),n:scaleNutri(r.n,f),f});
 }
-function dayNutri(wd){const t={k:0,p:0,c:0,f:0,fi:0};["colazione","pranzo","spuntino","cena"].forEach(m=>{const n=recipeFor(m,wd).n;for(const x in t)t[x]+=n[x]});return t}
-function scaleShopQty(q,f){
-  if(f===1||/se manc|q\.b\./.test(q))return q;
-  const PL={confezione:"confezioni",vasetto:"vasetti",vaschetta:"vaschette",bottiglietta:"bottigliette",lattina:"lattine",busta:"buste",mazzo:"mazzi",cespo:"cespi"};
-  if(/confezion|vasett|vaschett|bottigliett|lattin|mazzo|cespo|bust/.test(q))
-    return q.replace(/^(\d+)\s+(\S+)/,(a,n,w)=>{const m=Math.max(1,Math.ceil(+n*f-.15));return m+" "+(m>1&&PL[w]?PL[w]:w)});
-  // frutta e verdura a pezzi: si comprano interi
-  if(/^\d+$/.test(q.trim()))return String(Math.max(1,Math.ceil(+q*f-.15)));
-  return scaleText(q,f);
-}
+function dayNutri(d){const t={k:0,p:0,c:0,f:0,fi:0};["colazione","pranzo","spuntino","cena"].forEach(m=>{const n=recipeFor(m,d).n;for(const x in t)t[x]+=n[x]});return t}
 function recipeHTML(r,eat){
   return '<div class="recipe">'+macroHTML(r.n,r.f?"la tua porzione":"")+'<div class="rec-h"><span class="eyebrow">Ingredienti · '+(r.f?"dosi ×"+fmtNum(r.f):"1 persona")+'</span><span class="mono rec-min">'+r.min+' min</span></div>'+
     '<ul class="ing">'+r.ing.map(i=>"<li>"+esc(i)+"</li>").join("")+'</ul>'+
@@ -1759,7 +1730,7 @@ function renderWeek(){
   for(let i=0;i<7;i++){
     const d=addDays(mon,i),p=buildDay(d),pc=pctOf(d);
     h+='<button class="wday'+(isToday(d)?" is-today":"")+'" data-day="'+key(d)+'"><div class="dn">'+DAYNAMES[i].slice(0,3)+'<small>'+d.getDate()+" "+MONTHS[d.getMonth()].slice(0,3)+'</small></div><div class="lines">'+
-      '<span>Allenamento · <b>'+esc(p.wo.name)+'</b></span><span>Mente · <b>'+esc(p.med.name)+" "+p.medMin+"′</b></span><span>Pranzo · <b>"+esc(MEALS.pranzo[i].split(/[,.(]/)[0])+'</b></span>'+
+      '<span>Allenamento · <b>'+esc(p.wo.name)+'</b></span><span>Mente · <b>'+esc(p.med.name)+" "+p.medMin+"′</b></span><span>Pranzo · <b>"+esc(rawRecipe("pranzo",d).t)+'</b></span>'+
       '<div class="bar"><i style="width:'+Math.round(pc*100)+'%"></i></div></div></button>';
   }
   $("weekGrid").innerHTML=h;
@@ -1775,33 +1746,54 @@ function renderRecipes(){
   const mon=addDays(weekSel,-((weekSel.getDay()+6)%7));
   if(recDay===null)recDay=(today().getDay()+6)%7;
   $("recDays").innerHTML=DAYNAMES.map((n,i)=>'<button type="button" data-recday="'+i+'" aria-pressed="'+(i===recDay)+'">'+n.slice(0,3)+"<small>"+addDays(mon,i).getDate()+"</small></button>").join("");
-  const tot=dayNutri(recDay),tg=target(),f=dayFactor(recDay);
-  $("recTotal").innerHTML='<div class="eyebrow">Totale del '+DAYNAMES[recDay].toLowerCase()+'</div>'+macroHTML(tot,"giornata")+
+  const dd=addDays(mon,recDay),tot=dayNutri(dd),tg=target(),f=dayFactor(dd);
+  const mn=menuNum(dd);
+  $("recTotal").innerHTML='<p class="note" style="margin:0"><b>Menù '+(mn%2?"B":"A")+(mn>=2?" con i piatti in giorni diversi":"")+'</b>. Il menù cambia ogni lunedì e gira su 4 settimane: 56 ricette, nessun piatto si ripete prima di 10 giorni.</p>'+
+    '<div class="eyebrow">Totale del '+DAYNAMES[recDay].toLowerCase()+'</div>'+macroHTML(tot,"giornata")+
     (tg?'<p class="note" style="margin:0">Porzioni ×'+fmtNum(f)+' per arrivare al tuo obiettivo di '+tg+' kcal al giorno. Il fattore cambia da un giorno all\'altro perché i menù hanno calorie diverse.'+(f===2||f===.6?" Il fattore è al limite: per un obiettivo così, chiedi a un nutrizionista.":"")+'</p>':
     '<p class="note" style="margin:0">Porzioni base, non adattate a te. Imposta il tuo fabbisogno e le dosi si adattano da sole.</p>')+
     '<div class="btnrow"><button type="button" class="btn btn-sec" id="goNeeds">'+(tg?"Modifica il fabbisogno":"Imposta il fabbisogno")+'</button></div>';
   $("recList").innerHTML=["colazione","pranzo","spuntino","cena"].map((m,j)=>{
-    const r=recipeFor(m,recDay);
-    const cur=mealIdx(m,recDay);
-    const opts=RECIPES[m].map((o,i)=>{const t=(m==="cena"&&S.profile.veg&&VEG_ALT[i])?VEG_ALT[i].t:o.t;return '<option value="'+i+'"'+(i===cur?" selected":"")+">"+esc(t)+(i===recDay?" (piatto del giorno)":" · "+DAYNAMES[i].slice(0,3))+"</option>"}).join("");
+    const r=recipeFor(m,dd);
+    const cur=mealIdx(m,dd),def=defaultIdx(m,dd);
+    const opts=RECIPES[m].map((o,i)=>'<option value="'+i+'"'+(i===cur?" selected":"")+">"+esc(recipeName(m,i))+(i===def?" (in menù)":"")+"</option>").join("");
     return '<details class="rec-card"'+(j===0?" open":"")+'><summary><span class="chip k-cibo">'+MEAL_LABEL[m]+'</span><b>'+esc(r.t)+'</b><span class="mono rec-min">'+r.n.k+" kcal · "+r.min+" min</span></summary>"+
-      '<div class="field swap"><label for="sw-'+m+'">Cambia piatto</label><select id="sw-'+m+'" data-swap="'+recDay+"-"+m+'">'+opts+"</select></div>"+recipeHTML(r)+"</details>";
+      '<div class="field swap"><label for="sw-'+m+'">Cambia piatto <small style="font-weight:500;color:var(--muted)">· solo per questo giorno</small></label><select id="sw-'+m+'" data-swap="'+key(dd)+"|"+m+'">'+opts+"</select></div>"+recipeHTML(r)+"</details>";
   }).join("");
 }
 
 /* ---------- LISTA DELLA SPESA ---------- */
 function weekKey(){return key(addDays(weekSel,-((weekSel.getDay()+6)%7)))}
 function shopLog(){return S.shop[weekKey()]||{}}
+// lista della spesa calcolata dai piatti della settimana, con porzioni, piatti cambiati, vegetariano e più proteine
+const MEAL_SHORT={colazione:"colazione",pranzo:"pranzo",spuntino:"spuntino",cena:"cena"};
+function shopQty(k,g){
+  const I=ING[k],up=(v,st)=>Math.ceil(v/st-.001)*st;
+  switch(I[2]){
+    case "pz":{const n=Math.max(1,Math.ceil(g/I[3]-.15));return n+" "+(n===1?I[4]:I[5])}
+    case "vas":{const n=Math.max(1,Math.ceil(g/240-.1));return n+(n===1?" vasetto":" vasetti")+" (240 g sgocciolati)"}
+    case "lat":{const n=Math.max(1,Math.ceil(g/400-.1));return n+(n===1?" lattina":" lattine")+" (400 ml)"}
+    case "ml":return g>=1000?fmtNum(up(g,250)/1000)+" l":up(g,50)+" ml";
+    case "dis":return "se manca (≈ "+up(g,10)+" g in settimana)";
+    case "qb":return "q.b.";
+    default:return "≈ "+(g>=100?up(g,50):up(g,10))+" g";
+  }
+}
 function shopGroups(){
-  let g=SHOP.map(x=>[x[0],x[1].slice()]);
-  if(S.profile.veg){const lp=g.find(x=>x[0].startsWith("Legumi"));lp[1]=lp[1].filter(i=>i[0]!=="salmone"&&i[0]!=="branzino").concat([["tempeh","Tempeh","150 g","cena lun"],["ceci2","Ceci cotti in più","1 vasetto","burger di ceci gio"]])}
-  if(S.profile.protein)g.push(["Più proteine",[["yogsoia","Yogurt di soia bianco","7 vasetti da 150 g","spuntino ogni giorno"],["edam2","Edamame (o tofu)","700 g","cena ogni giorno"]]]);
-  return g;
+  const mon=monOf(weekSel),acc={},use={};
+  for(let i=0;i<7;i++){const d=addDays(mon,i),f=dayFactor(d);
+    ["colazione","pranzo","spuntino","cena"].forEach(m=>{const r=rawRecipe(m,d);for(const k in (r.g||{})){
+      // le noci del Brasile restano 2–3 qualunque sia la porzione
+      acc[k]=(acc[k]||0)+r.g[k]*(k==="brasile"?1:f);(use[k]=use[k]||[]).push(DAYNAMES[i].slice(0,3).toLowerCase()+" "+MEAL_SHORT[m])}})}
+  const groups={};
+  for(const k in acc){const I=ING[k];if(!I)continue;const u=[...new Set(use[k])];
+    (groups[I[1]]=groups[I[1]]||[]).push([k,I[0],shopQty(k,acc[k]),u.length>3?u.slice(0,3).join(" · ")+(u.length===4?" e un'altra volta":" e altre "+(u.length-3)+" volte"):u.join(" · ")])}
+  return SHOP_CATS.filter(c=>groups[c]).map(c=>[c,groups[c].sort((x,y)=>x[1].localeCompare(y[1],"it"))]);
 }
 function renderShop(){
-  const got=shopLog(), hide=$("shopHide").checked, wf=weekFactor(), SHOP=shopGroups();
-  const sc=swapCount();$("shopSwap").hidden=!sc;$("shopSwap").textContent="Hai cambiato "+sc+(sc===1?" piatto":" piatti")+": la lista segue il menù originale. Controlla gli ingredienti dei piatti nuovi nella scheda Ricette.";
-  $("shopFor").textContent=wf===1?"Per 1 persona · 7 giorni":"Dosi ×"+fmtNum(wf)+" sul tuo fabbisogno · 7 giorni";
+  const got=shopLog(), hide=$("shopHide").checked, SHOP=shopGroups();
+  $("shopSwap").hidden=true;
+  $("shopFor").textContent=(target()?"Dosi sul tuo fabbisogno":"Per 1 persona")+" · menù "+(menuNum(weekSel)%2?"B":"A")+" · 7 giorni";
   let tot=0,n=0,h="";
   SHOP.forEach(g=>{
     const items=g[1], gGot=items.filter(i=>got[i[0]]).length;
@@ -1810,7 +1802,7 @@ function renderShop(){
     if(!vis.length)return;
     h+='<div class="shop-group"><h3>'+esc(g[0])+"<span>"+gGot+"/"+items.length+"</span></h3>"+vis.map(i=>
       '<label class="item'+(got[i[0]]?" got":"")+'" for="sh-'+i[0]+'"><input type="checkbox" id="sh-'+i[0]+'" data-shop="'+i[0]+'"'+(got[i[0]]?" checked":"")+'>'+
-      '<span class="nm"><b>'+esc(i[1])+"</b><small>"+esc(i[3])+'</small></span><span class="q">'+esc(scaleShopQty(i[2],wf))+"</span></label>").join("")+"</div>";
+      '<span class="nm"><b>'+esc(i[1])+"</b><small>"+esc(i[3])+'</small></span><span class="q">'+esc(i[2])+"</span></label>").join("")+"</div>";
   });
   if(!h)h='<div class="shop-group"><h3>Spesa completata</h3><p class="note" style="margin:0">Hai tutto. Ora prepara in anticipo riso, quinoa e legumi per la settimana.</p></div>';
   $("shopGroups").innerHTML=h;
@@ -1821,7 +1813,7 @@ function shopMissing(){
   const got=shopLog(),SHOP=shopGroups();
   return "Lista della spesa · Match Point Coach\n"+SHOP.map(g=>{
     const m=g[1].filter(i=>!got[i[0]]);
-    return m.length?"\n"+g[0].toUpperCase()+"\n"+m.map(i=>"- "+i[1]+" ("+scaleShopQty(i[2],weekFactor())+")").join("\n"):"";
+    return m.length?"\n"+g[0].toUpperCase()+"\n"+m.map(i=>"- "+i[1]+" ("+i[2]+")").join("\n"):"";
   }).join("")+"\n";
 }
 
@@ -1853,7 +1845,7 @@ function weightTrend(){
   let num=0,den=0;xs.forEach((x,i)=>{num+=(x-mx)*(ys[i]-my);den+=(x-mx)*(x-mx)});
   return den?num/den*7:null;
 }
-function currentKcal(){const t=target();if(t)return t;let b=0;for(let i=0;i<7;i++)b+=baseDay(i).k;return Math.round(b/7/10)*10}
+function currentKcal(){const t=target();if(t)return t;const w=thisWeek();return Math.round(w.reduce((a,d)=>a+baseDay(d).k,0)/7/10)*10}
 function weightAdvice(){
   const wk=weightTrend(),c=nutriCfg(),goal=c.mode==="base"?1:c.goal;
   const ents=weights();
@@ -2250,7 +2242,8 @@ document.addEventListener("change",e=>{
       setTime(id,fmt(d));toast("Le "+e.target.value+" sono prima della sveglia: ho messo le "+fmt(d)+". Se intendevi altro, cambialo.");return}
     if(S.profile.fast&&(id==="cena"||id==="colaz")){moveFastWindow(id,e.target.value);return}
     setTime(id,e.target.value);const w=timeWarnings(buildDay(today()));toast(w.length?"Orario salvato. Attenzione: "+w[0]:"Orario salvato")}return}
-  if(e.target.dataset&&e.target.dataset.swap){const sw=e.target.dataset.swap,wd=+sw.split("-")[0],v=+e.target.value;if(v===wd)delete S.swaps[sw];else S.swaps[sw]=v;save();renderRecipes();render();toast("Piatto cambiato per ogni "+DAYNAMES[wd].toLowerCase());return}
+  if(e.target.dataset&&e.target.dataset.swap){const sw=e.target.dataset.swap,pt=sw.split("|"),d=parseKey(pt[0]),v=+e.target.value;
+    if(v===defaultIdx(pt[1],d))delete S.swaps[sw];else S.swaps[sw]=v;save();renderRecipes();render();toast("Piatto cambiato per "+(isToday(d)?"oggi":DAYNAMES[(d.getDay()+6)%7].toLowerCase()+" "+d.getDate()));return}
   if(e.target.id==="n-veg"){S.profile.veg=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Menù vegetariano: il pesce diventa tempeh e ceci":"Pesce di nuovo nel menù");return}
   if(e.target.id==="n-fast"){S.profile.fast=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Digiuno 16:8: orari dei pasti aggiornati":"Orari dei pasti normali");return}
   if(e.target.id==="n-fast-start"){if(e.target.value){moveFastWindow(fastAnchor()==="last"?"cena":"colaz",e.target.value)}return}
@@ -2346,13 +2339,13 @@ function renderNeeds(){
   const cc=coffeeCfg();$("n-coffee").checked=cc.on;$("coffeeBox").hidden=!cc.on;$("n-cof-max").value=cc.max;
   if(document.activeElement!==$("n-cof-cut"))$("n-cof-cut").value=cc.cutoff;
   const t=target(),out=$("n-out");
-  let pAvg=0;for(let i=0;i<7;i++)pAvg+=dayNutri(i).p;pAvg=Math.round(pAvg/7);
+  let pAvg=0;thisWeek().forEach(d=>{pAvg+=dayNutri(d).p});pAvg=Math.round(pAvg/7);
   const wl=Object.keys(S.weights).sort().pop(),kg=wl?S.weights[wl]:(c.mode==="calc"?c.weight:null);
   const gk=kg?Math.round(pAvg/kg*10)/10:null;
   const prot='<span>Proteine: circa <b class="mono" style="font-size:.95rem">'+pAvg+' g</b> al giorno'+(gk?" ("+fmtNum(gk)+" g per kg)":"")+'. A chi si allena regolarmente si consigliano in genere 1,2–1,6 g per kg.</span>'+
     (gk&&gk<1.2?'<span class="warn">Sei sotto: '+(S.profile.protein?"aggiungi un legume in più a pranzo.":"attiva «Più proteine».")+"</span>":"");
   if(!t){out.innerHTML=(c.mode==="base"?"Usi le porzioni base delle ricette: circa 1500–2040 kcal al giorno, a seconda del menù.":"Completa i dati per calcolare il fabbisogno.")+prot;return}
-  let lo=9,hi=0;for(let i=0;i<7;i++){const f=dayFactor(i);lo=Math.min(lo,f);hi=Math.max(hi,f)}
+  let lo=9,hi=0;thisWeek().forEach(d=>{const f=dayFactor(d);lo=Math.min(lo,f);hi=Math.max(hi,f)});
   const raw=c.mode==="calc"?calcTarget(c):+c.kcal;
   out.innerHTML='<b class="mono">'+t+'</b> kcal al giorno<span>Porzioni da ×'+fmtNum(lo)+" a ×"+fmtNum(hi)+", a seconda del giorno.</span>"+
     (raw<1200?'<span class="warn">Ho alzato il valore a 1200 kcal: sotto questa soglia serve un professionista.</span>':t<1500?'<span class="warn">Un obiettivo così basso va concordato con medico o nutrizionista.</span>':"")+
@@ -2386,6 +2379,8 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!OV)rende
 
 render();
 loadClips();
+// i vecchi «cambia piatto» valevano per ogni settimana: con il menù a rotazione non hanno più senso
+Object.keys(S.swaps||{}).forEach(k=>{if(k.indexOf("|")<0)delete S.swaps[k]});
 fixSavedTimes();render();
 })();
 </script>
