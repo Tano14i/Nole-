@@ -256,6 +256,28 @@ fieldset.needs legend{font-weight:700;font-size:.9rem;padding:0 6px}
 .wk-ex.cur .ex span:first-child{font-weight:700}
 .wk-ex.done{opacity:.55}
 
+/* la mia voce */
+.vlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.vrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.vrow:last-child{border-bottom:0}
+.vtxt{font-size:.9rem;min-width:0}
+.vrow.has .vtxt{color:var(--muted)}
+.vbtns{display:flex;gap:4px;flex-wrap:nowrap}
+.vbtn{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:7px 10px;font-weight:700;font-size:.82rem;white-space:nowrap}
+.vbtn.rec{background:var(--warn);color:#fff;border-color:var(--warn)}
+
+.altbox{display:flex;flex-direction:column;gap:10px;background:var(--surface-2);border-radius:12px;padding:12px}
+.altbox select,.altbox input{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%}
+.altbox .seg button{font-size:.82rem}
+
+.tlist{display:flex;flex-direction:column}
+.trow{display:grid;grid-template-columns:1fr auto 64px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.trow:last-child{border-bottom:0}
+.trow label{font-size:.9rem;font-weight:600;min-width:0}
+.trow input{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:7px 9px;font-family:var(--f-mono)}
+.trow.inline{border-bottom:1px dashed var(--line);padding:0 0 10px}
+#timesWarn span{display:block}
+
 /* spesa */
 #settSeg button{flex:1 1 0;min-width:0}
 .pane{display:flex;flex-direction:column;gap:16px}
@@ -412,6 +434,7 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
 
     <div class="habits" id="habits"></div>
     <div class="section-h"><h2>Il programma del giorno</h2><span class="eyebrow" id="countLbl">0/9</span></div>
+    <p class="note" id="kcalLine" style="margin:-8px 0 0" hidden></p>
     <ol class="timeline" id="timeline"></ol>
 
     <p class="footer-note">Ispirato alle abitudini che Novak Djokovic ha descritto pubblicamente (dieta senza glutine e latticini, alimentazione in prevalenza vegetale, yoga e flessibilità, meditazione quotidiana). Non è un programma ufficiale né affiliato. Non sostituisce il parere di medico o nutrizionista: con patologie, gravidanza o dubbi, chiedi prima a loro.</p>
@@ -491,6 +514,7 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
       <div class="btnrow"><button type="button" class="btn btn-court" id="vc-test">Ascolta</button><button type="button" class="btn btn-ghost" id="vc-reset">Valori consigliati</button></div>
       <p class="note" id="vc-none" style="margin:0">Hai poche voci italiane. Su Android puoi installarne di più naturali: Impostazioni → Accessibilità → Sintesi vocale → Motore Google → Installa dati vocali → Italiano. Poi riapri questa pagina.</p>
     </div>
+    <div class="phase card-block" id="myVoice"></div>
     <button class="btn btn-go" id="medStart">Inizia la meditazione</button>
   </section>
 
@@ -604,6 +628,13 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
         </div>
         <label class="remitem" for="n-prot"><input type="checkbox" id="n-prot"> Più proteine: yogurt di soia allo spuntino ed edamame a cena (+18 g al giorno)</label>
         <div class="needs-out" id="n-out" aria-live="polite"></div>
+      </fieldset>
+      <fieldset class="needs" id="timesSet">
+        <legend>I tuoi orari</legend>
+        <p class="note" style="margin:0">Gli orari partono dalla sveglia e da quando ti alleni. Puoi cambiarli uno per uno: valgono ogni giorno. «Auto» torna all'orario calcolato.</p>
+        <div id="timesBox" class="tlist"></div>
+        <div class="needs-out" id="timesWarn" aria-live="polite"></div>
+        <div class="btnrow"><button type="button" class="btn btn-ghost" id="timesReset" hidden>Torna a tutti gli orari automatici</button></div>
       </fieldset>
       <div class="field"><label for="f-start">Giorno 1 del programma</label><input id="f-start" type="date"></div>
       <div class="btnrow" id="resetRow">
@@ -955,7 +986,7 @@ function addDays(d,n){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate())
 function diffDays(a,b){return Math.round((parseKey(key(b))-parseKey(key(a)))/864e5)}
 function today(){return parseKey(key(new Date()))}
 
-function defaults(){return{profile:{name:"",wake:"06:30",slot:"mattina",level:0,why:"",start:key(today())},log:{},medMin:{},shop:{},weights:{},journal:{},rem:{on:false,nudge:true,ids:{},dismiss:false},swaps:{},rpe:{},water:{},sleep:{},coffee:{},weekGoal:null,reviewSeen:null,voice:false,lastBackup:null,setup:false,sound:true}}
+function defaults(){return{profile:{name:"",wake:"06:30",slot:"mattina",level:0,why:"",start:key(today())},log:{},medMin:{},shop:{},weights:{},journal:{},rem:{on:false,nudge:true,ids:{},dismiss:false},swaps:{},rpe:{},water:{},sleep:{},coffee:{},alt:{},weekGoal:null,reviewSeen:null,voice:false,lastBackup:null,setup:false,sound:true}}
 let S=(function(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&s.profile)return Object.assign(defaults(),s)}catch(e){}return defaults()})();
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 
@@ -980,11 +1011,16 @@ function buildDay(d){
   const P=S.profile, lvl=+P.level||0, I=dayInfo(d), W=toMin(P.wake), f=WEEKS[I.week].factor;
   const wo=WORKOUTS[I.wd], med=MEDS[I.wd];
   const medMin=MED_MIN[lvl][I.week];
-  let trainAt=P.slot==="pranzo"?W+345:P.slot==="sera"?W+720:W+120;
-  let lunchAt=P.slot==="pranzo"?W+420:W+390,colazAt=W+45,snackAt=W+600,cenaAt=W+810;
+  // pranzo e cena restano in orari normali qualunque sia la sveglia; la cena almeno 2 ore e mezza prima di dormire
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),q15=v=>Math.round(v/15)*15;
+  let colazAt=W+45,lunchAt=clamp(W+390,750,810),cenaAt=Math.min(clamp(W+810,1170,1230),W+960-150);
+  if(P.slot==="pranzo")lunchAt+=30;
+  let snackAt=q15((lunchAt+cenaAt)/2);
+  let trainAt=P.slot==="pranzo"?lunchAt-75:P.slot==="sera"?cenaAt-90:W+120;
   // digiuno 16:8: tutti i pasti in 8 ore; l'allenamento si sposta dentro la finestra, dopo il primo pasto
   const FW=fastWindow();
-  if(FW){colazAt=FW;lunchAt=FW+180;snackAt=FW+330;cenaAt=FW+450;trainAt=P.slot==="sera"?FW+390:FW+90}
+  if(FW){colazAt=FW;lunchAt=FW+180;snackAt=FW+330;cenaAt=FW+450;trainAt=FW+90;
+    if(P.slot==="sera"){snackAt=FW+300;trainAt=FW+360}}   // la sera: spuntino e allenamento prima, la cena resta libera
   const woDur=Math.round(wo.dur[lvl]*(I.week===3?.85:1));
   const R={colazione:recipeFor("colazione",I.wd),pranzo:recipeFor("pranzo",I.wd),spuntino:recipeFor("spuntino",I.wd),cena:recipeFor("cena",I.wd)};
   const tasks=[
@@ -1019,6 +1055,13 @@ function buildDay(d){
       list:["Schermi spenti 30 minuti prima.","Prepara i vestiti per l'allenamento di domani: domattina avrai una scusa in meno.","Metti un bicchiere d'acqua sul comodino: il primo gesto di domani è già pronto.","Stanza fresca, buia e silenziosa.","Punta a 7–8 ore di sonno."],
       micro:"Metti il telefono in carica fuori dalla camera."}
   ];
+  // orari scelti dall'utente: valgono ogni giorno; un orario prima della sveglia è dopo mezzanotte
+  const OT=S.times||{};
+  tasks.forEach(x=>{if(OT[x.id]&&x.id!=="wake"){const m=dayTime(x.id,OT[x.id],W);if(m!==null)x.t=m}});
+  const ce=tasks.find(x=>x.id==="cena");
+  if(ce.t<1020)ce.title=ce.title.replace(/^Cena:/,"Ultimo pasto:");
+  if(FW)ce.sum=ce.sum.replace(/Finisci entro le \d\d:\d\d/,"Finisci entro le "+fmt(ce.t+30));
+  tasks.sort((a,b)=>a.t-b.t);   // la giornata sempre in ordine di orario
   return{info:I,tasks,wo,med,medMin};
 }
 function dayLog(k){return S.log[k]||{}}
@@ -1174,18 +1217,19 @@ const WEAK_TIP={
 function weekStats(){
   const t=today(),st=parseKey(S.profile.start),days=[];
   for(let i=6;i>=0;i--){const d=addDays(t,-i);if(diffDays(st,d)>=0)days.push(d)}
-  const by={},cnt={};let wins=0,wo=0,med=0,meals=0,mealsTot=0,wat=[],slp=[],woMiss=0,cof=0,cofLate=0;
+  const by={},cnt={};let wins=0,wo=0,med=0,meals=0,mealsTot=0,wat=[],slp=[],woMiss=0,cof=0,cofLate=0,alts=0;const altBy={};
   days.forEach(d=>{
     const k=key(d),l=dayLog(k),p=buildDay(d);
     if(won(d))wins++;if(l.train)wo++;else if(!isToday(d))woMiss++;
     med+=S.medMin[k]||0;
     p.tasks.forEach(x=>{by[x.kind]=(by[x.kind]||0)+(l[x.id]?1:0);cnt[x.kind]=(cnt[x.kind]||0)+1;if(x.kind==="cibo"){mealsTot++;if(l[x.id])meals++}});
     if(S.water[k])wat.push(S.water[k]);if(S.sleep[k])slp.push(S.sleep[k]);
+    Object.keys(S.alt[k]||{}).forEach(id=>{alts++;altBy[id]=(altBy[id]||0)+1});
     const cc=S.coffee[k]||[];cof+=cc.length;cofLate+=cc.filter(m=>m>toMin(coffeeCfg().cutoff)).length;
   });
   let weak=null,wp=2;for(const kd in cnt){const p=by[kd]/cnt[kd];if(p<wp){wp=p;weak=kd}}
   const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length*10)/10:null;
-  return{n:days.length,wins,wo,med,mealPct:mealsTot?Math.round(meals/mealsTot*100):0,water:avg(wat),sleep:avg(slp),weak,weakPct:Math.round(wp*100),woMiss,cof:Math.round(cof/Math.max(1,days.length)*10)/10,cofLate};
+  return{n:days.length,wins,wo,med,mealPct:mealsTot?Math.round(meals/mealsTot*100):0,water:avg(wat),sleep:avg(slp),weak,weakPct:Math.round(wp*100),woMiss,cof:Math.round(cof/Math.max(1,days.length)*10)/10,cofLate,alts,altBy};
 }
 function renderReview(){
   const w=weekStats();
@@ -1195,6 +1239,9 @@ function renderReview(){
     "Il punto da migliorare è «"+labelKind(w.weak).toLowerCase()+"» ("+w.weakPct+"% fatto). "+WEAK_TIP[w.weak]);
   if(w.woMiss>=3&&(+S.profile.level||0)>0)tip+=" Hai saltato "+w.woMiss+" allenamenti: prova un livello più basso per due settimane.";
   if(w.sleep!==null&&w.sleep<7)tip+=" Dormi in media meno di 7 ore: il recupero è parte dell'allenamento."+(w.cofLate?" Hai bevuto "+w.cofLate+(w.cofLate===1?" caffè":" caffè")+" dopo le "+coffeeCfg().cutoff+": prova a spostarli prima.":"");
+  if(w.alts)tiles.push([w.alts,w.alts===1?"pasto cambiato":"pasti cambiati"]);
+  const altTop=Object.keys(w.altBy).sort((a,b)=>w.altBy[b]-w.altBy[a])[0];
+  if(altTop&&w.altBy[altTop]>=3)tip+=" Hai cambiato "+MEAL_LABEL[MEAL_OF[altTop]].toLowerCase()+" "+w.altBy[altTop]+" volte: scegli in Ricette un piatto più pratico per quel pasto, così il piano segue la tua vita reale.";
   if(coffeeCfg().on)tiles.push([fmtNum(w.cof),"caffè al giorno"+(w.cofLate?" · "+w.cofLate+" tardi":"")]);
   $("reviewTiles").innerHTML=tiles.map(x=>'<div class="stat"><b>'+x[0]+"</b><span>"+x[1]+"</span></div>").join("");
   $("reviewTip").textContent=tip;
@@ -1228,7 +1275,11 @@ function say(t,calm){
     next(0);
   }catch(e){}
 }
-function speak(t){if(S.voice)say(t,!!(OV&&(OV.med||OV.seq)))}
+function speak(t){
+  // la registrazione dell'utente ha la precedenza sulla sintesi vocale
+  if(S.myVoice!==false&&typeof myClips!=="undefined"&&myClips.has(t)){hush();playClip(t);return}
+  if(S.voice)say(t,!!(OV&&(OV.med||OV.seq)));
+}
 function renderVoices(){
   const box=$("voiceCfg");if(!VOICE_OK){box.hidden=true;return}
   box.hidden=!S.voice;
@@ -1242,7 +1293,7 @@ function renderVoices(){
 }
 function setVoice(patch){S.voiceCfg=Object.assign(voiceCfg(),patch);save();renderVoices()}
 if(VOICE_OK&&"onvoiceschanged" in speechSynthesis)speechSynthesis.onvoiceschanged=()=>{if(view==="medita")renderVoices()};
-function hush(){sayToken++;try{if(VOICE_OK)speechSynthesis.cancel()}catch(e){}}
+function hush(){sayToken++;try{if(VOICE_OK)speechSynthesis.cancel()}catch(e){}if(typeof stopClip==="function")stopClip()}
 
 /* ---------- ALLENAMENTO GUIDATO ---------- */
 const WK_UNIT={"rip":"ripetizioni","per lato":"ripetizioni per lato","per gamba":"ripetizioni per gamba","giri":"giri","sec":"secondi","sec per lato":"secondi per lato","min":"minuti"};
@@ -1330,6 +1381,155 @@ function wkPause(){
   else{OV.paused=true;if(w.end)w.left=Math.max(0,(w.end-Date.now())/1000);$("ovPause").textContent="Riprendi";hush()}
 }
 
+/* ---------- LA MIA VOCE ---------- */
+// frasi fisse che si possono registrare; la chiave è il testo esatto che l'app pronuncia
+const RITUAL_END=["Rituale fatto. Ora la meditazione: telefono giù, ascolta e basta.","Rituale fatto. Buona giornata."];
+const MED_END="Fine. Resta un attimo in silenzio prima di alzarti.";
+function voiceSets(){
+  return[["Rituale del mattino",RITUAL.map(r=>r[0]).concat(RITUAL_END)]]
+    .concat(MEDS.map(m=>[m.name,m.steps]))
+    .concat([[SOS.name,SOS.steps],["Fine della meditazione",[MED_END]]]);
+}
+const REC_OK=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder&&window.indexedDB);
+const myClips=new Map();   // testo → URL dell'audio registrato
+let clipEl=null,recState=null;
+function idb(){
+  return new Promise((ok,ko)=>{const r=indexedDB.open("mpc-voce",1);
+    r.onupgradeneeded=()=>r.result.createObjectStore("clips");r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)});
+}
+async function idbDo(mode,fn){const db=await idb();return new Promise((ok,ko)=>{const tx=db.transaction("clips",mode),st=tx.objectStore("clips"),req=fn(st);
+  tx.oncomplete=()=>ok(req&&req.result);tx.onerror=()=>ko(tx.error)})}
+async function loadClips(){
+  if(!window.indexedDB)return;
+  try{
+    const db=await idb();
+    await new Promise(ok=>{const cur=db.transaction("clips").objectStore("clips").openCursor();
+      cur.onsuccess=()=>{const c=cur.result;if(!c){ok();return}myClips.set(c.key,URL.createObjectURL(c.value));c.continue()};cur.onerror=()=>ok()});
+  }catch(e){}
+  if(view==="medita")renderMyVoice();
+}
+function playClip(t){
+  stopClip();
+  clipEl=new Audio(myClips.get(t));const p=clipEl.play();if(p&&p.catch)p.catch(()=>{});
+}
+function stopClip(){if(clipEl){clipEl.pause();clipEl=null}}
+async function startRec(t,btn){
+  if(recState){stopRec();return}
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})}
+  catch(e){toast("Microfono non disponibile: consenti l'accesso al microfono per questo sito.");return}
+  hush();
+  const rec=new MediaRecorder(stream),chunks=[];
+  recState={rec,stream,t,started:Date.now()};
+  rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+  rec.onstop=async()=>{
+    stream.getTracks().forEach(x=>x.stop());
+    const blob=new Blob(chunks,{type:rec.mimeType||"audio/webm"});recState=null;
+    if(blob.size<1500){toast("Registrazione troppo corta, riprova.");renderMyVoice();return}
+    try{await idbDo("readwrite",st=>st.put(blob,t));if(myClips.has(t))URL.revokeObjectURL(myClips.get(t));myClips.set(t,URL.createObjectURL(blob));
+      toast("Registrata. Tocca ▶ per riascoltarla.")}catch(e){toast("Non riesco a salvare la registrazione sul telefono.")}
+    renderMyVoice();
+  };
+  rec.start();renderMyVoice();
+  recState.timer=setTimeout(()=>{if(recState&&recState.rec===rec)stopRec()},30000);   // massimo 30 secondi a frase
+}
+function stopRec(){if(recState){clearTimeout(recState.timer);try{recState.rec.stop()}catch(e){}}}
+async function delClip(t){
+  try{await idbDo("readwrite",st=>st.delete(t))}catch(e){}
+  if(myClips.has(t))URL.revokeObjectURL(myClips.get(t));myClips.delete(t);renderMyVoice();
+}
+function renderMyVoice(){
+  const box=$("myVoice");if(!box)return;
+  if(!REC_OK||!ENV.site){box.innerHTML='<div class="eyebrow">La mia voce</div><p class="note" style="margin:0">Registrare la tua voce funziona nell\'app installata dal sito, non in questa anteprima.</p>';return}
+  const sets=voiceSets(),all=[...new Set(sets.flatMap(s=>s[1]))],done=all.filter(t=>myClips.has(t)).length;
+  const row=t=>{const rec=recState&&recState.t===t,has=myClips.has(t);
+    return '<li class="vrow'+(has?" has":"")+'"><span class="vtxt">'+esc(t)+'</span><span class="vbtns">'+
+      '<button type="button" class="vbtn'+(rec?" rec":"")+'" data-vrec="'+esc(t)+'" aria-label="'+(rec?"Ferma la registrazione":"Registra questa frase")+'">'+(rec?"■ Stop":"● "+(has?"Rifai":"Registra"))+"</button>"+
+      (has?'<button type="button" class="vbtn" data-vplay="'+esc(t)+'" aria-label="Riascolta">▶</button><button type="button" class="vbtn" data-vdel="'+esc(t)+'" aria-label="Elimina la registrazione">✕</button>':"")+"</span></li>"};
+  const open=box.querySelectorAll("details[open]"),openIdx=[...open].map(d=>d.dataset.i);
+  box.innerHTML='<div class="section-h" style="margin:0"><h2 style="font-size:1.05rem">La mia voce</h2><span class="eyebrow mono">'+done+"/"+all.length+" frasi</span></div>"+
+    '<p class="note" style="margin:0">Registra le frasi con la tua voce: l\'app usa le tue registrazioni dove ci sono e la voce del telefono per il resto. Parla piano, come a un amico, in una stanza silenziosa. Massimo 30 secondi a frase.</p>'+
+    '<label class="remitem" for="myVoiceOn"><input type="checkbox" id="myVoiceOn"'+(S.myVoice!==false?" checked":"")+"> Usa la mia voce dove l'ho registrata</label>"+
+    sets.map((s,i)=>{const n=s[1].filter(t=>myClips.has(t)).length;
+      return '<details class="rec-card" data-i="'+i+'"'+(openIdx.includes(String(i))||(recState&&s[1].includes(recState.t))?" open":"")+'><summary><b>'+esc(s[0])+'</b><span class="mono rec-min">'+n+"/"+s[1].length+'</span></summary><ol class="vlist">'+s[1].map(row).join("")+"</ol></details>"}).join("")+
+    '<p class="note" style="margin:0">Le registrazioni restano solo su questo telefono e non sono incluse nel backup.</p>';
+}
+
+/* ---------- PASTI CAMBIATI ---------- */
+const MEAL_OF={colaz:"colazione",pranzo:"pranzo",snack:"spuntino",cena:"cena"};
+// stima grossolana delle calorie di un pasto fuori piano, per porzione
+const ALT_KCAL={colazione:[300,450,650],pranzo:[450,700,1000],spuntino:[120,200,350],cena:[450,700,1000]};
+const ALT_SIZE=["leggera","normale","abbondante"];
+let altOpen=null,altSize=1;
+function altOf(k,id){return S.alt[k]&&S.alt[k][id]}
+function altKcal(id,a){return ALT_KCAL[MEAL_OF[id]][a.size]}
+function mealSwitchHTML(x){
+  const m=MEAL_OF[x.id],wd=(sel.getDay()+6)%7,cur=mealIdx(m,wd),k=key(sel),a=altOf(k,x.id);
+  if(a)return '<div class="altbox done"><div><span class="chip k-cibo">Modificato</span><p style="margin:4px 0 0"><b>'+esc(a.text)+"</b> · porzione "+ALT_SIZE[a.size]+" · circa "+altKcal(x.id,a)+' kcal (stima)</p></div><div class="btnrow"><button type="button" class="btn btn-ghost" data-altundo="'+x.id+'">Annulla la modifica</button></div></div>';
+  if(altOpen===x.id)return '<div class="altbox"><div class="field"><label for="alt-text">Cosa hai mangiato?</label><input id="alt-text" maxlength="80" placeholder="Es. pizza margherita, insalata con pollo" autocomplete="off"></div>'+
+    '<div class="field"><label id="l-alts">Porzione</label><div class="seg" role="group" aria-labelledby="l-alts">'+ALT_SIZE.map((s,i)=>'<button type="button" data-altsize="'+i+'" aria-pressed="'+(altSize===i)+'">'+s[0].toUpperCase()+s.slice(1)+" · ~"+ALT_KCAL[m][i]+" kcal</button>").join("")+"</div></div>"+
+    '<div class="btnrow"><button type="button" class="btn btn-court" data-altsave="'+x.id+'">Salva e segna come fatto</button><button type="button" class="btn btn-ghost" data-altcancel="1">Annulla</button></div>'+
+    '<p class="note" style="margin:0">Non conta come pasto saltato: la serie resta. Le calorie sono una stima per tenere realistico il totale della giornata.</p></div>';
+  const opts=RECIPES[m].map((o,i)=>{const t=(m==="cena"&&S.profile.veg&&VEG_ALT[i])?VEG_ALT[i].t:o.t;return '<option value="'+i+'"'+(i===cur?" selected":"")+">"+esc(t)+(i===wd?" (piatto del giorno)":"")+"</option>"}).join("");
+  return '<div class="altbox"><div class="field"><label for="tsw-'+m+'">Cambia piatto <small style="font-weight:500;color:var(--muted)">· vale per ogni '+DAYNAMES[wd].toLowerCase()+"</small></label>"+
+    '<select id="tsw-'+m+'" data-swap="'+wd+"-"+m+'">'+opts+"</select></div>"+
+    '<div class="btnrow"><button type="button" class="btn btn-sec" data-altopen="'+x.id+'">Ho mangiato altro</button></div></div>';
+}
+// calorie dei pasti già fatti oggi: ricetta se seguita, stima se cambiata
+function dayEaten(d){
+  const k=key(d),l=dayLog(k),p=buildDay(d);let eaten=0,planned=0,changed=0;
+  p.tasks.filter(x=>x.rec).forEach(x=>{planned+=x.rec.n.k;const a=altOf(k,x.id);if(a){eaten+=altKcal(x.id,a);changed++}else if(l[x.id])eaten+=x.rec.n.k});
+  return{eaten,planned,changed};
+}
+
+/* ---------- ORARI PERSONALIZZATI ---------- */
+// solo diario e luci spente possono andare dopo mezzanotte
+const NIGHT={medpm:1,sleep:1};
+// minuti della giornata per un orario scelto: prima della sveglia vale dopo mezzanotte solo per la sera;
+// per pasti e allenamento è quasi sempre un AM/PM sbagliato (00:00 al posto di 12:00), quindi si legge come pomeriggio
+function dayTime(id,v,W){
+  let m=toMin(v);
+  if(m>=W)return m;
+  if(NIGHT[id])return m+1440;
+  if(m+720>=W&&m+720<1440)return m+720;
+  return null;
+}
+// corregge gli orari salvati con l'AM/PM sbagliato e dice cosa ha cambiato
+function fixSavedTimes(){
+  const OT=S.times||{},W=toMin(S.profile.wake),fixed=[];
+  for(const id in OT){if(NIGHT[id]||id==="wake")continue;const m=toMin(OT[id]);if(m<W){const d=dayTime(id,OT[id],W);
+    if(d===null)delete OT[id];else{fixed.push(TIME_LABEL[id].split(" /")[0]+" "+OT[id]+" → "+fmt(d));OT[id]=fmt(d)}}}
+  if(fixed.length){save();setTimeout(()=>toast("Ho corretto "+fixed.join(", ")+": le 00:00 sono mezzanotte."),400)}
+}
+const TIME_LABEL={medam:"Meditazione del mattino",colaz:"Colazione / primo pasto",train:"Allenamento",pranzo:"Pranzo",snack:"Spuntino",cena:"Cena / ultimo pasto",medpm:"Diario serale",sleep:"Luci spente"};
+function setTime(id,v){S.times=S.times||{};if(v)S.times[id]=v;else delete S.times[id];save();render();if(view==="tu")renderTimes()}
+// avvisi sugli orari: non bloccano, aiutano a scegliere
+function timeWarnings(plan){
+  const w=[],T=plan.tasks,f=x=>fmt(x.t),meals=T.filter(x=>x.rec),tr=T.find(x=>x.id==="train"),sl=T.find(x=>x.id==="sleep"),ce=T.find(x=>x.id==="cena");
+  for(let i=1;i<meals.length;i++){const g=meals[i].t-meals[i-1].t;if(g<120)w.push(MEAL_LABEL[MEAL_OF[meals[i-1].id]]+" ("+f(meals[i-1])+") e "+MEAL_LABEL[MEAL_OF[meals[i].id]].toLowerCase()+" ("+f(meals[i])+") sono a "+g+" minuti: meglio almeno 2 ore.")}
+  meals.forEach(m=>{if(sl&&m.t>sl.t)w.push(MEAL_LABEL[MEAL_OF[m.id]]+" ("+f(m)+") è dopo le luci spente ("+f(sl)+").")});
+  if(ce&&sl&&sl.t-ce.t<150)w.push("La cena ("+f(ce)+") è a meno di 2 ore e mezza dalle luci spente ("+f(sl)+"): la digestione disturba il sonno.");
+  if(tr){const end=tr.t+tr.dur;meals.forEach(m=>{
+    if(m.t>tr.t&&m.t<end)w.push(MEAL_LABEL[MEAL_OF[m.id]]+" ("+f(m)+") cade durante l'allenamento ("+f(tr)+"–"+fmt(end)+").");
+    else if(m.t<=tr.t&&tr.t-m.t<60)w.push("L'allenamento ("+f(tr)+") è a meno di un'ora da "+MEAL_LABEL[MEAL_OF[m.id]].toLowerCase()+" ("+f(m)+").")})}
+  if(tr&&meals.length&&tr.t<meals[0].t&&S.profile.fast)w.push("Ti alleni alle "+f(tr)+", prima del primo pasto ("+f(meals[0])+"): a digiuno va bene per sessioni leggere, ma nei giorni intensi meglio mangiare prima.");
+  if(S.profile.fast&&meals.length){const span=meals[meals.length-1].t+30-meals[0].t;if(span>480)w.push("La finestra dei pasti va dalle "+f(meals[0])+" alle "+fmt(meals[meals.length-1].t+30)+": "+fmtNum(Math.round(span/6)/10)+" ore, oltre le 8 del digiuno 16:8.")}
+  return w;
+}
+function renderTimes(){
+  const box=$("timesBox");if(!box)return;
+  const plan=buildDay(today()),S_=S.times||{};
+  box.innerHTML=plan.tasks.filter(x=>x.id!=="wake").map(x=>'<div class="trow"><label for="tm-'+x.id+'">'+TIME_LABEL[x.id]+(S_[x.id]?' <span class="chip k-mente">tuo</span>':"")+'</label><input type="time" id="tm-'+x.id+'" data-tid="'+x.id+'" value="'+fmt(x.t)+'">'+
+    (S_[x.id]?'<button type="button" class="vbtn" data-treset="'+x.id+'" aria-label="Orario automatico per '+TIME_LABEL[x.id]+'">Auto</button>':'<span></span>')+"</div>").join("");
+  const w=timeWarnings(plan);
+  $("timesWarn").innerHTML=w.length?w.map(t=>'<span class="warn">'+esc(t)+"</span>").join(""):"<span>Orari equilibrati: pasti distanziati, cena lontana dal sonno, allenamento lontano dai pasti.</span>";
+  $("timesReset").hidden=!Object.keys(S_).length;
+}
+function timeRowHTML(x){
+  if(x.id==="wake")return '<p class="note" style="margin:0">L\'orario del risveglio si cambia in Progressi → Ora della sveglia.</p>';
+  return '<div class="trow inline"><label for="tt-'+x.id+'">Orario</label><input type="time" id="tt-'+x.id+'" data-tid="'+x.id+'" value="'+fmt(x.t)+'">'+((S.times||{})[x.id]?'<button type="button" class="vbtn" data-treset="'+x.id+'">Auto</button>':"<span></span>")+"</div>";
+}
+
 /* ---------- UTILITY UI ---------- */
 const $=id=>document.getElementById(id);
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
@@ -1386,6 +1586,8 @@ function render(){
   $("ringPct").textContent=Math.round(pct*100)+"%";
   $("coachLine").textContent=coachLine(sel,plan,pct);
   $("countLbl").textContent=done+"/"+plan.tasks.length+" fatti";
+  const de=dayEaten(sel);$("kcalLine").hidden=!de.eaten;
+  $("kcalLine").textContent="Pasti di oggi: circa "+de.eaten+" kcal su "+de.planned+" previste"+(de.changed?" · "+de.changed+(de.changed===1?" pasto cambiato (stima)":" pasti cambiati (stima)"):"");
 
   // prossima azione
   const nm=nowMin();
@@ -1410,19 +1612,19 @@ function render(){
   // timeline
   const nowIdx=t?plan.tasks.findIndex(x=>!l[x.id]&&x.t+(x.dur||10)>=nm-30):-1;
   $("timeline").innerHTML=plan.tasks.map((x,i)=>{
-    const isDone=!!l[x.id], open=openTask===x.id;
+    const isDone=!!l[x.id], open=openTask===x.id, al=x.rec&&altOf(key(sel),x.id);
     let det="";
     if(open){
       if(x.ex){det='<div class="details"><p class="note" style="margin:0">Tocca un esercizio per vedere come si esegue.</p>'+x.ex.map(e=>exHTML(e,+S.profile.level||0,WEEKS[I.week].factor)).join("")+'<div class="tip">'+esc(x.tip)+'</div>'+startBtn(x)+'</div>'}
       else if(x.id==="medpm")det='<div class="details">'+journalHTML(sel)+startBtn(x)+"</div>";
-      else if(x.rec)det='<div class="details">'+recipeHTML(x.rec,x.eat)+startBtn(x)+"</div>";
+      else if(x.rec)det='<div class="details">'+mealSwitchHTML(x)+(altOf(key(sel),x.id)?"":recipeHTML(x.rec,x.eat)+startBtn(x))+"</div>";
       else det='<div class="details"><ul>'+x.list.map(s=>"<li>"+esc(s)+"</li>").join("")+"</ul>"+startBtn(x)+"</div>";
     }
     return '<li class="task'+(isDone?" done":"")+(i===nowIdx?" now":"")+'">'+
       '<div class="time">'+fmt(x.t)+'</div><div class="body"><div class="card">'+
-      '<button class="expand" data-open="'+x.id+'" aria-expanded="'+open+'"><span class="chip k-'+x.kind+'">'+labelKind(x.kind)+'</span><h3>'+esc(x.title)+'</h3><div class="sum">'+esc(x.sum)+'</div></button>'+
+      '<button class="expand" data-open="'+x.id+'" aria-expanded="'+open+'"><span class="chip k-'+x.kind+'">'+labelKind(x.kind)+'</span><h3>'+esc(al?x.title.split(":")[0]+": "+al.text:x.title)+(al?' <span class="chip k-cibo" style="vertical-align:2px">Modificato</span>':"")+'</h3><div class="sum">'+esc(al?"Al posto di: "+x.rec.t+" · porzione "+ALT_SIZE[al.size]+" · circa "+altKcal(x.id,al)+" kcal (stima)":x.sum)+'</div></button>'+
       '<button class="check" data-check="'+x.id+'" aria-pressed="'+isDone+'" aria-label="'+(isDone?"Segna come da fare: ":"Segna come fatto: ")+esc(x.title)+'">'+(isDone?'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg>':"")+'</button>'+
-      det+'</div></div></li>';
+      det.replace('<div class="details">','<div class="details">'+timeRowHTML(x))+'</div></div></li>';
   }).join("");
 
   if(view==="sett")renderWeek();
@@ -1611,7 +1813,7 @@ function shopMissing(){
 /* ---------- MEDITA ---------- */
 let medSel=null, durSel=null;
 function renderMed(){
-  $("voiceRow").hidden=!VOICE_OK;$("voiceOn").checked=!!S.voice;renderVoices();
+  $("voiceRow").hidden=!VOICE_OK;$("voiceOn").checked=!!S.voice;renderVoices();renderMyVoice();
   const p=buildDay(today());
   if(!medSel)medSel=p.med.id;
   if(!durSel)durSel=p.medMin;
@@ -1855,7 +2057,7 @@ function renderYou(){
   $("f-wake").value=P.wake;
   if(document.activeElement!==$("f-why"))$("f-why").value=P.why;
   $("f-start").value=P.start;
-  renderNeeds();
+  renderNeeds();if(!document.activeElement||!document.activeElement.dataset||!document.activeElement.dataset.tid)renderTimes();
   $("f-slot").innerHTML=SLOTS.map(s=>'<button type="button" data-slot="'+s[0]+'" aria-pressed="'+(P.slot===s[0])+'">'+s[1]+"</button>").join("");
   $("f-level").innerHTML=LEVELS.map((s,i)=>'<button type="button" data-level="'+i+'" aria-pressed="'+(+P.level===i)+'">'+s+"</button>").join("");
 }
@@ -1932,11 +2134,11 @@ function finish(){
     $("ovDone").textContent="Continua";$("ovPause").textContent="Basta così";
     o.state="miniEnd";
   }else if(o.seq){
-    const t=o.next?"Rituale fatto. Ora la meditazione: telefono giù, ascolta e basta.":"Rituale fatto. Buona giornata.";
+    const t=o.next?RITUAL_END[0]:RITUAL_END[1];
     $("ovMsg").textContent=t;speak(t);$("ovDone").textContent=o.next?"Avvia la meditazione":"Fatto";o.state="end";
   }else{
     $("ovMsg").textContent=o.med?"Fine. Resta un attimo in silenzio prima di alzarti.":"Tempo finito. Segna come fatto e passa alla prossima.";
-    if(o.med){$("orbTxt").textContent="Fine";speak("Fine. Resta un attimo in silenzio prima di alzarti.")}
+    if(o.med){$("orbTxt").textContent="Fine";speak(MED_END)}
     o.state="end";
   }
 }
@@ -1967,7 +2169,14 @@ function startTask(id,mini){
 /* ---------- EVENTI ---------- */
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
-  if(b.dataset.check){const k=key(sel);setDone(sel,b.dataset.check,!dayLog(k)[b.dataset.check]);return}
+  if(b.dataset.check){const k=key(sel),id=b.dataset.check,on=!dayLog(k)[id];if(!on&&altOf(k,id))delete S.alt[k][id];setDone(sel,id,on);return}
+  if(b.dataset.altopen){altOpen=b.dataset.altopen;altSize=1;render();setTimeout(()=>{const i=$("alt-text");if(i)i.focus()},30);return}
+  if(b.dataset.altcancel){altOpen=null;render();return}
+  if(b.dataset.altsize!==undefined){altSize=+b.dataset.altsize;const v=$("alt-text")?$("alt-text").value:"";render();if($("alt-text")){$("alt-text").value=v}return}
+  if(b.dataset.altsave){const t=($("alt-text")&&$("alt-text").value||"").trim();if(!t){toast("Scrivi in breve cosa hai mangiato");return}
+    const k=key(sel);S.alt[k]=S.alt[k]||{};S.alt[k][b.dataset.altsave]={text:t,size:altSize};altOpen=null;save();
+    if(!dayLog(k)[b.dataset.altsave])setDone(sel,b.dataset.altsave,true);else render();toast("Registrato. Cambiare piano ogni tanto fa parte del piano.");return}
+  if(b.dataset.altundo){const k=key(sel);if(S.alt[k])delete S.alt[k][b.dataset.altundo];save();render();toast("Modifica annullata: vale di nuovo la ricetta");return}
   if(b.dataset.open){openTask=openTask===b.dataset.open?null:b.dataset.open;render();return}
   if(b.dataset.start){startTask(b.dataset.start,false);return}
   if(b.dataset.day){sel=parseKey(b.dataset.day);openTask=null;switchView("oggi");return}
@@ -1991,6 +2200,11 @@ document.addEventListener("click",e=>{
   if(b.id==="instBannerNo"){S.instDismiss=true;save();render();toast("Le istruzioni restano in Progressi → App e promemoria");return}
   if(b.id==="instBannerBtn"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;render()})}return}
   if(b.id==="instBtn"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;renderApp()})}return}
+  if(b.dataset.vrec!==undefined){if(recState&&recState.t!==b.dataset.vrec){stopRec();return}startRec(b.dataset.vrec,b);return}
+  if(b.dataset.vplay!==undefined){hush();playClip(b.dataset.vplay);return}
+  if(b.dataset.vdel!==undefined){delClip(b.dataset.vdel);toast("Registrazione eliminata");return}
+  if(b.dataset.treset){setTime(b.dataset.treset,null);toast("Orario automatico");return}
+  if(b.id==="timesReset"){S.times={};save();render();renderTimes();toast("Tutti gli orari sono di nuovo automatici");return}
   if(b.dataset.rpe!==undefined){setRpe(+b.dataset.rpe);return}
   if(b.dataset.water){const k=key(sel),n=+b.dataset.water;S.water[k]=(S.water[k]===n?n-1:n);save();renderHabits();if(S.water[k]===8)toast("8 bicchieri: idratazione da campione.");return}
   if(b.dataset.coffee){const k=key(sel),c=coffeeCfg();S.coffee[k]=S.coffee[k]||[];
@@ -2012,7 +2226,13 @@ $("prevDay").onclick=()=>{sel=addDays(sel,-1);openTask=null;$("excuseBox").hidde
 $("nextDay").onclick=()=>{sel=addDays(sel,1);openTask=null;$("excuseBox").hidden=true;render()};
 $("goToday").onclick=()=>{sel=today();openTask=null;render()};
 document.addEventListener("change",e=>{
-  if(e.target.dataset&&e.target.dataset.swap){const sw=e.target.dataset.swap,wd=+sw.split("-")[0],v=+e.target.value;if(v===wd)delete S.swaps[sw];else S.swaps[sw]=v;save();renderRecipes();render();toast("Piatto cambiato");return}
+  if(e.target.dataset&&e.target.dataset.tid){if(e.target.value){
+    const id=e.target.dataset.tid,W=toMin(S.profile.wake),m=toMin(e.target.value);
+    if(!NIGHT[id]&&m<W){const d=dayTime(id,e.target.value,W);
+      if(d===null){toast("Questo orario è prima della sveglia ("+S.profile.wake+"): scegline uno più tardi.");render();if(view==="tu")renderTimes();return}
+      setTime(id,fmt(d));toast("Le "+e.target.value+" sono prima della sveglia: ho messo le "+fmt(d)+". Se intendevi altro, cambialo.");return}
+    setTime(id,e.target.value);const w=timeWarnings(buildDay(today()));toast(w.length?"Orario salvato. Attenzione: "+w[0]:"Orario salvato")}return}
+  if(e.target.dataset&&e.target.dataset.swap){const sw=e.target.dataset.swap,wd=+sw.split("-")[0],v=+e.target.value;if(v===wd)delete S.swaps[sw];else S.swaps[sw]=v;save();renderRecipes();render();toast("Piatto cambiato per ogni "+DAYNAMES[wd].toLowerCase());return}
   if(e.target.id==="n-veg"){S.profile.veg=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Menù vegetariano: il pesce diventa tempeh e ceci":"Pesce di nuovo nel menù");return}
   if(e.target.id==="n-fast"){S.profile.fast=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Digiuno 16:8: orari dei pasti aggiornati":"Orari dei pasti normali");return}
   if(e.target.id==="n-fast-start"){if(e.target.value){S.profile.fastStart=e.target.value;save();renderNeeds();render();toast("Finestra dei pasti aggiornata")}return}
@@ -2020,6 +2240,7 @@ document.addEventListener("change",e=>{
   if(e.target.id==="n-cof-max"){S.profile.coffee=Object.assign(coffeeCfg(),{max:+e.target.value});save();render();return}
   if(e.target.id==="n-cof-cut"){if(e.target.value){S.profile.coffee=Object.assign(coffeeCfg(),{cutoff:e.target.value});save();renderNeeds();render();scheduleReminders()}return}
   if(e.target.id==="n-prot"){S.profile.protein=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Più proteine: +18 g al giorno":"Proteine come da ricetta");return}
+  if(e.target.id==="myVoiceOn"){S.myVoice=e.target.checked;save();toast(e.target.checked?"Uso la tua voce dove l'hai registrata":"Uso solo la voce del telefono");return}
   if(e.target.id==="vc-voice"){setVoice({name:e.target.value});hush();say("Respira lentamente. Sei esattamente dove devi essere.");return}
   if(e.target.id==="voiceOn"){S.voice=e.target.checked;save();renderVoices();if(S.voice)speak("Guida vocale attiva.");else hush();return}
   if(e.target.dataset&&e.target.dataset.rem){S.rem.ids[e.target.dataset.rem]=e.target.checked;save();scheduleReminders();return}
@@ -2084,7 +2305,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&OV)closeOverlay()})
 $("settings").addEventListener("submit",e=>e.preventDefault());
 $("f-name").addEventListener("input",e=>{S.profile.name=e.target.value.trim();S.setup=true;save();render()});
 $("f-why").addEventListener("input",e=>{S.profile.why=e.target.value.trim();S.setup=true;save()});
-$("f-wake").addEventListener("change",e=>{if(e.target.value){S.profile.wake=e.target.value;S.setup=true;save();render();toast("Sveglia alle "+e.target.value+". Orari ricalcolati.")}});
+$("f-wake").addEventListener("change",e=>{if(e.target.value){S.profile.wake=e.target.value;fixSavedTimes();S.setup=true;save();render();toast("Sveglia alle "+e.target.value+". Orari ricalcolati.")}});
 function renderNeeds(){
   const c=nutriCfg();
   $("n-mode").innerHTML=[["base","Porzioni base"],["calc","Calcola"],["manual","Inserisco le kcal"]].map(x=>'<button type="button" data-nmode="'+x[0]+'" aria-pressed="'+(c.mode===x[0])+'">'+x[1]+"</button>").join("");
@@ -2097,7 +2318,7 @@ function renderNeeds(){
   $("n-veg").checked=!!S.profile.veg;$("n-prot").checked=!!S.profile.protein;
   $("n-fast").checked=!!S.profile.fast;$("fastBox").hidden=!S.profile.fast;
   if(document.activeElement!==$("n-fast-start"))$("n-fast-start").value=S.profile.fastStart||"11:00";
-  const FW=fastWindow();$("fastInfo").textContent=FW?"Mangi dalle "+fmt(FW)+" alle "+fmt(FW+480)+". L'allenamento si sposta dentro la finestra, dopo il primo pasto.":"";
+  const FW=fastWindow();$("fastInfo").textContent=FW?"Mangi dalle "+fmt(FW)+" alle "+fmt(FW+480)+". L'allenamento si sposta dentro la finestra, dopo il primo pasto. Gli orari che cambi a mano in «I tuoi orari» hanno la precedenza.":"";
   const cc=coffeeCfg();$("n-coffee").checked=cc.on;$("coffeeBox").hidden=!cc.on;$("n-cof-max").value=cc.max;
   if(document.activeElement!==$("n-cof-cut"))$("n-cof-cut").value=cc.cutoff;
   const t=target(),out=$("n-out");
@@ -2140,5 +2361,7 @@ setInterval(()=>{const k=key(today());if(k!==lastDay){if(key(sel)===lastDay)sel=
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!OV)render();if(!document.hidden&&OV)lockScreen(true)});
 
 render();
+loadClips();
+fixSavedTimes();render();
 })();
 </script>
