@@ -598,6 +598,7 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
       <h2 style="font-size:1.15rem;font-weight:800">Il tuo piano</h2>
       <div class="field"><label for="f-name">Come ti chiamo?</label><input id="f-name" maxlength="30" placeholder="Il tuo nome" autocomplete="given-name"></div>
       <div class="field"><label for="f-wake">Ora della sveglia</label><input id="f-wake" type="time" value="06:30"><small>Tutti gli orari della giornata si calcolano da qui. Punta a 7–8 ore di sonno.</small></div>
+      <div class="field"><label for="f-wake-we">Sveglia nel weekend</label><div class="trow inline" style="border:0;padding:0;grid-template-columns:1fr auto"><input id="f-wake-we" type="time"><button type="button" class="vbtn" id="wakeWeClear">Come in settimana</button></div><small id="wakeWeHint">Sabato e domenica. L'ora di andare a dormire segue la sveglia del giorno dopo: il venerdì e il sabato si può fare più tardi.</small></div>
       <div class="field"><label id="l-slot">Quando ti alleni?</label><div class="seg" id="f-slot" role="group" aria-labelledby="l-slot"></div></div>
       <div class="field"><label id="l-level">Livello</label><div class="seg" id="f-level" role="group" aria-labelledby="l-level"></div><small>Cambia volume degli allenamenti e minuti di meditazione.</small></div>
       <div class="field"><label for="f-why">Il tuo perché</label><textarea id="f-why" maxlength="200" placeholder="Es. Voglio sentirmi leggero, concentrato e fiero di me ogni sera."></textarea><small>Te lo ricorderò quando premi «Non ho voglia».</small></div>
@@ -933,6 +934,22 @@ const EXCUSES=[
   "Non decidere con la testa stanca. Metti le scarpe, apri il tappetino. Il resto viene da sé."
 ];
 const GENERIC=[
+  "Non contare i giorni. Fai in modo che i giorni contino, uno alla volta.",
+  "Il primo passo è sempre il più corto. Fallo adesso.",
+  "Non serve motivazione per bere un bicchiere d'acqua. Comincia da lì.",
+  "Ogni abitudine è un voto per la persona che vuoi diventare.",
+  "Fare il minimo oggi vale più del massimo rimandato a domani.",
+  "La fatica di adesso pesa meno del rimpianto di stasera.",
+  "Quando la testa dice «dopo», il corpo può dire «due minuti».",
+  "Un campione si riconosce da come gioca i punti brutti, non quelli facili.",
+  "Allenati, mangia bene, dormi: non c'è un segreto più grande di questo.",
+  "La calma è un'abilità: si allena come il dritto.",
+  "Tieni la promessa piccola di oggi: domani sarà più facile.",
+  "Respira lento prima di decidere. Le scelte migliori arrivano con calma.",
+  "Non devi vincere la giornata intera. Vinci la prossima ora.",
+  "La sera prepara il mattino: vestiti pronti, acqua sul comodino.",
+  "Il progresso è noioso da vicino e straordinario da lontano. Continua.",
+  "Se salti un giorno, non saltarne due. È tutta qui la regola.",
   "Una cosa alla volta. Guarda solo la prossima azione, non tutta la lista.",
   "Disciplina vuol dire mantenere la promessa anche quando l'entusiasmo è finito.",
   "Il corpo segue la mente. Respira, poi muoviti.",
@@ -979,18 +996,24 @@ function dose(e,lvl,f){
   const s=e.s[lvl], r=e.fixed?e.r[lvl]:Math.max(1,Math.round(e.r[lvl]*f*trainAdj()));
   return (s>1?s+" × ":"")+r+" "+e.u;
 }
+// sveglia del giorno: nel weekend può essere diversa
+function wakeOf(d){const P=S.profile,wd=(d.getDay()+6)%7;return toMin(wd>=5&&P.wakeWE?P.wakeWE:P.wake)}
 function buildDay(d){
-  const P=S.profile, lvl=+P.level||0, I=dayInfo(d), W=toMin(P.wake), f=WEEKS[I.week].factor;
+  const P=S.profile, lvl=+P.level||0, I=dayInfo(d), W=wakeOf(d), f=WEEKS[I.week].factor;
+  // luci spente 8 ore prima della sveglia del giorno dopo: il venerdì si può fare più tardi, la domenica si torna presto
+  const sleepAt=wakeOf(addDays(d,1))+1440-480;
   const wo=WORKOUTS[I.wd], med=MEDS[I.wd];
+  // nelle settimane del menù B gli esercizi di forza, agilità ed esplosività cambiano con varianti equivalenti
+  const exVar=menuNum(d)%2===1, woEx=exVar?wo.ex.map(e=>ALT_EX[e.n]?Object.assign({},e,{n:ALT_EX[e.n]}):e):wo.ex;
   const medMin=MED_MIN[lvl][I.week];
   // pranzo e cena restano in orari normali qualunque sia la sveglia; la cena almeno 2 ore e mezza prima di dormire
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),q15=v=>Math.round(v/15)*15;
-  let colazAt=W+45,lunchAt=clamp(W+390,750,810),cenaAt=Math.min(clamp(W+810,1170,1230),W+960-150);
+  let colazAt=W+45,lunchAt=clamp(W+390,750,810),cenaAt=Math.min(clamp(W+810,1170,1230),sleepAt-150);
   if(P.slot==="pranzo")lunchAt+=30;
   let snackAt=q15((lunchAt+cenaAt)/2);
   let trainAt=P.slot==="pranzo"?lunchAt-75:P.slot==="sera"?cenaAt-90:W+120;
   // digiuno 16:8: tutti i pasti in 8 ore; l'allenamento si sposta dentro la finestra, dopo il primo pasto
-  const FW=fastWindow();
+  const FW=fastWindow(W);
   if(FW){colazAt=FW;lunchAt=FW+180;snackAt=FW+330;cenaAt=FW+450;trainAt=FW+90;
     if(P.slot==="sera"){snackAt=FW+300;trainAt=FW+360}}   // la sera: spuntino e allenamento prima, la cena resta libera
   const woDur=Math.round(wo.dur[lvl]*(I.week===3?.85:1));
@@ -1006,8 +1029,8 @@ function buildDay(d){
     {id:"colaz",t:colazAt,kind:"cibo",title:(FW?"Primo pasto: ":"Colazione: ")+R.colazione.t,dur:R.colazione.min,rec:R.colazione,sum:(FW?"Rompi il digiuno. ":"")+R.colazione.desc+" · circa "+R.colazione.n.k+" kcal",
       eat:"Siediti a tavola, senza schermi, e mastica lentamente.",
       micro:"Prepara solo gli ingredienti sul tavolo. Il resto viene facile."},
-    {id:"train",t:trainAt,kind:"corpo",title:wo.name,dur:woDur,ex:wo.ex,tip:wo.tip,
-      sum:woDur+" minuti · "+WEEKS[I.week].name+(trainAdj()!==1?" · volume "+(trainAdj()>1?"+":"")+Math.round((trainAdj()-1)*100)+"% su misura":""),
+    {id:"train",t:trainAt,kind:"corpo",title:wo.name,dur:woDur,ex:woEx,tip:wo.tip,
+      sum:woDur+" minuti · "+WEEKS[I.week].name+(exVar&&woEx!==wo.ex&&woEx.some((e,j)=>e.n!==wo.ex[j].n)?" · esercizi variati":"")+(trainAdj()!==1?" · volume "+(trainAdj()>1?"+":"")+Math.round((trainAdj()-1)*100)+"% su misura":""),
       micro:"Metti le scarpe e fai solo il primo esercizio. Se dopo 2 minuti vuoi smettere, puoi."},
     {id:"pranzo",t:lunchAt,kind:"cibo",title:"Pranzo: "+R.pranzo.t,dur:R.pranzo.min,rec:R.pranzo,sum:R.pranzo.desc+" · circa "+R.pranzo.n.k+" kcal",
       eat:"Mangia lentamente: posate giù tra un boccone e l'altro.",
@@ -1018,11 +1041,11 @@ function buildDay(d){
     {id:"cena",t:cenaAt,kind:"cibo",title:"Cena: "+R.cena.t,dur:R.cena.min,rec:R.cena,sum:R.cena.desc+" · circa "+R.cena.n.k+" kcal"+(FW?". Finisci entro le "+fmt(FW+480)+": da lì parte il digiuno":""),
       eat:"Finisci di cenare almeno 2 ore prima di dormire.",
       micro:"Lava e taglia le verdure. Il resto della cena parte da lì."},
-    {id:"medpm",t:W+930,kind:"mente",title:"Chiusura: diario e gratitudine",dur:5,med:MEDS[6],
+    {id:"medpm",t:sleepAt-30,kind:"mente",title:"Chiusura: diario e gratitudine",dur:5,med:MEDS[6],
       sum:"Tre righe sul diario: cosa è andato bene, cosa migliorare, tre grazie.",
       list:["Scrivi una cosa che hai fatto bene oggi.","Scrivi una cosa da migliorare domani, senza giudicarti.","Scrivi tre cose per cui sei grato.","Chiudi con 10 respiri lenti."],
       micro:"Scrivi una sola riga: cosa è andato bene oggi."},
-    {id:"sleep",t:W+960,kind:"sonno",title:"Luci spente",dur:5,
+    {id:"sleep",t:sleepAt,kind:"sonno",title:"Luci spente",dur:5,
       sum:"Stessa ora ogni sera. Schermi spenti, stanza fresca e buia.",
       list:["Schermi spenti 30 minuti prima.","Prepara i vestiti per l'allenamento di domani: domattina avrai una scusa in meno.","Metti un bicchiere d'acqua sul comodino: il primo gesto di domani è già pronto.","Stanza fresca, buia e silenziosa.","Punta a 7–8 ore di sonno."],
       micro:"Metti il telefono in carica fuori dalla camera."}
@@ -1073,6 +1096,33 @@ const HOW={
   "Yoga rigenerativo":[["Pose sdraiate o sedute, sostenute da cuscini.","Resta 2–3 minuti in ogni posa.","Respira lento e lascia andare il peso."],"Cercare l'allungamento massimo: qui ci si rilassa.","Anche 10 minuti bastano."],
   "Tempo all'aperto senza telefono":[["Esci: parco, giardino, lungomare.","Niente telefono, niente cuffie.","Guarda, ascolta, respira."],"Riempire il tempo di impegni.","Anche 10 minuti sul balcone."]
 };
+// varianti usate a settimane alterne: stesso gruppo muscolare, stessa difficoltà
+const ALT_EX={
+  "Squat a corpo libero":"Squat sumo","Piegamenti (anche sulle ginocchia)":"Piegamenti a mani strette","Affondi alternati":"Affondi all'indietro",
+  "Rematore con elastico":"Rematore a un braccio con elastico","Plank":"Plank con tocco della spalla","Dead bug":"Bird dog",
+  "Passi laterali veloci":"Passo incrociato laterale (carioca)","Split step + scatto di 5 metri":"Split step + scatto laterale",
+  "Salti con la corda (anche simulati)":"Jumping jack","Equilibrio su una gamba":"Stacco su una gamba senza pesi",
+  "Squat jump":"Skater jump","Piegamenti veloci":"Piegamenti esplosivi su un rialzo","Ponte glutei su una gamba":"Hip thrust con le spalle sul divano",
+  "Rotazioni del busto con elastico":"Dritto e rovescio simulati con elastico","Mountain climber":"Burpee senza salto","Plank laterale":"Plank laterale con rotazione"
+};
+Object.assign(HOW,{
+  "Squat sumo":[["Piedi più larghi delle spalle, punte in fuori.","Scendi con il busto dritto, ginocchia in linea con le punte.","Spingi sui talloni e risali stringendo i glutei."],"Ginocchia che cadono verso l'interno.","Scendi meno, fino a dove riesci con la schiena dritta."],
+  "Piegamenti a mani strette":[["Mani sotto le spalle, gomiti vicini al corpo.","Scendi controllato tenendo i gomiti stretti: lavorano i tricipiti.","Spingi e torna su senza far cadere i fianchi."],"Allargare i gomiti a metà movimento.","Sulle ginocchia o con le mani su un tavolo."],
+  "Affondi all'indietro":[["In piedi, porta una gamba indietro con un passo lungo.","Scendi finché il ginocchio dietro sfiora terra.","Spingi sul piede davanti e torna in piedi, poi cambia gamba."],"Busto che cade in avanti.","Tieniti a una sedia per l'equilibrio."],
+  "Rematore a un braccio con elastico":[["Elastico fissato in basso davanti a te, un piede avanti.","Tira il gomito indietro vicino al fianco, stringendo la scapola.","Torna lentamente e cambia braccio dopo la serie."],"Ruotare il busto per tirare di più.","Elastico più leggero."],
+  "Plank con tocco della spalla":[["Posizione di piegamento, braccia tese, piedi un po' larghi.","Tocca la spalla opposta con una mano, poi con l'altra.","I fianchi restano fermi, senza dondolare."],"Bacino che ruota a ogni tocco.","Ginocchia a terra o piedi più larghi."],
+  "Bird dog":[["A quattro zampe, schiena piatta.","Distendi insieme il braccio destro in avanti e la gamba sinistra indietro.","Tieni 2 secondi, torna e cambia lato."],"Inarcare la schiena bassa.","Muovi solo la gamba, senza il braccio."],
+  "Passo incrociato laterale (carioca)":[["Spostati di lato incrociando il piede dietro, poi davanti.","Le anche ruotano, le spalle restano rivolte in avanti.","Dopo 5–6 passi cambia direzione."],"Guardare i piedi.","Più lento, anche camminando."],
+  "Split step + scatto laterale":[["Piccolo saltello a piedi divaricati, come in risposta.","Appena atterri, spingi di lato per 3 passi veloci.","Torna al centro e ripeti dall'altra parte."],"Scattare con il peso sui talloni.","Al posto dello scatto, due passi laterali."],
+  "Jumping jack":[["Salta aprendo gambe e braccia.","Salta di nuovo chiudendo gambe e braccia.","Atterra morbido sugli avampiedi."],"Atterrare a gambe rigide.","Senza salto: apri una gamba alla volta."],
+  "Stacco su una gamba senza pesi":[["In piedi su una gamba, ginocchio morbido.","Inclina il busto in avanti mentre l'altra gamba va indietro, schiena dritta.","Torna su stringendo il gluteo della gamba d'appoggio."],"Schiena curva.","Tieni una mano appoggiata al muro."],
+  "Skater jump":[["Salta di lato da una gamba all'altra, come un pattinatore.","Atterra morbido sulla gamba esterna, l'altra passa dietro.","Riparti subito dall'altra parte."],"Atterrare con il ginocchio verso l'interno.","Passo laterale invece del salto."],
+  "Piegamenti esplosivi su un rialzo":[["Mani su un rialzo stabile (panca, gradino).","Scendi controllato e spingi forte, le mani si staccano un attimo.","Riatterra morbido e continua."],"Atterrare a braccia rigide.","Piegamenti veloci senza staccare le mani."],
+  "Hip thrust con le spalle sul divano":[["Spalle appoggiate al divano, piedi a terra, ginocchia a 90°.","Spingi sui talloni e solleva il bacino fino a formare una linea con il busto.","Stringi i glutei 1 secondo in alto e scendi piano."],"Inarcare la schiena invece di usare i glutei.","Ponte glutei a terra."],
+  "Dritto e rovescio simulati con elastico":[["Elastico fissato di lato all'altezza della vita.","Ruota busto e anche come in un dritto, tirando l'elastico.","Torna lentamente; poi dall'altro lato come un rovescio."],"Muovere solo le braccia.","Senza elastico, solo il movimento."],
+  "Burpee senza salto":[["Dalla posizione in piedi, mani a terra.","Porta i piedi indietro in plank, uno alla volta o insieme.","Riporta i piedi verso le mani e alzati."],"Schiena che cede nel plank.","Mani su una sedia invece che a terra."],
+  "Plank laterale con rotazione":[["Plank laterale sull'avambraccio, braccio libero verso l'alto.","Porta il braccio sotto il busto ruotando, poi torna in alto.","Fianchi alti per tutto il movimento."],"Fianco che cede.","Ginocchia a terra."]
+});
 function exHTML(e,lvl,f){
   const h=HOW[e.n];
   const head='<span>'+esc(e.n)+'</span><span class="dose">'+esc(dose(e,lvl,f))+"</span>";
@@ -1174,10 +1224,10 @@ function renderHabits(){
 // minuti del primo pasto, o null se il digiuno è spento; mai prima di un'ora dopo la sveglia
 // la finestra si decide dall'ultimo pasto (più naturale: so a che ora ceno) o dal primo; l'altro estremo lo calcola l'app
 function fastAnchor(){const P=S.profile;return P.fastAnchor||(P.fastStart&&!P.fastEnd?"first":"last")}
-function fastWindow(){
+function fastWindow(W){
   const P=S.profile;if(!P.fast)return null;
   const want=fastAnchor()==="last"?toMin(P.fastEnd||"18:00")-450:toMin(P.fastStart||"11:00");
-  return Math.max(toMin(P.wake)+60,want);
+  return Math.max((W===undefined?toMin(P.wake):W)+60,want);
 }
 // fine dei pasti e ripresa: l'ultimo pasto dura mezz'ora, poi 16 ore di digiuno
 function fastTimes(){const FW=fastWindow();if(FW===null)return null;const end=FW+480;return{first:FW,last:FW+450,end,next:(end+960)%1440}}
@@ -1557,7 +1607,16 @@ function coachLine(d,plan,pct){
   if(h<11&&pct===0)return "Buongiorno "+n+". La giornata si decide nei primi 30 minuti: avvia il rituale, poi telefono a faccia in giù e niente social.";
   if(h>=18&&pct<.4)return "Non è troppo tardi. Scegli una cosa sola qui sotto e falla adesso. Una.";
   if(I.wd===6)return "Domenica: si recupera. Riposare bene fa parte del piano, non è una pausa dal piano.";
-  return GENERIC[((I.idx%GENERIC.length)+GENERIC.length)%GENERIC.length];
+  // frasi costruite sui tuoi dati, alternate con quelle generali
+  const k=key(d),ks=key(addDays(d,-1)),sl=S.sleep[k],wat=S.water[k]||0,st=streakInfo().n,c=[];
+  if(sl&&sl<7)c.push("Stanotte hai dormito "+sl+" ore: oggi allenamento con calma, il recupero fa parte del piano.");
+  if(won(addDays(d,-1)))c.push("Ieri giornata vinta. Oggi la regola è la stessa: una cosa alla volta.");
+  if(st>=3)c.push(st+" giorni di fila, "+n+". Non spezzare la catena: fai solo la prossima azione.");
+  if(goalActive())c.push("L'obiettivo della settimana è «"+S.weekGoal.text+"». Oggi cosa fai per lui?");
+  if(h>=14&&wat<3)c.push("È pomeriggio e hai bevuto "+wat+(wat===1?" bicchiere":" bicchieri")+": riempi la borraccia adesso.");
+  if(dayLog(ks).train&&S.rpe[ks]===-1)c.push("Ieri l'allenamento è stato duro: oggi ascolta il corpo, la tecnica conta più della fatica.");
+  const pool=c.concat(GENERIC),i=I.idx*3+Math.floor(h/4);
+  return c.length&&i%2===0?c[i%c.length]:pool[((i%pool.length)+pool.length)%pool.length];
 }
 
 /* ---------- RENDER OGGI ---------- */
@@ -2061,7 +2120,7 @@ function renderYou(){
   // form
   const P=S.profile;
   if(document.activeElement!==$("f-name"))$("f-name").value=P.name;
-  $("f-wake").value=P.wake;
+  $("f-wake").value=P.wake;$("f-wake-we").value=P.wakeWE||"";$("wakeWeClear").hidden=!P.wakeWE;
   if(document.activeElement!==$("f-why"))$("f-why").value=P.why;
   $("f-start").value=P.start;
   renderNeeds();if(!document.activeElement||!document.activeElement.dataset||!document.activeElement.dataset.tid)renderTimes();
@@ -2316,6 +2375,9 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&OV)closeOverlay()})
 $("settings").addEventListener("submit",e=>e.preventDefault());
 $("f-name").addEventListener("input",e=>{S.profile.name=e.target.value.trim();S.setup=true;save();render()});
 $("f-why").addEventListener("input",e=>{S.profile.why=e.target.value.trim();S.setup=true;save()});
+$("f-wake-we").addEventListener("change",e=>{if(e.target.value&&e.target.value!==S.profile.wake)S.profile.wakeWE=e.target.value;else delete S.profile.wakeWE;
+  S.setup=true;save();render();renderYou();toast(S.profile.wakeWE?"Nel weekend sveglia alle "+S.profile.wakeWE+". Orari ricalcolati.":"Nel weekend stessa sveglia della settimana")});
+$("wakeWeClear").onclick=()=>{delete S.profile.wakeWE;save();render();renderYou();toast("Nel weekend stessa sveglia della settimana")};
 $("f-wake").addEventListener("change",e=>{if(e.target.value){S.profile.wake=e.target.value;fixSavedTimes();S.setup=true;save();render();toast("Sveglia alle "+e.target.value+". Orari ricalcolati.")}});
 function renderNeeds(){
   const c=nutriCfg();
@@ -2382,5 +2444,9 @@ loadClips();
 // i vecchi «cambia piatto» valevano per ogni settimana: con il menù a rotazione non hanno più senso
 Object.keys(S.swaps||{}).forEach(k=>{if(k.indexOf("|")<0)delete S.swaps[k]});
 fixSavedTimes();render();
+// solo per i test automatici (pagina aperta con ?test): espone i calcoli dell'app
+if(/[?&]test\b/.test(location.search))window.__mpc={get S(){return S},set S(v){S=v},setWeek(d){weekSel=d},save,render,
+  buildDay,timeWarnings,scaleText,defaultIdx,menuNum,rawRecipe,recipeFor,shopGroups,dayFactor,target,streakInfo,fastTimes,fixSavedTimes,
+  key,parseKey,addDays,today,fmt,toMin,RECIPES,ING,defaults};
 })();
 </script>

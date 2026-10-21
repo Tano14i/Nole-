@@ -27,6 +27,9 @@ Apri `index.html` in un browser (su telefono o computer). Non serve installare n
 - **Allenamento che si adatta**: dopo l'allenamento scegli «troppo facile», «giusto» o «troppo duro»; il volume dei successivi sale o scende (da −25% a +30%).
 - **Menù su misura**: in Ricette puoi cambiare ogni piatto con un altro della stessa categoria; nel fabbisogno puoi scegliere «Vegetariano» (il pesce diventa tempeh e ceci) e «Più proteine» (+18 g al giorno).
 - **I tuoi orari** (in Progressi, o aprendo un'attività in Oggi): ogni orario si può cambiare e vale ogni giorno; «Auto» torna all'orario calcolato. L'app avvisa se i pasti sono troppo vicini, se la cena è vicina al sonno, se ti alleni subito dopo mangiato o se la finestra del digiuno supera le 8 ore.
+- **Weekend**: sveglia diversa per sabato e domenica; l'ora di andare a dormire segue la sveglia del giorno dopo.
+- **Allenamenti variati**: a settimane alterne gli esercizi di forza, agilità ed esplosività cambiano con varianti equivalenti, tutte spiegate.
+- **Coach**: più frasi, e frasi costruite sui tuoi dati (sonno, serie, giornata di ieri, acqua, obiettivo della settimana).
 - **Menù che cambia ogni settimana**: 56 ricette in due menù che si alternano ogni lunedì, su un ciclo di 4 settimane (le settimane 3 e 4 ripropongono i piatti in giorni diversi). La lista della spesa si calcola dai piatti della settimana, con porzioni, piatti cambiati, vegetariano e più proteine.
 - **Pasti cambiati**: aprendo un pasto in Oggi puoi «Cambiare piatto» (vale solo per quel giorno) oppure segnare «Ho mangiato altro» con una breve descrizione e la porzione; il pasto conta come fatto, le calorie sono stimate e il resoconto settimanale segnala i pasti che cambi spesso.
 - **Acqua e sonno**: in Oggi segni i bicchieri d'acqua e le ore di sonno.
@@ -48,6 +51,18 @@ L'app è una web app installabile: funziona offline e manda notifiche all'ora di
 3. In **Progressi → App e promemoria** tocca «Attiva i promemoria» e consenti le notifiche.
 
 Le notifiche arrivano finché il telefono tiene l'app attiva o in background. Per avvisi garantiti anche ad app chiusa, usa **«Aggiungi al calendario»**: scarica un file `.ics` con un evento settimanale e un avviso per ogni attività.
+
+## Test automatici
+
+I test aprono l'app in un browser vero, a larghezza telefono, con dati di prova e un orologio fissato. Controllano, tra l'altro: che l'app si apra senza errori nei due temi, gli orari della giornata in 96 combinazioni, il digiuno 16:8, il menù a rotazione, le dosi scalate, la lista della spesa, rituale, allenamento guidato, pasti cambiati, backup e serie con jolly, weekend, allenamenti variati e frasi del coach.
+
+```
+npm install
+npx playwright install chromium
+npm test
+```
+
+Su GitHub partono da soli a ogni pull request (`.github/workflows/test.yml`).
 
 ## Avvertenza
 

@@ -1,0 +1,11 @@
+{
+  "name": "match-point-coach",
+  "private": true,
+  "description": "Test automatici di Match Point Coach",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}
