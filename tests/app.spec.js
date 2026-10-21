@@ -191,3 +191,40 @@ test("serie con jolly: un giorno storto a settimana non la azzera", async ({ pag
   await open(page, { state: { log }, time: "2026-10-29T08:00:00" });
   await expect(page.locator("#hdr-streak")).toHaveText("9");
 });
+
+test("weekend: sveglia propria, e luci spente calcolate sulla sveglia del giorno dopo", async ({ page }) => {
+  await open(page, { state: { profile: { wake: "06:30", wakeWE: "08:30" } } });
+  const r = await page.evaluate(() => {
+    const M = window.__mpc, at = (d, id) => { const p = M.buildDay(M.parseKey(d)); return M.fmt(p.tasks.find(x => x.id === id).t); };
+    const warn = ["2026-10-23", "2026-10-24", "2026-10-25"].flatMap(d => M.timeWarnings(M.buildDay(M.parseKey(d))).map(w => d + ": " + w));
+    return { venSveglia: at("2026-10-23", "wake"), venLuci: at("2026-10-23", "sleep"), sabSveglia: at("2026-10-24", "wake"),
+      sabLuci: at("2026-10-24", "sleep"), domLuci: at("2026-10-25", "sleep"), warn };
+  });
+  expect(r).toEqual({ venSveglia: "06:30", venLuci: "00:30", sabSveglia: "08:30", sabLuci: "00:30", domLuci: "22:30", warn: [] });
+});
+
+test("allenamenti variati a settimane alterne, e ogni variante ha la spiegazione", async ({ page }) => {
+  await open(page);
+  const r = await page.evaluate(() => {
+    const M = window.__mpc, names = d => M.buildDay(M.parseKey(d)).tasks.find(x => x.id === "train").ex.map(e => e.n);
+    return { a: names("2026-10-20"), b: names("2026-10-27") };
+  });
+  expect(r.a).toContain("Squat a corpo libero");
+  expect(r.b).toContain("Squat sumo");
+  expect(r.a).not.toEqual(r.b);
+  // martedì 27: ogni esercizio si apre con passaggi, errore da evitare e versione più facile
+  for (let i = 0; i < 6; i++) await page.click("#nextDay");
+  await page.click('[data-open="train"]');
+  await expect(page.locator(".details details.exd")).toHaveCount(6);
+  await expect(page.locator(".details details.exd").first()).toContainText("Squat sumo");
+  expect(await page.$$eval(".details .ex", x => x.filter(e => !e.closest("details")).length)).toBe(0);
+});
+
+test("il coach usa i tuoi dati: sonno corto e serie in corso", async ({ page }) => {
+  const all = { wake: 1, medam: 1, colaz: 1, train: 1, pranzo: 1, snack: 1, cena: 1, medpm: 1, sleep: 1 }, log = {};
+  for (let d = 19; d <= 20; d++) log[`2026-10-${d}`] = { ...all };
+  await open(page, { state: { log, sleep: { "2026-10-21": 5 } }, time: "2026-10-21T12:00:00" });
+  const lines = new Set();
+  for (const h of ["12:00", "16:00", "20:00", "23:00"]) { await page.clock.setFixedTime(new Date(`2026-10-21T${h}:00`)); await page.evaluate(() => window.__mpc.render()); lines.add(await page.textContent("#coachLine")); }
+  expect([...lines].some(l => l.includes("dormito 5 ore") || l.includes("giorni di fila") || l.includes("Ieri giornata vinta"))).toBe(true);
+});
