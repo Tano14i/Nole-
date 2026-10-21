@@ -616,7 +616,8 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
         <label class="remitem" for="n-veg"><input type="checkbox" id="n-veg"> Vegetariano: sostituisci il pesce con tempeh e ceci</label>
         <label class="remitem" for="n-fast"><input type="checkbox" id="n-fast"> Digiuno intermittente 16:8: tutti i pasti in 8 ore</label>
         <div id="fastBox" class="needs-out" hidden>
-          <div class="field"><label for="n-fast-start">Primo pasto alle</label><input id="n-fast-start" type="time" value="11:00"><small id="fastInfo"></small></div>
+          <div class="field"><label id="l-fanchor">Decido io l'orario del</label><div class="seg" id="n-fast-anchor" role="group" aria-labelledby="l-fanchor"></div></div>
+          <div class="field"><label for="n-fast-start" id="l-fast-time">Ultimo pasto alle</label><input id="n-fast-start" type="time" value="18:00"><small id="fastInfo"></small></div>
           <span class="warn">Non adatto con diabete o farmaci per la glicemia, in gravidanza o allattamento, con disturbi alimentari o sotto i 18 anni: in questi casi chiedi prima al medico.</span>
           <span>Nelle ore di digiuno: acqua, tisane e caffè nero senza zucchero. Se ti senti debole o hai le vertigini, mangia e torna agli orari normali. Le prime 1–2 settimane la fame si fa sentire: è normale.</span>
         </div>
@@ -1060,7 +1061,7 @@ function buildDay(d){
   tasks.forEach(x=>{if(OT[x.id]&&x.id!=="wake"){const m=dayTime(x.id,OT[x.id],W);if(m!==null)x.t=m}});
   const ce=tasks.find(x=>x.id==="cena");
   if(ce.t<1020)ce.title=ce.title.replace(/^Cena:/,"Ultimo pasto:");
-  if(FW)ce.sum=ce.sum.replace(/Finisci entro le \d\d:\d\d/,"Finisci entro le "+fmt(ce.t+30));
+  if(FW)ce.sum=ce.sum.replace(/Finisci entro le \d\d:\d\d: da lì parte il digiuno/,"Finisci entro le "+fmt(ce.t+30)+": digiuno fino alle "+fmt((ce.t+30+960)%1440)+" di domani");
   tasks.sort((a,b)=>a.t-b.t);   // la giornata sempre in ordine di orario
   return{info:I,tasks,wo,med,medMin};
 }
@@ -1191,10 +1192,15 @@ function renderHabits(){
 
 /* ---------- DIGIUNO 16:8 E CAFFÈ ---------- */
 // minuti del primo pasto, o null se il digiuno è spento; mai prima di un'ora dopo la sveglia
+// la finestra si decide dall'ultimo pasto (più naturale: so a che ora ceno) o dal primo; l'altro estremo lo calcola l'app
+function fastAnchor(){const P=S.profile;return P.fastAnchor||(P.fastStart&&!P.fastEnd?"first":"last")}
 function fastWindow(){
   const P=S.profile;if(!P.fast)return null;
-  return Math.max(toMin(P.wake)+60,toMin(P.fastStart||"11:00"));
+  const want=fastAnchor()==="last"?toMin(P.fastEnd||"18:00")-450:toMin(P.fastStart||"11:00");
+  return Math.max(toMin(P.wake)+60,want);
 }
+// fine dei pasti e ripresa: l'ultimo pasto dura mezz'ora, poi 16 ore di digiuno
+function fastTimes(){const FW=fastWindow();if(FW===null)return null;const end=FW+480;return{first:FW,last:FW+450,end,next:(end+960)%1440}}
 function coffeeCfg(){return Object.assign({on:false,max:2,cutoff:"14:00"},S.profile.coffee||{})}
 function coffeeHTML(k){
   const c=coffeeCfg();if(!c.on)return"";
@@ -1494,12 +1500,21 @@ function dayTime(id,v,W){
   if(m+720>=W&&m+720<1440)return m+720;
   return null;
 }
+// con il digiuno, primo e ultimo pasto non sono orari isolati: spostarli sposta la finestra e il resto dei pasti
+function moveFastWindow(id,v){
+  const P=S.profile;S.times=S.times||{};
+  if(id==="cena"){P.fastAnchor="last";P.fastEnd=v}else{P.fastAnchor="first";P.fastStart=v}
+  ["colaz","pranzo","snack","cena"].forEach(m=>delete S.times[m]);
+  save();render();if(view==="tu"){renderTimes();if(document.activeElement!==$("n-fast-start"))renderNeeds();else{$("n-fast-start").blur();renderNeeds()}}
+  const FT=fastTimes();toast("Finestra spostata: dalle "+fmt(FT.first)+" alle "+fmt(FT.end)+". Domani primo pasto alle "+fmt(FT.next)+".");
+}
 // corregge gli orari salvati con l'AM/PM sbagliato e dice cosa ha cambiato
 function fixSavedTimes(){
   const OT=S.times||{},W=toMin(S.profile.wake),fixed=[];
   for(const id in OT){if(NIGHT[id]||id==="wake")continue;const m=toMin(OT[id]);if(m<W){const d=dayTime(id,OT[id],W);
     if(d===null)delete OT[id];else{fixed.push(TIME_LABEL[id].split(" /")[0]+" "+OT[id]+" → "+fmt(d));OT[id]=fmt(d)}}}
   if(fixed.length){save();setTimeout(()=>toast("Ho corretto "+fixed.join(", ")+": le 00:00 sono mezzanotte."),400)}
+  if(S.profile.fast&&OT.cena&&!S.profile.fastAnchor){S.profile.fastAnchor="last";S.profile.fastEnd=OT.cena;["colaz","pranzo","snack","cena"].forEach(m=>delete OT[m]);save()}
 }
 const TIME_LABEL={medam:"Meditazione del mattino",colaz:"Colazione / primo pasto",train:"Allenamento",pranzo:"Pranzo",snack:"Spuntino",cena:"Cena / ultimo pasto",medpm:"Diario serale",sleep:"Luci spente"};
 function setTime(id,v){S.times=S.times||{};if(v)S.times[id]=v;else delete S.times[id];save();render();if(view==="tu")renderTimes()}
@@ -2205,6 +2220,8 @@ document.addEventListener("click",e=>{
   if(b.dataset.vdel!==undefined){delClip(b.dataset.vdel);toast("Registrazione eliminata");return}
   if(b.dataset.treset){setTime(b.dataset.treset,null);toast("Orario automatico");return}
   if(b.id==="timesReset"){S.times={};save();render();renderTimes();toast("Tutti gli orari sono di nuovo automatici");return}
+  if(b.dataset.fanchor){const FT=fastTimes();S.profile.fastAnchor=b.dataset.fanchor;
+    if(FT){if(b.dataset.fanchor==="last")S.profile.fastEnd=fmt(FT.last);else S.profile.fastStart=fmt(FT.first)}save();renderNeeds();return}
   if(b.dataset.rpe!==undefined){setRpe(+b.dataset.rpe);return}
   if(b.dataset.water){const k=key(sel),n=+b.dataset.water;S.water[k]=(S.water[k]===n?n-1:n);save();renderHabits();if(S.water[k]===8)toast("8 bicchieri: idratazione da campione.");return}
   if(b.dataset.coffee){const k=key(sel),c=coffeeCfg();S.coffee[k]=S.coffee[k]||[];
@@ -2231,11 +2248,12 @@ document.addEventListener("change",e=>{
     if(!NIGHT[id]&&m<W){const d=dayTime(id,e.target.value,W);
       if(d===null){toast("Questo orario è prima della sveglia ("+S.profile.wake+"): scegline uno più tardi.");render();if(view==="tu")renderTimes();return}
       setTime(id,fmt(d));toast("Le "+e.target.value+" sono prima della sveglia: ho messo le "+fmt(d)+". Se intendevi altro, cambialo.");return}
+    if(S.profile.fast&&(id==="cena"||id==="colaz")){moveFastWindow(id,e.target.value);return}
     setTime(id,e.target.value);const w=timeWarnings(buildDay(today()));toast(w.length?"Orario salvato. Attenzione: "+w[0]:"Orario salvato")}return}
   if(e.target.dataset&&e.target.dataset.swap){const sw=e.target.dataset.swap,wd=+sw.split("-")[0],v=+e.target.value;if(v===wd)delete S.swaps[sw];else S.swaps[sw]=v;save();renderRecipes();render();toast("Piatto cambiato per ogni "+DAYNAMES[wd].toLowerCase());return}
   if(e.target.id==="n-veg"){S.profile.veg=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Menù vegetariano: il pesce diventa tempeh e ceci":"Pesce di nuovo nel menù");return}
   if(e.target.id==="n-fast"){S.profile.fast=e.target.checked;save();renderNeeds();render();toast(e.target.checked?"Digiuno 16:8: orari dei pasti aggiornati":"Orari dei pasti normali");return}
-  if(e.target.id==="n-fast-start"){if(e.target.value){S.profile.fastStart=e.target.value;save();renderNeeds();render();toast("Finestra dei pasti aggiornata")}return}
+  if(e.target.id==="n-fast-start"){if(e.target.value){moveFastWindow(fastAnchor()==="last"?"cena":"colaz",e.target.value)}return}
   if(e.target.id==="n-coffee"){S.profile.coffee=Object.assign(coffeeCfg(),{on:e.target.checked});save();renderNeeds();render();return}
   if(e.target.id==="n-cof-max"){S.profile.coffee=Object.assign(coffeeCfg(),{max:+e.target.value});save();render();return}
   if(e.target.id==="n-cof-cut"){if(e.target.value){S.profile.coffee=Object.assign(coffeeCfg(),{cutoff:e.target.value});save();renderNeeds();render();scheduleReminders()}return}
@@ -2317,8 +2335,14 @@ function renderNeeds(){
   ["age","weight","height","kcal"].forEach(k=>{if(document.activeElement!==$("n-"+k))$("n-"+k).value=c[k]});
   $("n-veg").checked=!!S.profile.veg;$("n-prot").checked=!!S.profile.protein;
   $("n-fast").checked=!!S.profile.fast;$("fastBox").hidden=!S.profile.fast;
-  if(document.activeElement!==$("n-fast-start"))$("n-fast-start").value=S.profile.fastStart||"11:00";
-  const FW=fastWindow();$("fastInfo").textContent=FW?"Mangi dalle "+fmt(FW)+" alle "+fmt(FW+480)+". L'allenamento si sposta dentro la finestra, dopo il primo pasto. Gli orari che cambi a mano in «I tuoi orari» hanno la precedenza.":"";
+  const fa=fastAnchor(),FT=fastTimes();
+  $("n-fast-anchor").innerHTML=[["last","Ultimo pasto"],["first","Primo pasto"]].map(x=>'<button type="button" data-fanchor="'+x[0]+'" aria-pressed="'+(fa===x[0])+'">'+x[1]+"</button>").join("");
+  $("l-fast-time").textContent=fa==="last"?"Ultimo pasto alle":"Primo pasto alle";
+  if(document.activeElement!==$("n-fast-start"))$("n-fast-start").value=fa==="last"?(S.profile.fastEnd||"18:00"):(S.profile.fastStart||"11:00");
+  if(FT){const asked=fa==="last"?toMin(S.profile.fastEnd||"18:00")-450:toMin(S.profile.fastStart||"11:00");
+    $("fastInfo").textContent="Primo pasto "+fmt(FT.first)+" · ultimo pasto "+fmt(FT.last)+" · finisci entro le "+fmt(FT.end)+". Digiuno dalle "+fmt(FT.end)+" alle "+fmt(FT.next)+" del giorno dopo: 16 ore."+
+      (FT.first>asked?" La finestra non può iniziare prima di un'ora dopo la sveglia, per questo è spostata.":"")+" Se cambi l'orario del primo o dell'ultimo pasto nella giornata, la finestra si sposta da sola."}
+  else $("fastInfo").textContent="";
   const cc=coffeeCfg();$("n-coffee").checked=cc.on;$("coffeeBox").hidden=!cc.on;$("n-cof-max").value=cc.max;
   if(document.activeElement!==$("n-cof-cut"))$("n-cof-cut").value=cc.cutoff;
   const t=target(),out=$("n-out");

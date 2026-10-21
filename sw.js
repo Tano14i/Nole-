@@ -1,5 +1,5 @@
 // Match Point Coach: funzionamento offline e apertura dell'app dalle notifiche
-const VERSION = "match-point-coach-v16";
+const VERSION = "match-point-coach-v17";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", e => {
