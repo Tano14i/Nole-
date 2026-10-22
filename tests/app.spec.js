@@ -228,3 +228,29 @@ test("il coach usa i tuoi dati: sonno corto e serie in corso", async ({ page }) 
   for (const h of ["12:00", "16:00", "20:00", "23:00"]) { await page.clock.setFixedTime(new Date(`2026-10-21T${h}:00`)); await page.evaluate(() => window.__mpc.render()); lines.add(await page.textContent("#coachLine")); }
   expect([...lines].some(l => l.includes("dormito 5 ore") || l.includes("giorni di fila") || l.includes("Ieri giornata vinta"))).toBe(true);
 });
+
+test("modalità minima: allenamento di 10 minuti, meditazione di 3, diario di una riga, e contano come fatti", async ({ page }) => {
+  await open(page, { time: "2026-10-20T08:00:00" });
+  await page.click("#t-tu");
+  await page.check("#mn-on");
+  const r = await page.evaluate(() => {
+    const M = window.__mpc, p = M.buildDay(M.today()), tr = p.tasks.find(x => x.id === "train");
+    return { dur: tr.dur, ex: tr.ex.length, maxSets: Math.max(...tr.ex.map(e => e.s[0])), med: p.tasks.find(x => x.id === "medam").dur };
+  });
+  expect(r).toEqual({ dur: 10, ex: 3, maxSets: 2, med: 3 });
+  // nei giorni con esercizi a minuti il totale resta sui 10 minuti (giovedì: recupero attivo; sabato: resistenza)
+  const minutes = await page.evaluate(() => ["2026-10-22", "2026-10-24", "2026-10-25"].map(d => {
+    const tr = window.__mpc.buildDay(window.__mpc.parseKey(d)).tasks.find(x => x.id === "train");
+    return tr.ex.filter(e => e.u === "min").reduce((a, e) => a + e.r[0], 0);
+  }));
+  minutes.forEach(m => expect(m).toBeLessThanOrEqual(10));
+  // solo l'allenamento in versione minima: la meditazione torna completa
+  await page.uncheck("#mn-med");
+  expect(await page.evaluate(() => window.__mpc.buildDay(window.__mpc.today()).tasks.find(x => x.id === "medam").dur)).toBeGreaterThan(3);
+  await page.click("#t-oggi");
+  await page.click('[data-open="medpm"]');
+  await expect(page.locator(".details .journal textarea")).toHaveCount(1);
+  await page.fill("#j-good", "Ho fatto 10 minuti di allenamento");
+  await page.click("[data-jsave]");
+  await expect(page.locator('[data-check="medpm"]')).toHaveAttribute("aria-pressed", "true");
+});
