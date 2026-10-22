@@ -248,6 +248,7 @@ fieldset.needs legend{font-weight:700;font-size:.9rem;padding:0 6px}
 #voiceCfg select{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
 
 .hab-wide{grid-column:1/-1}
+#mn-opts{padding-left:4px}
 .hab .btnrow .btn{padding:8px 14px;font-size:.9rem}
 
 .bigtime.target{font-size:clamp(2.4rem,12vw,3.6rem)}
@@ -631,6 +632,16 @@ form.settings{background:var(--surface);border:1px solid var(--line);border-radi
         <label class="remitem" for="n-prot"><input type="checkbox" id="n-prot"> Più proteine: yogurt di soia allo spuntino ed edamame a cena (+18 g al giorno)</label>
         <div class="needs-out" id="n-out" aria-live="polite"></div>
       </fieldset>
+      <fieldset class="needs" id="miniSet">
+        <legend>Modalità minima</legend>
+        <label class="remitem" for="mn-on"><input type="checkbox" id="mn-on"> Attiva la modalità minima</label>
+        <p class="note" style="margin:0">Per i giorni in cui partire è la parte difficile: le versioni corte contano come fatte, per la serie e per il resoconto. Quando ti senti pronto, la spegni.</p>
+        <div id="mn-opts" class="tlist">
+          <label class="remitem" for="mn-train"><input type="checkbox" id="mn-train"> Allenamento: 10 minuti, i primi 3 esercizi</label>
+          <label class="remitem" for="mn-med"><input type="checkbox" id="mn-med"> Meditazione del mattino: 3 minuti</label>
+          <label class="remitem" for="mn-diary"><input type="checkbox" id="mn-diary"> Diario serale: una riga sola</label>
+        </div>
+      </fieldset>
       <fieldset class="needs" id="timesSet">
         <legend>I tuoi orari</legend>
         <p class="note" style="margin:0">Gli orari partono dalla sveglia e da quando ti alleni. Puoi cambiarli uno per uno: valgono ogni giorno. «Auto» torna all'orario calcolato.</p>
@@ -1005,7 +1016,13 @@ function buildDay(d){
   const wo=WORKOUTS[I.wd], med=MEDS[I.wd];
   // nelle settimane del menù B gli esercizi di forza, agilità ed esplosività cambiano con varianti equivalenti
   const exVar=menuNum(d)%2===1, woEx=exVar?wo.ex.map(e=>ALT_EX[e.n]?Object.assign({},e,{n:ALT_EX[e.n]}):e):wo.ex;
-  const medMin=MED_MIN[lvl][I.week];
+  // modalità minima: versioni corte di allenamento, meditazione e diario, che contano come fatte
+  const MN=miniCfg(),miniTr=MN.on&&MN.train,miniMed=MN.on&&MN.med,miniDiary=MN.on&&MN.diary;
+  const medMin=miniMed?3:MED_MIN[lvl][I.week];
+  // versione minima: primi 3 esercizi, al massimo 2 serie; tra quelli a minuti il primo dura fino a 6, gli altri 2, così il totale resta sui 10 minuti
+  let minSeen=0;
+  const trEx=miniTr?woEx.slice(0,3).map(e=>{const cap=e.u==="min"?(minSeen++?2:6):0;
+    return Object.assign({},e,{s:e.s.map(x=>Math.min(x,2)),r:cap?e.r.map(x=>Math.min(x,cap)):e.r})}):woEx;
   // pranzo e cena restano in orari normali qualunque sia la sveglia; la cena almeno 2 ore e mezza prima di dormire
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),q15=v=>Math.round(v/15)*15;
   let colazAt=W+45,lunchAt=clamp(W+390,750,810),cenaAt=Math.min(clamp(W+810,1170,1230),sleepAt-150);
@@ -1016,7 +1033,7 @@ function buildDay(d){
   const FW=fastWindow(W);
   if(FW){colazAt=FW;lunchAt=FW+180;snackAt=FW+330;cenaAt=FW+450;trainAt=FW+90;
     if(P.slot==="sera"){snackAt=FW+300;trainAt=FW+360}}   // la sera: spuntino e allenamento prima, la cena resta libera
-  const woDur=Math.round(wo.dur[lvl]*(I.week===3?.85:1));
+  const woDur=miniTr?10:Math.round(wo.dur[lvl]*(I.week===3?.85:1));
   const R={colazione:recipeFor("colazione",d),pranzo:recipeFor("pranzo",d),spuntino:recipeFor("spuntino",d),cena:recipeFor("cena",d)};
   const tasks=[
     {id:"wake",t:W,kind:"rituale",title:"Risveglio da campione",dur:3,seq:RITUAL,
@@ -1024,13 +1041,13 @@ function buildDay(d){
       list:RITUAL.map(r=>r[0]+" ("+(r[1]>=60?r[1]/60+" min":r[1]+" s")+")").concat(["Avvia il rituale e lascia il telefono a faccia in giù: con la guida vocale ti basta ascoltare. Alla fine parte la meditazione."]),
       micro:"Alzati e bevi un bicchiere d'acqua. Basta questo per iniziare."},
     {id:"medam",t:W+15,kind:"mente",title:"Meditazione: "+med.name,dur:medMin,med:med,
-      sum:med.sum+" "+medMin+" minuti.",list:med.steps,
+      sum:med.sum+" "+medMin+" minuti."+(miniMed?" Versione minima.":""),list:med.steps,
       micro:"Siediti, chiudi gli occhi e fai 5 respiri lenti contando le espirazioni."},
     {id:"colaz",t:colazAt,kind:"cibo",title:(FW?"Primo pasto: ":"Colazione: ")+R.colazione.t,dur:R.colazione.min,rec:R.colazione,sum:(FW?"Rompi il digiuno. ":"")+R.colazione.desc+" · circa "+R.colazione.n.k+" kcal",
       eat:"Siediti a tavola, senza schermi, e mastica lentamente.",
       micro:"Prepara solo gli ingredienti sul tavolo. Il resto viene facile."},
-    {id:"train",t:trainAt,kind:"corpo",title:wo.name,dur:woDur,ex:woEx,tip:wo.tip,
-      sum:woDur+" minuti · "+WEEKS[I.week].name+(exVar&&woEx!==wo.ex&&woEx.some((e,j)=>e.n!==wo.ex[j].n)?" · esercizi variati":"")+(trainAdj()!==1?" · volume "+(trainAdj()>1?"+":"")+Math.round((trainAdj()-1)*100)+"% su misura":""),
+    {id:"train",t:trainAt,kind:"corpo",title:wo.name,dur:woDur,ex:trEx,tip:miniTr?"Versione minima: 10 minuti, i primi 3 esercizi. Se ti va di continuare, continua.":wo.tip,
+      sum:woDur+" minuti · "+(miniTr?"versione minima":WEEKS[I.week].name)+(exVar&&woEx!==wo.ex&&woEx.some((e,j)=>e.n!==wo.ex[j].n)?" · esercizi variati":"")+(trainAdj()!==1?" · volume "+(trainAdj()>1?"+":"")+Math.round((trainAdj()-1)*100)+"% su misura":""),
       micro:"Metti le scarpe e fai solo il primo esercizio. Se dopo 2 minuti vuoi smettere, puoi."},
     {id:"pranzo",t:lunchAt,kind:"cibo",title:"Pranzo: "+R.pranzo.t,dur:R.pranzo.min,rec:R.pranzo,sum:R.pranzo.desc+" · circa "+R.pranzo.n.k+" kcal",
       eat:"Mangia lentamente: posate giù tra un boccone e l'altro.",
@@ -1041,8 +1058,8 @@ function buildDay(d){
     {id:"cena",t:cenaAt,kind:"cibo",title:"Cena: "+R.cena.t,dur:R.cena.min,rec:R.cena,sum:R.cena.desc+" · circa "+R.cena.n.k+" kcal"+(FW?". Finisci entro le "+fmt(FW+480)+": da lì parte il digiuno":""),
       eat:"Finisci di cenare almeno 2 ore prima di dormire.",
       micro:"Lava e taglia le verdure. Il resto della cena parte da lì."},
-    {id:"medpm",t:sleepAt-30,kind:"mente",title:"Chiusura: diario e gratitudine",dur:5,med:MEDS[6],
-      sum:"Tre righe sul diario: cosa è andato bene, cosa migliorare, tre grazie.",
+    {id:"medpm",t:sleepAt-30,kind:"mente",title:"Chiusura: diario e gratitudine",dur:miniDiary?2:5,med:MEDS[6],
+      sum:miniDiary?"Una riga sul diario: cosa è andato bene oggi. Versione minima.":"Tre righe sul diario: cosa è andato bene, cosa migliorare, tre grazie.",
       list:["Scrivi una cosa che hai fatto bene oggi.","Scrivi una cosa da migliorare domani, senza giudicarti.","Scrivi tre cose per cui sei grato.","Chiudi con 10 respiri lenti."],
       micro:"Scrivi una sola riga: cosa è andato bene oggi."},
     {id:"sleep",t:sleepAt,kind:"sonno",title:"Luci spente",dur:5,
@@ -1274,6 +1291,9 @@ function renderReview(){
     (w.weakPct>=90?"Settimana quasi perfetta. Il prossimo passo è mantenerla, non aggiungere altro.":
     "Il punto da migliorare è «"+labelKind(w.weak).toLowerCase()+"» ("+w.weakPct+"% fatto). "+WEAK_TIP[w.weak]);
   if(w.woMiss>=3&&(+S.profile.level||0)>0)tip+=" Hai saltato "+w.woMiss+" allenamenti: prova un livello più basso per due settimane.";
+  const mc=miniCfg();
+  if(mc.on&&w.n>=7&&w.wo>=6)tip+=" Con la modalità minima non hai saltato quasi nessun allenamento: è il momento di provare il piano completo, almeno per l'allenamento.";
+  else if(mc.on)tip+=" Sei in modalità minima: va benissimo, l'obiettivo ora è non saltare.";
   if(w.sleep!==null&&w.sleep<7)tip+=" Dormi in media meno di 7 ore: il recupero è parte dell'allenamento."+(w.cofLate?" Hai bevuto "+w.cofLate+(w.cofLate===1?" caffè":" caffè")+" dopo le "+coffeeCfg().cutoff+": prova a spostarli prima.":"");
   if(w.alts)tiles.push([w.alts,w.alts===1?"pasto cambiato":"pasti cambiati"]);
   const altTop=Object.keys(w.altBy).sort((a,b)=>w.altBy[b]-w.altBy[a])[0];
@@ -1956,9 +1976,10 @@ function addWeight(){
 
 /* ---------- DIARIO SERALE ---------- */
 const JQ=[["good","Cosa è andato bene oggi?"],["improve","Cosa migliori domani?"],["grat","Tre cose per cui sei grato"]];
+function miniCfg(){return Object.assign({on:false,train:true,med:true,diary:true},S.profile.mini||{})}
 function journalHTML(d){
-  const j=S.journal[key(d)]||{};
-  return '<div class="journal">'+JQ.map(q=>'<div class="field"><label for="j-'+q[0]+'">'+q[1]+'</label><textarea id="j-'+q[0]+'" data-j="'+q[0]+'" maxlength="500" rows="2">'+esc(j[q[0]]||"")+'</textarea></div>').join("")+
+  const j=S.journal[key(d)]||{},mc=miniCfg(),qs=mc.on&&mc.diary?JQ.slice(0,1):JQ;
+  return '<div class="journal">'+(qs.length===1?'<p class="note" style="margin:0">Versione minima: una riga basta.</p>':"")+qs.map(q=>'<div class="field"><label for="j-'+q[0]+'">'+q[1]+'</label><textarea id="j-'+q[0]+'" data-j="'+q[0]+'" maxlength="500" rows="2">'+esc(j[q[0]]||"")+'</textarea></div>').join("")+
     '<div class="btnrow"><button type="button" class="btn btn-go" data-jsave="1">Salva e segna come fatto</button></div><p class="note" style="margin:0">Si salva mentre scrivi. Rileggi tutto in Progressi.</p></div>';
 }
 function renderJournal(){
@@ -2123,6 +2144,7 @@ function renderYou(){
   $("f-wake").value=P.wake;$("f-wake-we").value=P.wakeWE||"";$("wakeWeClear").hidden=!P.wakeWE;
   if(document.activeElement!==$("f-why"))$("f-why").value=P.why;
   $("f-start").value=P.start;
+  const mc=miniCfg();$("mn-on").checked=mc.on;$("mn-opts").hidden=!mc.on;$("mn-train").checked=mc.train;$("mn-med").checked=mc.med;$("mn-diary").checked=mc.diary;
   renderNeeds();if(!document.activeElement||!document.activeElement.dataset||!document.activeElement.dataset.tid)renderTimes();
   $("f-slot").innerHTML=SLOTS.map(s=>'<button type="button" data-slot="'+s[0]+'" aria-pressed="'+(P.slot===s[0])+'">'+s[1]+"</button>").join("");
   $("f-level").innerHTML=LEVELS.map((s,i)=>'<button type="button" data-level="'+i+'" aria-pressed="'+(+P.level===i)+'">'+s+"</button>").join("");
@@ -2294,6 +2316,8 @@ $("prevDay").onclick=()=>{sel=addDays(sel,-1);openTask=null;$("excuseBox").hidde
 $("nextDay").onclick=()=>{sel=addDays(sel,1);openTask=null;$("excuseBox").hidden=true;render()};
 $("goToday").onclick=()=>{sel=today();openTask=null;render()};
 document.addEventListener("change",e=>{
+  if(/^mn-(on|train|med|diary)$/.test(e.target.id)){const k=e.target.id.slice(3);S.profile.mini=Object.assign(miniCfg(),{[k]:e.target.checked});save();render();renderYou();
+    if(k==="on")toast(e.target.checked?"Modalità minima attiva: l'importante è partire.":"Piano completo. Bentornato.");return}
   if(e.target.dataset&&e.target.dataset.tid){if(e.target.value){
     const id=e.target.dataset.tid,W=toMin(S.profile.wake),m=toMin(e.target.value);
     if(!NIGHT[id]&&m<W){const d=dayTime(id,e.target.value,W);
@@ -2338,6 +2362,7 @@ $("nextExcuse").onclick=()=>{
   const plan=buildDay(sel),x=plan.tasks.find(t=>t.id===$("nextCard").dataset.id);
   let line=EXCUSES[excuseIdx%EXCUSES.length];excuseIdx++;
   if(S.profile.why&&excuseIdx%3===1)line="Ricordati perché hai iniziato: «"+S.profile.why+"»";
+  else if(!miniCfg().on&&x&&["train","medam","medpm"].includes(x.id)&&excuseIdx%3===2)line="Succede spesso? Attiva la modalità minima in Progressi: versioni corte che contano come fatte.";
   $("excuseBox").innerHTML="<b>Coach:</b> "+esc(line)+(x?"<br><b>Versione mini:</b> "+esc(x.micro):"");
   $("excuseBox").hidden=false;
 };

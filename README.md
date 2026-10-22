@@ -27,6 +27,7 @@ Apri `index.html` in un browser (su telefono o computer). Non serve installare n
 - **Allenamento che si adatta**: dopo l'allenamento scegli «troppo facile», «giusto» o «troppo duro»; il volume dei successivi sale o scende (da −25% a +30%).
 - **Menù su misura**: in Ricette puoi cambiare ogni piatto con un altro della stessa categoria; nel fabbisogno puoi scegliere «Vegetariano» (il pesce diventa tempeh e ceci) e «Più proteine» (+18 g al giorno).
 - **I tuoi orari** (in Progressi, o aprendo un'attività in Oggi): ogni orario si può cambiare e vale ogni giorno; «Auto» torna all'orario calcolato. L'app avvisa se i pasti sono troppo vicini, se la cena è vicina al sonno, se ti alleni subito dopo mangiato o se la finestra del digiuno supera le 8 ore.
+- **Modalità minima** (in Progressi): versioni corte di allenamento (10 minuti), meditazione del mattino (3 minuti) e diario (una riga), che contano come fatte. Il resoconto settimanale propone di tornare al piano completo quando non salti più.
 - **Weekend**: sveglia diversa per sabato e domenica; l'ora di andare a dormire segue la sveglia del giorno dopo.
 - **Allenamenti variati**: a settimane alterne gli esercizi di forza, agilità ed esplosività cambiano con varianti equivalenti, tutte spiegate.
 - **Coach**: più frasi, e frasi costruite sui tuoi dati (sonno, serie, giornata di ieri, acqua, obiettivo della settimana).
